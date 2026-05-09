@@ -16,6 +16,8 @@ import {
 import { FIRM } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
+import { BrandMark } from "./brand-mark";
+
 const PRIMARY_NAV = [
   { label: "Practice Areas", href: "/practice-areas" },
   { label: "Locations", href: "/locations" },
@@ -54,14 +56,9 @@ export function SiteHeader() {
         <Link
           href="/"
           aria-label={`${FIRM.legalName} home`}
-          className="flex items-baseline gap-1.5"
+          className="flex items-center"
         >
-          <span className="font-display text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-            {FIRM.legalName.replace(" Law Firm", "")}
-          </span>
-          <span className="font-display text-sm font-medium text-primary sm:text-base">
-            Law
-          </span>
+          <BrandMark />
         </Link>
 
         <nav className="hidden lg:block" aria-label="Primary">
