@@ -1,5 +1,5 @@
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
-import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+import { canonicalUrl, defaultOgImageUrl, siteUrl } from "@/lib/seo/canonical";
 
 type GraphNode = Record<string, unknown>;
 
@@ -15,7 +15,7 @@ function legalServiceNode(): GraphNode {
     name: FIRM.legalName,
     url: siteUrl(),
     telephone: FIRM.phone,
-    image: `${siteUrl()}/images/og/default.png`,
+    image: defaultOgImageUrl(),
     priceRange: "Free Consultation",
     address: {
       "@type": "PostalAddress",

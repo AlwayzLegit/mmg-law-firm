@@ -7,7 +7,7 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { FIRM } from "@/lib/constants";
 import { getPostBySlug, getPublishedPosts } from "@/lib/data/blog";
-import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildArticle } from "@/lib/seo/schema";
 
@@ -51,7 +51,7 @@ export default async function BlogPostPage({ params }: Props) {
     title: post.title,
     description: post.meta_description ?? post.excerpt ?? post.title,
     path,
-    image: post.hero_image_url ?? `${siteUrl()}/images/og/default.png`,
+    image: post.hero_image_url ?? defaultOgImageUrl(),
     publishedAt: post.published_at ?? undefined,
     author: post.author_name,
   });

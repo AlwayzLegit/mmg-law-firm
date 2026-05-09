@@ -5,6 +5,9 @@ import { Mail, Phone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import NoteCompose from "./note-compose";
+import StatusControl from "./status-control";
+
 type Props = { params: Promise<{ id: string }> };
 
 export default async function LeadDetailPage({ params }: Props) {
@@ -35,11 +38,19 @@ export default async function LeadDetailPage({ params }: Props) {
         ← Back to leads
       </Link>
 
-      <div className="mt-3 flex items-baseline justify-between">
+      <div className="mt-3 flex items-baseline justify-between gap-4">
         <h1 className="font-display text-2xl font-medium tracking-tight">
           {lead.full_name}
         </h1>
-        <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium capitalize">
+        <span
+          className={`rounded-md px-2 py-0.5 text-xs font-medium capitalize ${
+            lead.status === "signed"
+              ? "bg-success/10 text-success"
+              : lead.status === "spam" || lead.status === "rejected"
+                ? "bg-destructive/10 text-destructive"
+                : "bg-secondary"
+          }`}
+        >
           {lead.status}
         </span>
       </div>
@@ -143,9 +154,23 @@ export default async function LeadDetailPage({ params }: Props) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Notes</CardTitle>
+              <CardTitle className="text-base">Status</CardTitle>
             </CardHeader>
             <CardContent>
+              <StatusControl
+                leadId={lead.id}
+                currentStatus={lead.status}
+                currentReason={lead.rejection_reason}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Notes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <NoteCompose leadId={lead.id} />
               {notes && notes.length > 0 ? (
                 <ul className="space-y-3">
                   {notes.map((n) => (
@@ -161,10 +186,10 @@ export default async function LeadDetailPage({ params }: Props) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No notes yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No notes yet — write the first one above.
+                </p>
               )}
-              {/* TODO(group-e): inline note compose, status change dropdown,
-                  conflict-check button, audit-log section. */}
             </CardContent>
           </Card>
         </div>

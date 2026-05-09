@@ -16,7 +16,7 @@ import {
   getLocationPage,
   getPublishedLocationPages,
 } from "@/lib/data/queries";
-import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
@@ -79,7 +79,7 @@ export default async function CityPracticePage({ params }: Props) {
     "@type": "LegalService",
     name: `${FIRM.legalName} — ${row.practice_area_name} in ${row.city_name}`,
     url: canonicalUrl(path),
-    image: `${siteUrl()}/images/og/default.png`,
+    image: defaultOgImageUrl(),
     telephone: FIRM.phone,
     address: {
       "@type": "PostalAddress",

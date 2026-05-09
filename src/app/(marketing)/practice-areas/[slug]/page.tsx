@@ -10,7 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
 import { PRACTICE_AREA_CONTENT } from "@/lib/data/practice-area-content";
-import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
@@ -58,7 +58,7 @@ export default async function PracticeAreaPage({ params }: Props) {
     "@type": "LegalService",
     name: `${FIRM.legalName} — ${area.name}`,
     url: canonicalUrl(path),
-    image: `${siteUrl()}/images/og/default.png`,
+    image: defaultOgImageUrl(),
     description: area.intro,
     telephone: FIRM.phone,
     address: {

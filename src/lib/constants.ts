@@ -49,7 +49,8 @@ export const SITE = {
   name: "MMG Law Firm",
   description:
     "California personal-injury attorney based in Glendale. Free consultation. No fee unless we win.",
-  defaultOgImage: "/og/default.png",
+  /** Generated at build time by src/app/opengraph-image.tsx. */
+  defaultOgImage: "/opengraph-image",
 } as const;
 
 export type FirmConfig = typeof FIRM;
