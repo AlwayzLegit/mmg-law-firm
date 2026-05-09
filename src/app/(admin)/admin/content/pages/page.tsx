@@ -90,6 +90,7 @@ export default async function ContentPagesAdmin() {
           title="City x practice pages"
           published={lpRows.filter((p) => p.is_published).length}
           total={lpRows.length}
+          href="/admin/content/location-pages"
         />
         <RowSummary
           title="Practice areas"
@@ -183,6 +184,7 @@ function PageRow({
   row,
 }: {
   row: {
+    id: string;
     cities: { slug: string; name: string; counties: { slug: string; name: string } };
     practice_areas: { slug: string; name: string };
     last_reviewed_at: string | null;
@@ -191,10 +193,8 @@ function PageRow({
   return (
     <li className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-xs">
       <Link
-        href={`/locations/${row.cities.counties.slug}/${row.cities.slug}/${row.practice_areas.slug}`}
+        href={`/admin/content/location-pages/${row.id}`}
         className="truncate font-medium hover:text-primary"
-        target="_blank"
-        rel="noopener"
       >
         {row.cities.name} · {row.practice_areas.name}
       </Link>
@@ -211,24 +211,38 @@ function RowSummary({
   title,
   published,
   total,
+  href,
 }: {
   title: string;
   published: number;
   total: number;
+  href?: string;
 }) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          {title}
-        </p>
-        <p className="mt-2 font-display text-3xl font-medium tracking-tight">
-          {published}
-          <span className="ml-1 text-base text-muted-foreground">
-            / {total} published
-          </span>
-        </p>
-      </CardContent>
-    </Card>
+  const body = (
+    <CardContent className="pt-6">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {title}
+      </p>
+      <p className="mt-2 font-display text-3xl font-medium tracking-tight">
+        {published}
+        <span className="ml-1 text-base text-muted-foreground">
+          / {total} published
+        </span>
+      </p>
+      {href ? (
+        <p className="mt-3 text-xs text-primary">Manage →</p>
+      ) : null}
+    </CardContent>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block">
+        <Card className="transition-colors hover:border-primary/30">
+          {body}
+        </Card>
+      </Link>
+    );
+  }
+  return <Card>{body}</Card>;
 }
