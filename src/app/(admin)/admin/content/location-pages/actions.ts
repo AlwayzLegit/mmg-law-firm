@@ -1,10 +1,16 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+
+const CreateInput = z.object({
+  city_id: z.string().uuid(),
+  practice_area_id: z.string().uuid(),
+});
 
 const UpdateInput = z.object({
   id: z.string().uuid(),
@@ -25,6 +31,80 @@ export type ActionResult = { ok: true } | { ok: false; error: string };
 function emptyToNull(v: string | null | undefined): string | null {
   if (v == null) return null;
   return v.trim() === "" ? null : v;
+}
+
+/** Create a new draft location_pages row for a (city, practice_area) pair.
+ *  Returns the new id (and redirects in the wrapper) so the caller can
+ *  send the user straight into the editor for the fresh row. */
+export async function createLocationPage(
+  formData: FormData,
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const { user } = await requireAdmin();
+
+  const parsed = CreateInput.safeParse({
+    city_id: formData.get("city_id"),
+    practice_area_id: formData.get("practice_area_id"),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: "Pick both a city and a practice area." };
+  }
+
+  const supabase = await getServerSupabase();
+
+  // The unique (city_id, practice_area_id) constraint will reject duplicates.
+  // We surface a useful message instead of letting Supabase's raw error leak.
+  const { data: existing } = await supabase
+    .from("location_pages")
+    .select("id")
+    .eq("city_id", parsed.data.city_id)
+    .eq("practice_area_id", parsed.data.practice_area_id)
+    .maybeSingle();
+  if (existing) {
+    return {
+      ok: false,
+      error:
+        "A page already exists for this city + practice combination. Open it from the list.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("location_pages")
+    .insert({
+      city_id: parsed.data.city_id,
+      practice_area_id: parsed.data.practice_area_id,
+      is_published: false,
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "Couldn't create row." };
+  }
+
+  void supabase.from("audit_log").insert({
+    actor_id: user.id,
+    entity: "location_pages",
+    entity_id: data.id,
+    action: "create",
+    diff: {
+      city_id: parsed.data.city_id,
+      practice_area_id: parsed.data.practice_area_id,
+    },
+  });
+
+  revalidatePath("/admin/content/location-pages");
+  revalidatePath("/admin/content/pages");
+
+  return { ok: true, id: data.id };
+}
+
+/** Convenience wrapper that calls createLocationPage and redirects to the
+ *  detail editor on success. Lets us use it directly as a form action. */
+export async function createLocationPageAndRedirect(
+  formData: FormData,
+): Promise<{ ok: false; error: string } | undefined> {
+  const result = await createLocationPage(formData);
+  if (!result.ok) return result;
+  redirect(`/admin/content/location-pages/${result.id}`);
 }
 
 /** Update editorial fields on a location_pages row. Updating local_angle_md

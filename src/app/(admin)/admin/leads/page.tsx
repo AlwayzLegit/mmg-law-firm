@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import LeadsTable, { type LeadRow } from "./leads-table";
+
 const STATUS_OPTIONS = [
   "all",
   "new",
@@ -31,9 +33,7 @@ export default async function LeadsPage({
 
   let query = supabase
     .from("leads")
-    .select(
-      "id, full_name, phone, email, status, created_at, county_id, practice_area_id",
-    )
+    .select("id, full_name, phone, email, status, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -45,6 +45,7 @@ export default async function LeadsPage({
   }
 
   const { data, error } = await query;
+  const rows = (data ?? []) as LeadRow[];
 
   return (
     <div>
@@ -54,8 +55,11 @@ export default async function LeadsPage({
             Leads
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Most recent first. Click any name for details.
-            {status === "all" ? " Spam is hidden — pick the spam filter to review." : null}
+            Most recent first. Click any name for details. Tick rows for bulk
+            actions.
+            {status === "all"
+              ? " Spam is hidden — pick the spam filter to review."
+              : null}
           </p>
         </div>
       </div>
@@ -82,69 +86,17 @@ export default async function LeadsPage({
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-base">
-            {data?.length ?? 0} matching {data?.length === 1 ? "lead" : "leads"}
+            {rows.length} matching {rows.length === 1 ? "lead" : "leads"}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {error ? (
             <p className="text-sm text-destructive">{error.message}</p>
-          ) : !data || data.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No leads found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="px-2 py-3 text-left">Created</th>
-                    <th className="px-2 py-3 text-left">Name</th>
-                    <th className="px-2 py-3 text-left">Phone</th>
-                    <th className="px-2 py-3 text-left">Email</th>
-                    <th className="px-2 py-3 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((l) => (
-                    <tr key={l.id} className="border-b border-border/60">
-                      <td className="px-2 py-3 align-top text-xs text-muted-foreground">
-                        <time dateTime={l.created_at}>
-                          {new Date(l.created_at).toLocaleString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </time>
-                      </td>
-                      <td className="px-2 py-3 align-top">
-                        <Link
-                          href={`/admin/leads/${l.id}`}
-                          className="font-medium hover:text-primary"
-                        >
-                          {l.full_name}
-                        </Link>
-                      </td>
-                      <td className="px-2 py-3 align-top text-xs text-muted-foreground">
-                        {l.phone}
-                      </td>
-                      <td className="px-2 py-3 align-top text-xs text-muted-foreground">
-                        {l.email ?? "—"}
-                      </td>
-                      <td className="px-2 py-3 align-top">
-                        <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium capitalize">
-                          {l.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <LeadsTable rows={rows} status={status} />
           )}
         </CardContent>
       </Card>
-
-      {/* TODO(group-e): kanban view toggle, bulk actions, filters by county
-          and practice area. Inline status changes from the row. */}
     </div>
   );
 }
