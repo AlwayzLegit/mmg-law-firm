@@ -22,10 +22,12 @@ export function buildMetadata({
 }: BuildOpts): Metadata {
   const url = canonicalUrl(path);
   const imageUrl = image.startsWith("http") ? image : `${siteUrl()}${image}`;
-  const siteTitle = `${title} | ${FIRM.legalName}`;
+  // The root layout's title.template provides the " | MMG Law Firm" suffix —
+  // pass the bare title here so we don't double it.
+  const ogTitle = `${title} | ${FIRM.legalName}`;
 
   return {
-    title: siteTitle,
+    title,
     description,
     metadataBase: new URL(siteUrl()),
     alternates: {
@@ -35,7 +37,7 @@ export function buildMetadata({
       ? { index: false, follow: false }
       : { index: true, follow: true },
     openGraph: {
-      title: siteTitle,
+      title: ogTitle,
       description,
       url,
       siteName: FIRM.legalName,
@@ -46,13 +48,13 @@ export function buildMetadata({
           url: imageUrl,
           width: 1200,
           height: 630,
-          alt: siteTitle,
+          alt: ogTitle,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: siteTitle,
+      title: ogTitle,
       description,
       images: [imageUrl],
     },
