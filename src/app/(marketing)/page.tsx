@@ -1,20 +1,18 @@
 import { AttorneyBioCard } from "@/components/marketing/attorney-bio-card";
-import {
-  CaseResultsSection,
-  type CaseResult,
-} from "@/components/marketing/case-result-card";
+import { CaseResultsSection } from "@/components/marketing/case-result-card";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { Faq } from "@/components/marketing/faq";
 import { Hero } from "@/components/marketing/hero";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { LocationsList } from "@/components/marketing/locations-list";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
-import {
-  TestimonialsSection,
-  type Testimonial,
-} from "@/components/marketing/testimonial-card";
+import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { WhyMmg } from "@/components/marketing/why-mmg";
 import { HOMEPAGE_FAQS } from "@/lib/data/faqs";
+import {
+  getApprovedTestimonials,
+  getPublishedCaseResults,
+} from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -24,23 +22,21 @@ export const metadata = buildMetadata({
   path: "/",
 });
 
-// Group D will load published case_results from Supabase here. Per spec §17,
-// we never invent case results — until the attorney provides verified entries
-// the section renders an empty state.
-const HOMEPAGE_CASE_RESULTS: CaseResult[] = [];
+export const revalidate = 3600;
 
-// Group E will load approved testimonials from Supabase here. Same constraint.
-const HOMEPAGE_TESTIMONIALS: Testimonial[] = [];
-
-export default function HomePage() {
+export default async function HomePage() {
+  const [caseResults, testimonials] = await Promise.all([
+    getPublishedCaseResults(3),
+    getApprovedTestimonials(3),
+  ]);
   return (
     <>
       <Hero />
       <PracticeAreaGrid />
       <WhyMmg />
       <AttorneyBioCard />
-      <CaseResultsSection results={HOMEPAGE_CASE_RESULTS} />
-      <TestimonialsSection testimonials={HOMEPAGE_TESTIMONIALS} />
+      <CaseResultsSection results={caseResults} />
+      <TestimonialsSection testimonials={testimonials} />
       <LocationsList />
 
       <section className="container-page py-16 md:py-24">

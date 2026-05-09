@@ -2,6 +2,7 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
+import { getApprovedTestimonials } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -12,11 +13,8 @@ export const metadata = buildMetadata({
 
 export const revalidate = 86400;
 
-// TODO(group-e): pull approved testimonials from Supabase. Empty state per
-// spec §17 — never fabricate client quotes.
-const TESTIMONIALS = [] as const;
-
-export default function ReviewsPage() {
+export default async function ReviewsPage() {
+  const testimonials = await getApprovedTestimonials();
   return (
     <>
       <BreadcrumbJsonLd
@@ -40,7 +38,7 @@ export default function ReviewsPage() {
         </div>
       </section>
 
-      <TestimonialsSection testimonials={[...TESTIMONIALS]} />
+      <TestimonialsSection testimonials={testimonials} />
       <CtaBand />
     </>
   );

@@ -2,6 +2,7 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { CaseResultsSection } from "@/components/marketing/case-result-card";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
+import { getPublishedCaseResults } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -12,12 +13,8 @@ export const metadata = buildMetadata({
 
 export const revalidate = 86400;
 
-// TODO(group-d): pull published case_results from Supabase here.
-// Per spec §17, we never invent case results — until attorney supplies real,
-// anonymized entries the section renders the empty state.
-const RESULTS = [] as const;
-
-export default function CaseResultsPage() {
+export default async function CaseResultsPage() {
+  const results = await getPublishedCaseResults();
   return (
     <>
       <BreadcrumbJsonLd
@@ -42,7 +39,7 @@ export default function CaseResultsPage() {
         </div>
       </section>
 
-      <CaseResultsSection results={[...RESULTS]} />
+      <CaseResultsSection results={results} />
       <CtaBand />
     </>
   );
