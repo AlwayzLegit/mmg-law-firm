@@ -1,125 +1,80 @@
-import Link from "next/link";
-import { Phone, ShieldCheck, Globe2, Award } from "lucide-react";
-
-import { buttonVariants } from "@/components/ui/button";
-import { FIRM, DISCLAIMERS } from "@/lib/constants";
+import { AttorneyBioCard } from "@/components/marketing/attorney-bio-card";
+import {
+  CaseResultsSection,
+  type CaseResult,
+} from "@/components/marketing/case-result-card";
+import { CtaBand } from "@/components/marketing/cta-band";
+import { Faq } from "@/components/marketing/faq";
+import { Hero } from "@/components/marketing/hero";
+import { LeadForm } from "@/components/marketing/lead-form";
+import { LocationsList } from "@/components/marketing/locations-list";
+import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
+import {
+  TestimonialsSection,
+  type Testimonial,
+} from "@/components/marketing/testimonial-card";
+import { WhyMmg } from "@/components/marketing/why-mmg";
+import { HOMEPAGE_FAQS } from "@/lib/data/faqs";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
   title: "California Personal-Injury Attorney",
   description:
-    "Mihran M. Ghazaryan, Esq. — California personal-injury counsel based in Glendale. Free consultation. No fee unless we win.",
+    "Mihran M. Ghazaryan, Esq. — California personal-injury counsel based in Glendale. Free consultation. No fee unless we win your case.",
   path: "/",
 });
 
-// TODO(human): Group B replaces this placeholder with the full hero,
-// practice-area grid, trust signals, case-results carousel, testimonials,
-// locations, lead form, and FAQ.
+// Group D will load published case_results from Supabase here. Per spec §17,
+// we never invent case results — until the attorney provides verified entries
+// the section renders an empty state.
+const HOMEPAGE_CASE_RESULTS: CaseResult[] = [];
+
+// Group E will load approved testimonials from Supabase here. Same constraint.
+const HOMEPAGE_TESTIMONIALS: Testimonial[] = [];
 
 export default function HomePage() {
   return (
     <>
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-16 md:py-24">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Attorney Advertising
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight text-foreground md:text-5xl lg:text-6xl">
-            When the unexpected happens, the call you make next matters.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            {FIRM.legalName} represents Californians injured in car, truck,
-            motorcycle, pedestrian, bicycle, rideshare, and slip-and-fall
-            accidents. Free consultation. No fee unless we win your case.
-          </p>
+      <Hero />
+      <PracticeAreaGrid />
+      <WhyMmg />
+      <AttorneyBioCard />
+      <CaseResultsSection results={HOMEPAGE_CASE_RESULTS} />
+      <TestimonialsSection testimonials={HOMEPAGE_TESTIMONIALS} />
+      <LocationsList />
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/contact"
-              className={buttonVariants({ size: "lg" })}
-            >
-              Request Free Consultation
-            </Link>
-            <a
-              href={`tel:${FIRM.phoneTel}`}
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
-              <Phone className="h-4 w-4" aria-hidden />
-              Call {FIRM.phone}
-            </a>
+      <section className="container-page py-16 md:py-24">
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
+              Tell us what happened
+            </p>
+            <h2 className="mt-3 font-display text-3xl font-medium tracking-tight md:text-4xl">
+              Free consultation. We&apos;ll call you back.
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              You&apos;re not committing to anything by reaching out — and there
+              is no fee unless we win your case. Tell us briefly what happened
+              and we&apos;ll be in touch within one business hour during office
+              hours.
+            </p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Prefer to call?{" "}
+              <a
+                href={`tel:+18185685818`}
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                (818) 568-5818
+              </a>
+              {" "}— Mon–Fri 9:00 to 18:00.
+            </p>
           </div>
-
-          <ul className="mt-10 grid gap-6 sm:grid-cols-3">
-            <TrustItem
-              icon={<ShieldCheck className="h-5 w-5" aria-hidden />}
-              title="No fee unless we win"
-              body="Contingency representation across all personal-injury matters."
-            />
-            <TrustItem
-              icon={<Globe2 className="h-5 w-5" aria-hidden />}
-              title="Bilingual representation"
-              body={`Counsel available in ${FIRM.languages.join(", ")}.`}
-            />
-            <TrustItem
-              icon={<Award className="h-5 w-5" aria-hidden />}
-              title="A real attorney handles your case"
-              body={`${FIRM.attorneyName} personally manages every matter.`}
-            />
-          </ul>
+          <LeadForm variant="compact" />
         </div>
       </section>
 
-      <section className="container-page py-16">
-        <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
-          <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-            Site under active build
-          </h2>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            The full site (practice-area pages, statewide locations, attorney
-            biography, blog, and online intake) is being assembled. In the
-            meantime,{" "}
-            <a
-              href={`tel:${FIRM.phoneTel}`}
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              call {FIRM.phone}
-            </a>{" "}
-            for a free consultation, or visit our{" "}
-            <Link
-              href="/contact"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              contact page
-            </Link>
-            .
-          </p>
-          <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
-            {DISCLAIMERS.general}
-          </p>
-        </div>
-      </section>
+      <Faq items={HOMEPAGE_FAQS} />
+      <CtaBand />
     </>
-  );
-}
-
-function TrustItem({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
-  return (
-    <li className="flex items-start gap-4">
-      <span className="mt-0.5 inline-flex h-9 w-9 flex-none items-center justify-center rounded-full bg-primary/10 text-primary">
-        {icon}
-      </span>
-      <div>
-        <p className="font-medium">{title}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-      </div>
-    </li>
   );
 }
