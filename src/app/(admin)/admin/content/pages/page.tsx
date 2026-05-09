@@ -1,5 +1,11 @@
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
+
+const STALE_AFTER_DAYS = 365;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function ContentPagesAdmin() {
   const supabase = await getServerSupabase();
@@ -14,12 +20,51 @@ export default async function ContentPagesAdmin() {
       .order("name"),
     supabase
       .from("location_pages")
-      .select("id, city_id, practice_area_id, is_published, last_reviewed_at"),
+      .select(
+        `
+          id,
+          is_published,
+          last_reviewed_at,
+          local_angle_md,
+          cities!inner(slug, name, counties!inner(slug, name)),
+          practice_areas!inner(slug, name)
+        `,
+      )
+      .order("last_reviewed_at", { ascending: true, nullsFirst: true }),
     supabase
       .from("practice_areas")
       .select("id, slug, name, is_published, display_order")
       .order("display_order"),
   ]);
+
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const staleThreshold = now - STALE_AFTER_DAYS * DAY_MS;
+
+  type LocationPageRow = {
+    id: string;
+    is_published: boolean;
+    last_reviewed_at: string | null;
+    local_angle_md: string | null;
+    cities: {
+      slug: string;
+      name: string;
+      counties: { slug: string; name: string };
+    };
+    practice_areas: { slug: string; name: string };
+  };
+
+  const lpRows = (locationPages.data ?? []) as unknown as LocationPageRow[];
+
+  const stalePages = lpRows.filter((p) => {
+    if (!p.is_published) return false;
+    if (!p.last_reviewed_at) return true;
+    return new Date(p.last_reviewed_at).getTime() < staleThreshold;
+  });
+
+  const missingAngle = lpRows.filter(
+    (p) => p.is_published && (!p.local_angle_md || p.local_angle_md.trim() === ""),
+  );
 
   return (
     <div>
@@ -42,11 +87,9 @@ export default async function ContentPagesAdmin() {
           total={cities.data?.length ?? 0}
         />
         <RowSummary
-          title="City × practice pages"
-          published={
-            locationPages.data?.filter((p) => p.is_published).length ?? 0
-          }
-          total={locationPages.data?.length ?? 0}
+          title="City x practice pages"
+          published={lpRows.filter((p) => p.is_published).length}
+          total={lpRows.length}
         />
         <RowSummary
           title="Practice areas"
@@ -56,6 +99,61 @@ export default async function ContentPagesAdmin() {
           total={practiceAreas.data?.length ?? 0}
         />
       </div>
+
+      {(stalePages.length > 0 || missingAngle.length > 0) && (
+        <Card className="mt-8 border-warning/40 bg-warning/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle
+                className="h-4 w-4 text-warning"
+                aria-hidden
+              />
+              Pages needing attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            {missingAngle.length > 0 ? (
+              <div>
+                <p className="font-medium">
+                  {missingAngle.length} published page
+                  {missingAngle.length === 1 ? "" : "s"} with empty
+                  local_angle_md
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Per CRPC compliance, city x practice pages must have
+                  unique locally-relevant content. RLS already hides these
+                  publicly, but they should be unpublished or filled in.
+                </p>
+                <ul className="mt-2 grid gap-1">
+                  {missingAngle.slice(0, 10).map((p) => (
+                    <PageRow key={p.id} row={p} />
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {stalePages.length > 0 ? (
+              <div>
+                <p className="font-medium">
+                  {stalePages.length} published page
+                  {stalePages.length === 1 ? "" : "s"} not reviewed in 12+
+                  months
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Spec §10.4: pages must be reviewed within 12 months to
+                  remain published. Open each row, confirm the content is
+                  current, and update last_reviewed_at.
+                </p>
+                <ul className="mt-2 grid gap-1">
+                  {stalePages.slice(0, 10).map((p) => (
+                    <PageRow key={p.id} row={p} />
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mt-8">
         <CardHeader>
@@ -70,7 +168,7 @@ export default async function ContentPagesAdmin() {
           <code className="rounded bg-secondary px-1 py-0.5 text-xs">
             is_published
           </code>{" "}
-          there. City × practice pages additionally require non-empty{" "}
+          there. City x practice pages additionally require non-empty{" "}
           <code className="rounded bg-secondary px-1 py-0.5 text-xs">
             local_angle_md
           </code>{" "}
@@ -78,6 +176,34 @@ export default async function ContentPagesAdmin() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function PageRow({
+  row,
+}: {
+  row: {
+    cities: { slug: string; name: string; counties: { slug: string; name: string } };
+    practice_areas: { slug: string; name: string };
+    last_reviewed_at: string | null;
+  };
+}) {
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-xs">
+      <Link
+        href={`/locations/${row.cities.counties.slug}/${row.cities.slug}/${row.practice_areas.slug}`}
+        className="truncate font-medium hover:text-primary"
+        target="_blank"
+        rel="noopener"
+      >
+        {row.cities.name} · {row.practice_areas.name}
+      </Link>
+      <span className="text-muted-foreground">
+        {row.last_reviewed_at
+          ? `Reviewed ${new Date(row.last_reviewed_at).toLocaleDateString("en-US")}`
+          : "Never reviewed"}
+      </span>
+    </li>
   );
 }
 

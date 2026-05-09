@@ -1,9 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
+import { getServerSupabase } from "@/lib/supabase/server";
+
+import InviteForm from "./invite-form";
 
 export default async function AdminSettingsPage() {
   const { user, profile } = await requireAdmin();
+  const supabase = await getServerSupabase();
+  const { data: admins } = await supabase
+    .from("admin_profiles")
+    .select("user_id, role, full_name, created_at")
+    .order("created_at", { ascending: true });
 
   return (
     <div>
@@ -37,8 +45,63 @@ export default async function AdminSettingsPage() {
         </Card>
       </div>
 
-      {/* TODO(group-e): invite-user flow (insert admin_profiles row, send
-          magic-link via supabase.auth.admin.inviteUserByEmail). */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Admins</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {admins && admins.length > 0 ? (
+              <ul className="divide-y divide-border">
+                {admins.map((a) => (
+                  <li
+                    key={a.user_id}
+                    className="flex items-center justify-between gap-3 py-3 text-sm"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {a.full_name ?? "(no name)"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Joined{" "}
+                        {new Date(a.created_at).toLocaleDateString("en-US")}
+                      </p>
+                    </div>
+                    <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium capitalize">
+                      {a.role}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No admins recorded.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {profile.role === "owner" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Invite a new admin</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InviteForm />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Inviting admins</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Only owners can invite new admins. Ask the firm owner if you
+              need access added.
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
