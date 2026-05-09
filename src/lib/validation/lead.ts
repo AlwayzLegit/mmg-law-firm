@@ -16,13 +16,15 @@ const PreferredContact = z.enum(["phone", "email", "text"]);
 export const LeadSchema = z
   .object({
     full_name: z.string().trim().min(2, "Please enter your full name").max(100),
-    email: z
-      .string()
-      .trim()
-      .email("Enter a valid email address")
-      .max(160)
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
+    email: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      z
+        .string()
+        .trim()
+        .email("Enter a valid email address")
+        .max(160)
+        .optional(),
+    ),
     phone: z
       .string()
       .trim()
@@ -45,20 +47,24 @@ export const LeadSchema = z
       .optional(),
     county_slug: z.string().trim().max(80).optional(),
     city_slug: z.string().trim().max(80).optional(),
-    incident_date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "Date format must be YYYY-MM-DD")
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
-    description: z
-      .string()
-      .trim()
-      .max(
-        500,
-        "Please keep your message under 500 characters — we'll discuss the details by phone.",
-      )
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
+    incident_date: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "Date format must be YYYY-MM-DD")
+        .optional(),
+    ),
+    description: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      z
+        .string()
+        .trim()
+        .max(
+          500,
+          "Please keep your message under 500 characters — we'll discuss the details by phone.",
+        )
+        .optional(),
+    ),
     has_attorney: z.boolean().default(false),
     consent_contact: z.literal(true, {
       message: "We need your consent before we can contact you.",
@@ -96,16 +102,33 @@ export const LeadSchema = z
   });
 
 /** Output: what the server receives after validation + transformation
- *  (phone normalized to E.164, optional fields coerced to undefined). */
+ *  (phone normalized to E.164, empty optionals coerced to undefined). */
 export type LeadInput = z.infer<typeof LeadSchema>;
 
-/** Input: what the form holds before submission. The phone is still raw
- *  user input here; consent_contact starts unchecked. */
-export type LeadFormValues = Omit<
-  z.input<typeof LeadSchema>,
-  "consent_contact"
-> & {
+/** Input: what the form holds before submission. Declared explicitly rather
+ *  than via z.input — preprocess() collapses input types to `unknown`,
+ *  which doesn't play nicely with react-hook-form's `field.value` typing. */
+export type LeadFormValues = {
+  full_name: string;
+  email?: string;
+  phone: string;
+  preferred_contact?: "phone" | "email" | "text";
+  practice_area?: string;
+  county_slug?: string;
+  city_slug?: string;
+  incident_date?: string;
+  description?: string;
+  has_attorney?: boolean;
   consent_contact: boolean;
+  turnstileToken: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  gclid?: string;
+  referrer?: string;
+  source_url?: string;
 };
 
 export const leadFormDefaults: LeadFormValues = {

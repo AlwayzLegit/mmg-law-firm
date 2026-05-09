@@ -40,6 +40,8 @@ The full build spec is in [`CLAUDE.md`](./CLAUDE.md). Read it before making chan
 | `pnpm start` | Run production server |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm test` | Vitest (unit tests) |
+| `pnpm test:watch` | Vitest in watch mode |
 | `pnpm format` | Prettier write |
 
 ## Deployment
