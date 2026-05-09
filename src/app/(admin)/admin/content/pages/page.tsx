@@ -80,11 +80,13 @@ export default async function ContentPagesAdmin() {
           title="Counties"
           published={counties.data?.filter((c) => c.is_published).length ?? 0}
           total={counties.data?.length ?? 0}
+          href="/admin/content/counties"
         />
         <RowSummary
           title="Cities"
           published={cities.data?.filter((c) => c.is_published).length ?? 0}
           total={cities.data?.length ?? 0}
+          href="/admin/content/cities"
         />
         <RowSummary
           title="City x practice pages"

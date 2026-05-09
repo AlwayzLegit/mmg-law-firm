@@ -8,36 +8,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { updateLocationPage } from "../actions";
+import { updateCounty } from "../actions";
 
 type Props = {
   id: string;
   intro_md: string;
-  local_angle_md: string;
+  local_stats_md: string;
   meta_description: string;
 };
 
 export default function EditForm(props: Props) {
   const [intro, setIntro] = React.useState(props.intro_md);
-  const [angle, setAngle] = React.useState(props.local_angle_md);
+  const [stats, setStats] = React.useState(props.local_stats_md);
   const [meta, setMeta] = React.useState(props.meta_description);
   const [pending, startTransition] = React.useTransition();
 
   const dirty =
     intro !== props.intro_md ||
-    angle !== props.local_angle_md ||
+    stats !== props.local_stats_md ||
     meta !== props.meta_description;
 
   function onSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      const result = await updateLocationPage(fd);
-      if (result.ok) {
-        toast.success("Changes saved. last_reviewed_at bumped to now.");
-      } else {
-        toast.error(result.error);
-      }
+      const result = await updateCounty(fd);
+      if (result.ok) toast.success("Saved.");
+      else toast.error(result.error);
     });
   }
 
@@ -56,24 +53,24 @@ export default function EditForm(props: Props) {
       <input type="hidden" name="id" value={props.id} />
 
       <MarkdownEditField
-        name="local_angle_md"
-        title="Local angle (required to publish)"
-        value={angle}
-        onChange={setAngle}
-        minRows={8}
+        name="intro_md"
+        title="County intro"
+        value={intro}
+        onChange={setIntro}
+        minRows={6}
         maxLength={20000}
-        placeholder="What's specific to this city x practice combination? Roads, courthouses, common collision patterns, demographic context, local insurance trends. Avoid templated content — write something only this firm could write about this place."
-        hint="Markdown supported. Leave empty to keep the page from rendering publicly. Per CRPC §7.1 don't paraphrase across cities — each angle should be genuinely local."
+        placeholder="One-paragraph county-level intro shown beneath the page hero. Mention local context that's recognizable to residents — major freeways, geography, demographics, common collision patterns."
+        hint="Markdown supported. Distinct content per county helps SEO and avoids the scaled-content-abuse risk."
       />
 
       <MarkdownEditField
-        name="intro_md"
-        title="Intro"
-        value={intro}
-        onChange={setIntro}
-        minRows={4}
-        maxLength={8000}
-        placeholder="Optional one-paragraph hero intro shown above the local angle. Leave empty to use a generic city x practice intro."
+        name="local_stats_md"
+        title="Local stats / context"
+        value={stats}
+        onChange={setStats}
+        minRows={5}
+        maxLength={20000}
+        placeholder="Optional: county-specific stats, court information, CHP district, common claim types. Anything that helps a reader who lives there feel the firm understands their area."
       />
 
       <Card>
@@ -93,7 +90,7 @@ export default function EditForm(props: Props) {
             maxLength={220}
             value={meta}
             onChange={(e) => setMeta(e.currentTarget.value)}
-            placeholder="What appears under the page title in Google. Aim for 140-160 chars."
+            placeholder="What appears under the page title in Google."
           />
         </CardContent>
       </Card>
