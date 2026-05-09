@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Phone } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -144,28 +144,58 @@ export function LeadForm({
     return (
       <div
         className={cn(
-          "rounded-2xl border border-border bg-card p-6 md:p-8",
+          "relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-[0_30px_60px_-30px_rgba(20,30,80,0.25)] md:p-8",
           className,
         )}
       >
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-          Thanks
-        </p>
-        <h3 className="mt-3 font-display text-2xl font-medium tracking-tight md:text-3xl">
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-success to-transparent"
+        />
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-success/15 text-success">
+            <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden>
+              <path
+                d="M5 10l3 3 7-7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-success">
+            Received
+          </p>
+        </div>
+        <h3 className="mt-4 font-display text-2xl font-medium tracking-tight md:text-3xl">
           Your request is in.
         </h3>
-        <p className="mt-3 text-muted-foreground">
+        <p className="mt-3 leading-relaxed text-muted-foreground">
           We&apos;ll call you back within one business hour during office
           hours. If your matter is urgent, please call us directly.
         </p>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-3">
           <a
             href={`tel:${FIRM.phoneTel}`}
-            className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary"
+            className={cn(
+              buttonVariants({ size: "marketing" }),
+              "gap-2",
+            )}
           >
-            <Phone className="h-4 w-4 text-primary" aria-hidden />
+            <Phone className="h-4 w-4" aria-hidden />
             Call {FIRM.phone}
           </a>
+          <button
+            type="button"
+            onClick={() => setSubmitted(false)}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "marketing" }),
+            )}
+          >
+            Submit another
+          </button>
         </div>
       </div>
     );
@@ -174,15 +204,25 @@ export function LeadForm({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border bg-card p-6 md:p-8",
+        "relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-[0_30px_60px_-30px_rgba(20,30,80,0.18)] md:p-8",
         className,
       )}
     >
-      <div className="mb-6">
-        <h3 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-          {headline}
-        </h3>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-transparent"
+      />
+
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+            Free consultation
+          </p>
+          <h3 className="mt-2 font-display text-2xl font-medium tracking-tight md:text-3xl">
+            {headline}
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        </div>
       </div>
 
       <Form {...form}>
@@ -359,7 +399,7 @@ export function LeadForm({
             control={form.control}
             name="consent_contact"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start gap-3 rounded-lg bg-secondary/40 p-4">
+              <FormItem className="flex flex-row items-start gap-3 rounded-xl border border-border bg-secondary/30 p-4">
                 <FormControl
                   as={Checkbox}
                   checked={field.value === true}
@@ -368,7 +408,7 @@ export function LeadForm({
                   }
                 />
                 <div className="grid gap-1">
-                  <FormLabel className="text-xs leading-relaxed font-normal">
+                  <FormLabel className="text-xs leading-relaxed font-normal text-foreground/80">
                     {TCPA_CONSENT_TEXT}
                   </FormLabel>
                   <FormMessage />
@@ -395,16 +435,19 @@ export function LeadForm({
 
           <Button
             type="submit"
-            size="lg"
+            size="marketing"
             disabled={form.formState.isSubmitting}
-            className="w-full justify-between"
+            className="group/cta w-full justify-between"
           >
             <span>
               {form.formState.isSubmitting
                 ? "Sending..."
                 : "Request Free Consultation"}
             </span>
-            <ArrowRight className="h-4 w-4" aria-hidden />
+            <ArrowRight
+              className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
+              aria-hidden
+            />
           </Button>
 
           <p className="text-xs text-muted-foreground">

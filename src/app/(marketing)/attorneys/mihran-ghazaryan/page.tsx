@@ -3,6 +3,7 @@ import { ArrowRight, Award, GraduationCap, Languages, Scale } from "lucide-react
 
 import { CtaBand } from "@/components/marketing/cta-band";
 import { LeadForm } from "@/components/marketing/lead-form";
+import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM } from "@/lib/constants";
@@ -72,31 +73,71 @@ export default function AttorneyBioPage() {
         }}
       />
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-14 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            About
-          </p>
+      <section className="relative isolate overflow-hidden border-b border-border">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/60 via-background to-background" />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "radial-gradient(70% 60% at 80% 0%, color-mix(in oklab, var(--color-primary) 18%, transparent) 0%, transparent 60%)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 -z-10 h-56 bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:32px_32px]"
+          style={{
+            maskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+          }}
+        />
 
-          <div className="mt-8 grid gap-10 md:grid-cols-[320px_1fr] md:items-start">
-            <div className="aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-secondary">
-              {/* TODO(human): drop /public/images/attorney/mihran.jpg
-                  and uncomment.
-                  <Image
-                    src="/images/attorney/mihran.jpg"
-                    alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
-                    width={640}
-                    height={800}
-                    priority
-                    className="h-full w-full object-cover"
-                  /> */}
-              <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                Attorney photo
+        <div className="container-page py-14 md:py-20">
+          <SectionEyebrow>About</SectionEyebrow>
+
+          <div className="mt-10 grid gap-10 md:grid-cols-[320px_1fr] md:items-start lg:gap-14">
+            <div className="relative">
+              <div
+                aria-hidden
+                className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/30"
+              />
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
+                {/* TODO(human): drop /public/images/attorney/mihran.jpg
+                  and replace this gradient block with a real photo. */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(155deg, var(--color-brand-700) 0%, var(--color-brand-500) 60%, var(--color-brand-300) 100%)",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-0 opacity-[0.18]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)",
+                    backgroundSize: "32px 32px",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-0 flex items-center justify-center text-[8rem] font-display font-medium tracking-tighter text-primary-foreground/15"
+                >
+                  {FIRM.attorneyName.split(/\s+/).map((p) => p[0]).join("").slice(0, 3)}
+                </div>
+                <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-3">
+                  <span className="rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground backdrop-blur">
+                    CA Bar #{FIRM.barNumber}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div>
-              <h1 className="font-display text-4xl font-medium tracking-tight md:text-5xl">
+              <h1 className="font-display text-[2.4rem] font-medium leading-[1.05] tracking-tight md:text-5xl lg:text-[3.5rem]">
                 {FIRM.attorneyName}
               </h1>
               <p className="mt-3 text-base text-muted-foreground">
@@ -118,19 +159,19 @@ export default function AttorneyBioPage() {
                 <Link
                   href="/contact"
                   className={cn(
-                    buttonVariants({ size: "lg" }),
-                    "gap-2 px-5 py-3 text-base h-auto",
+                    buttonVariants({ size: "marketing" }),
+                    "group/cta",
                   )}
                 >
                   <span>Free consultation</span>
-                  <ArrowRight className="h-4 w-4" aria-hidden />
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
+                    aria-hidden
+                  />
                 </Link>
                 <a
                   href={`tel:${FIRM.phoneTel}`}
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "lg" }),
-                    "px-5 py-3 text-base h-auto",
-                  )}
+                  className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
                 >
                   Call {FIRM.phone}
                 </a>

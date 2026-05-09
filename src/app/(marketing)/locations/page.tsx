@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CtaBand } from "@/components/marketing/cta-band";
+import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { getPublishedCounties } from "@/lib/data/queries";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -27,21 +28,16 @@ export default async function LocationsHubPage() {
         ]}
       />
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-16 md:py-24">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Locations
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            California, end to end.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            We work statewide from our Glendale office. Below are the counties
-            and cities where we&apos;re most active. If you don&apos;t see
-            yours, call us — we likely cover it too.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Locations"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Locations" }]}
+        title={
+          <>
+            California, <span className="text-primary">end to end.</span>
+          </>
+        }
+        description="We work statewide from our Glendale office. Below are the counties and cities where we're most active. If you don't see yours, call us — we likely cover it too."
+      />
 
       <section className="container-page py-16 md:py-20">
         {Object.keys(grouped).length === 0 ? (

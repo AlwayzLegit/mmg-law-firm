@@ -1,4 +1,5 @@
 import { CtaBand } from "@/components/marketing/cta-band";
+import { PageHero } from "@/components/marketing/page-hero";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
@@ -24,19 +25,12 @@ export default async function ReviewsPage() {
         ]}
       />
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-14 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Client experiences
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            What clients say
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            {DISCLAIMERS.testimonial}
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Client experiences"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reviews" }]}
+        title="What clients say."
+        description={DISCLAIMERS.testimonial}
+      />
 
       <TestimonialsSection testimonials={testimonials} />
       <CtaBand />

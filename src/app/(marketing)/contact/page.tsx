@@ -1,6 +1,7 @@
 import { Phone, Mail, Clock, MapPin } from "lucide-react";
 
 import { LeadForm } from "@/components/marketing/lead-form";
+import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -21,21 +22,17 @@ export default function ContactPage() {
         ]}
       />
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-14 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Contact
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            Free consultation. We&apos;ll call you back.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            Tell us briefly what happened and we&apos;ll be in touch within
-            one business hour during office hours. There is no fee unless we
-            win your case.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Contact"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Contact" }]}
+        title={
+          <>
+            Free consultation.{" "}
+            <span className="text-primary">We&apos;ll call you back.</span>
+          </>
+        }
+        description="Tell us briefly what happened and we'll be in touch within one business hour during office hours. There is no fee unless we win your case."
+      />
 
       <section className="container-page py-16 md:py-20">
         <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-16">

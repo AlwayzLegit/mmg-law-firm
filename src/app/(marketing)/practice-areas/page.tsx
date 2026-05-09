@@ -1,4 +1,5 @@
 import { CtaBand } from "@/components/marketing/cta-band";
+import { PageHero } from "@/components/marketing/page-hero";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -19,23 +20,26 @@ export default function PracticeAreasPage() {
           { name: "Practice Areas", path: "/practice-areas" },
         ]}
       />
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-16 md:py-24">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Practice areas
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            Personal injury, across every common cause of injury in California.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            We focus exclusively on personal injury — and within that, on the
-            kinds of cases we know how to win. Pick the area that matches your
-            situation, or call us if you&apos;re not sure where it fits.
-          </p>
-        </div>
-      </section>
 
-      <PracticeAreaGrid heading="Choose your situation" subheading="Click any area for what we handle, how we work, and what to do next." />
+      <PageHero
+        eyebrow="Practice areas"
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Practice Areas" },
+        ]}
+        title={
+          <>
+            Personal injury, across every cause of injury{" "}
+            <span className="text-primary">in California.</span>
+          </>
+        }
+        description="We focus exclusively on personal injury — and within that, on the kinds of cases we know how to win. Pick the area that matches your situation, or call us if you're not sure where it fits."
+      />
+
+      <PracticeAreaGrid
+        heading="Choose your situation"
+        subheading="Click any area for what we handle, how we work, and what to do next."
+      />
       <CtaBand />
     </>
   );

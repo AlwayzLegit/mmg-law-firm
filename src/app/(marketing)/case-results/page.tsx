@@ -1,5 +1,6 @@
 import { CtaBand } from "@/components/marketing/cta-band";
 import { CaseResultsSection } from "@/components/marketing/case-result-card";
+import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
 import { getPublishedCaseResults } from "@/lib/data/public-content";
@@ -24,20 +25,15 @@ export default async function CaseResultsPage() {
         ]}
       />
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-14 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Attorney Advertising
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            Case results
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            A selection of recent recoveries — anonymized to protect client
-            privacy. {DISCLAIMERS.results}
-          </p>
-        </div>
-      </section>
+      <PageHero
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Case Results" }]}
+        title="Selected recent recoveries."
+        description={
+          <>
+            Anonymized to protect client privacy. {DISCLAIMERS.results}
+          </>
+        }
+      />
 
       <CaseResultsSection results={results} />
       <CtaBand />

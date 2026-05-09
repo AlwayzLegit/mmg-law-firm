@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
 import { CtaBand } from "@/components/marketing/cta-band";
+import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { getPublishedPosts } from "@/lib/data/blog";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -26,69 +28,76 @@ export default async function BlogIndexPage() {
         ]}
       />
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-14 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Insights
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            Personal-injury law, in plain English.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            Practical articles on what to do after an accident, how the claim
-            process actually works, and California-specific legal context.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Insights"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Blog" }]}
+        title={
+          <>
+            Personal-injury law,{" "}
+            <span className="text-primary">in plain English.</span>
+          </>
+        }
+        description="Practical articles on what to do after an accident, how the claim process actually works, and California-specific legal context."
+      />
 
-      <section className="container-page py-16 md:py-20">
+      <section className="container-page py-20 md:py-24">
         {posts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-10 text-center">
+          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-12 text-center">
             <p className="text-muted-foreground">
               Articles will appear here once published. In the meantime, the
               practice-area pages cover the most common questions.
             </p>
           </div>
         ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((p) => (
-              <li
-                key={p.slug}
-                className="rounded-xl border border-border bg-card p-6"
-              >
-                {p.tags.length ? (
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-                    {p.tags.slice(0, 2).join(" · ")}
-                  </p>
-                ) : null}
-                <h2 className="mt-3 font-display text-lg font-medium tracking-tight">
-                  <Link
-                    href={`/blog/${p.slug}`}
-                    className="transition-colors hover:text-primary"
-                  >
-                    {p.title}
-                  </Link>
-                </h2>
-                {p.excerpt ? (
-                  <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-                    {p.excerpt}
-                  </p>
-                ) : null}
-                <p className="mt-4 text-xs text-muted-foreground">
-                  {p.author_name}
-                  {p.published_at ? (
-                    <>
-                      {" · "}
-                      <time dateTime={p.published_at}>
-                        {new Date(p.published_at).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </time>
-                    </>
+              <li key={p.slug}>
+                <Link
+                  href={`/blog/${p.slug}`}
+                  className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card p-7 transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_48px_-24px_rgba(20,30,80,0.2)]"
+                >
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-gradient-to-r from-[var(--color-gold-500)] via-primary to-[var(--color-gold-500)] transition-transform duration-300 group-hover:scale-x-100"
+                  />
+                  {p.tags.length ? (
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                      {p.tags.slice(0, 2).join(" · ")}
+                    </p>
                   ) : null}
-                </p>
+                  <h2 className="mt-3 font-display text-lg font-medium leading-snug tracking-tight transition-colors group-hover:text-primary">
+                    {p.title}
+                  </h2>
+                  {p.excerpt ? (
+                    <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+                      {p.excerpt}
+                    </p>
+                  ) : null}
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-6 text-xs text-muted-foreground">
+                    <span>
+                      {p.author_name}
+                      {p.published_at ? (
+                        <>
+                          {" · "}
+                          <time dateTime={p.published_at}>
+                            {new Date(p.published_at).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              },
+                            )}
+                          </time>
+                        </>
+                      ) : null}
+                    </span>
+                    <ArrowUpRight
+                      className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-primary"
+                      aria-hidden
+                    />
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>

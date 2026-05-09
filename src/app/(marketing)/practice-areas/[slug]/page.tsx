@@ -6,6 +6,7 @@ import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
+import { PageHero } from "@/components/marketing/page-hero";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
@@ -101,56 +102,38 @@ export default async function PracticeAreaPage({ params }: Props) {
         />
       ) : null}
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/40 to-background">
-        <div className="container-page py-14 md:py-20">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-            Attorney Advertising
-          </p>
-          <nav
-            aria-label="Breadcrumb"
-            className="mt-3 text-sm text-muted-foreground"
-          >
-            <Link href="/" className="hover:text-primary">
-              Home
-            </Link>
-            <span className="mx-1.5 text-muted-foreground/50">/</span>
-            <Link href="/practice-areas" className="hover:text-primary">
-              Practice Areas
-            </Link>
-            <span className="mx-1.5 text-muted-foreground/50">/</span>
-            <span className="text-foreground">{area.name}</span>
-          </nav>
-
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            California {area.name} Attorney
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg text-muted-foreground">
-            {area.intro}
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+      <PageHero
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Practice Areas", href: "/practice-areas" },
+          { label: area.name },
+        ]}
+        title={`California ${area.name} Attorney`}
+        description={area.intro}
+        actions={
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/contact"
               className={cn(
-                buttonVariants({ size: "lg" }),
-                "gap-2 px-5 py-3 text-base h-auto",
+                buttonVariants({ size: "marketing" }),
+                "group/cta",
               )}
             >
               <span>Free consultation</span>
-              <ArrowRight className="h-4 w-4" aria-hidden />
+              <ArrowRight
+                className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
+                aria-hidden
+              />
             </Link>
             <a
               href={`tel:${FIRM.phoneTel}`}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "px-5 py-3 text-base h-auto",
-              )}
+              className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
             >
               Call {FIRM.phone}
             </a>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       <article className="container-page py-16 md:py-20">
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
