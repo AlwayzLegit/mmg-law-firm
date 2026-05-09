@@ -19,7 +19,7 @@ export default function LoginForm({ next }: { next?: string }) {
     setSubmitting(true);
     try {
       const supabase = getBrowserSupabase();
-      const redirectTo = `${siteUrl()}/admin${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+      const redirectTo = `${siteUrl()}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: redirectTo },

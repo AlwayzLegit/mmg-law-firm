@@ -26,10 +26,15 @@ export default async function LoginPage({ searchParams }: Props) {
           Only authorized firm staff have access.
         </p>
 
-        {params.error === "not-admin" ? (
+        {params.error ? (
           <div className="mt-5 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-            Your account isn&apos;t authorized for admin. Contact the firm
-            owner to request access.
+            {params.error === "not-admin"
+              ? "Your account isn't authorized for admin. Contact the firm owner to request access."
+              : params.error === "auth-failed"
+                ? "That sign-in link didn't work — it may have expired or been used already. Request a new one below."
+                : params.error === "missing-code"
+                  ? "The sign-in link was missing a code. Try again with a fresh link."
+                  : "Something went wrong. Please try again."}
           </div>
         ) : null}
 

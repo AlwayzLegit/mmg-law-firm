@@ -19,6 +19,15 @@ const NoteInput = z.object({
   body: z.string().trim().min(1, "Note can't be empty").max(4000),
 });
 
+const ConflictInput = z.object({ leadId: z.string().uuid() });
+
+export type ConflictHit = {
+  source: "leads" | "case_results";
+  id: string;
+  label: string;
+  detail: string;
+};
+
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 export async function updateLeadStatus(
@@ -81,6 +90,111 @@ export async function updateLeadStatus(
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
   return { ok: true };
+}
+
+export async function runConflictCheck(
+  formData: FormData,
+): Promise<{ ok: true; hits: ConflictHit[] } | { ok: false; error: string }> {
+  const { user } = await requireAdmin();
+
+  const parsed = ConflictInput.safeParse({ leadId: formData.get("leadId") });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+
+  const { data: subject, error: subjErr } = await supabase
+    .from("leads")
+    .select("id, full_name, phone, email, description")
+    .eq("id", parsed.data.leadId)
+    .maybeSingle();
+  if (subjErr || !subject) {
+    return { ok: false, error: subjErr?.message ?? "Lead not found" };
+  }
+
+  const hits: ConflictHit[] = [];
+
+  // Same person, prior contact: name OR phone OR email match on another lead.
+  // ILIKE on full_name catches casing differences. Phone is already E.164.
+  const nameLike = `%${subject.full_name.replace(/[%_]/g, "")}%`;
+  const orParts: string[] = [`full_name.ilike.${nameLike}`];
+  if (subject.phone) orParts.push(`phone.eq.${subject.phone}`);
+  if (subject.email) orParts.push(`email.eq.${subject.email}`);
+
+  const { data: priorLeads, error: priorErr } = await supabase
+    .from("leads")
+    .select("id, full_name, phone, email, status, created_at")
+    .neq("id", subject.id)
+    .or(orParts.join(","))
+    .limit(20);
+  if (!priorErr && priorLeads) {
+    for (const p of priorLeads) {
+      hits.push({
+        source: "leads",
+        id: p.id,
+        label: `Prior lead — ${p.full_name}`,
+        detail: `${p.phone}${p.email ? ` · ${p.email}` : ""} · status=${p.status} · ${new Date(p.created_at).toLocaleDateString("en-US")}`,
+      });
+    }
+  }
+
+  // Adverse-party check: if the description mentions a name that already
+  // appears in our case_results (we may already represent the other side),
+  // surface it. We use the lead's own surname as a heuristic — and any
+  // multi-word capitalized run from the description.
+  const tokens = new Set<string>();
+  const surname = subject.full_name.trim().split(/\s+/).slice(-1)[0];
+  if (surname && surname.length >= 3) tokens.add(surname);
+
+  if (subject.description) {
+    const matches = subject.description.match(
+      /\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,}){0,2}\b/g,
+    );
+    if (matches) {
+      for (const m of matches) tokens.add(m);
+    }
+  }
+
+  if (tokens.size > 0) {
+    for (const tok of tokens) {
+      const safe = tok.replace(/[%_]/g, "");
+      const { data, error } = await supabase
+        .from("case_results")
+        .select("id, headline")
+        .ilike("headline", `%${safe}%`)
+        .limit(5);
+      if (!error && data && data.length > 0) {
+        for (const r of data) {
+          hits.push({
+            source: "case_results",
+            id: r.id,
+            label: `Possible adverse-party match: ${r.headline}`,
+            detail: `Token "${tok}" appears in this case-result headline.`,
+          });
+        }
+      }
+    }
+  }
+
+  // Stamp the conflict_checked_at column so we can see the check ran.
+  void supabase
+    .from("leads")
+    .update({
+      conflict_checked_at: new Date().toISOString(),
+      conflict_clear: hits.length === 0,
+    })
+    .eq("id", subject.id);
+
+  void supabase.from("audit_log").insert({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: subject.id,
+    action: "conflict_check",
+    diff: { hits: hits.length },
+  });
+
+  revalidatePath(`/admin/leads/${subject.id}`);
+
+  return { ok: true, hits };
 }
 
 export async function addLeadNote(formData: FormData): Promise<ActionResult> {

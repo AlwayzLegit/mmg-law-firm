@@ -5,6 +5,7 @@ import { Mail, Phone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import ConflictCheckButton from "./conflict-check";
 import NoteCompose from "./note-compose";
 import StatusControl from "./status-control";
 
@@ -161,6 +162,19 @@ export default async function LeadDetailPage({ params }: Props) {
                 leadId={lead.id}
                 currentStatus={lead.status}
                 currentReason={lead.rejection_reason}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Conflict check</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ConflictCheckButton
+                leadId={lead.id}
+                lastCheckedAt={lead.conflict_checked_at}
+                lastClear={lead.conflict_clear}
               />
             </CardContent>
           </Card>

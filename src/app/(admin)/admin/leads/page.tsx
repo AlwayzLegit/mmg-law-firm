@@ -39,6 +39,9 @@ export default async function LeadsPage({
 
   if (status !== "all") {
     query = query.eq("status", status);
+  } else {
+    // Default view excludes spam — explicit filter shows them.
+    query = query.neq("status", "spam");
   }
 
   const { data, error } = await query;
@@ -52,6 +55,7 @@ export default async function LeadsPage({
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Most recent first. Click any name for details.
+            {status === "all" ? " Spam is hidden — pick the spam filter to review." : null}
           </p>
         </div>
       </div>
