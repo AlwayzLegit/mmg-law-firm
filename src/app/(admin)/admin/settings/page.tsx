@@ -1,6 +1,9 @@
+import Link from "next/link";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
+import { getFirmSettings } from "@/lib/data/firm-settings";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import InviteForm from "./invite-form";
@@ -8,10 +11,13 @@ import InviteForm from "./invite-form";
 export default async function AdminSettingsPage() {
   const { user, profile } = await requireAdmin();
   const supabase = await getServerSupabase();
-  const { data: admins } = await supabase
-    .from("admin_profiles")
-    .select("user_id, role, full_name, created_at")
-    .order("created_at", { ascending: true });
+  const [{ data: admins }, settings] = await Promise.all([
+    supabase
+      .from("admin_profiles")
+      .select("user_id, role, full_name, created_at")
+      .order("created_at", { ascending: true }),
+    getFirmSettings(),
+  ]);
 
   return (
     <div>
@@ -33,7 +39,15 @@ export default async function AdminSettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Firm</CardTitle>
+            <CardTitle className="flex items-baseline justify-between text-base">
+              <span>Firm</span>
+              <Link
+                href="/admin/settings/firm"
+                className="text-xs font-normal text-primary hover:underline"
+              >
+                Edit →
+              </Link>
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
             <Row label="Legal name" value={FIRM.legalName} />
@@ -41,6 +55,10 @@ export default async function AdminSettingsPage() {
             <Row label="Email" value={FIRM.email} />
             <Row label="Address" value={FIRM_FULL_ADDRESS} />
             <Row label="CA Bar #" value={FIRM.barNumber} />
+            <Row
+              label="Founded"
+              value={settings.founded_year?.toString() ?? "—"}
+            />
           </CardContent>
         </Card>
       </div>

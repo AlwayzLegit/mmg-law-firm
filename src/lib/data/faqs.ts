@@ -1,8 +1,11 @@
 /**
- * Static homepage FAQ items. Group C's practice-area pages will have their
- * own FAQ blocks pulled from `practice_areas.faq_json` once the DB lands.
+ * Homepage FAQ fallback. The canonical source is
+ * `firm_settings.homepage_faqs_json`, edited at /admin/settings/firm. Until
+ * the attorney saves a non-empty list there, the homepage renders the array
+ * below (and dev-without-Supabase always uses it).
  *
- * TODO(human): attorney must review this copy before publishing.
+ * Per-practice-area FAQs live on `practice_areas.faq_json` and are edited
+ * at /admin/content/practice-areas/[id].
  */
 
 export type FaqItem = {

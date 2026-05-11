@@ -5,11 +5,11 @@ type SchemaGraphProps = {
   id?: string;
 };
 
-export function SchemaGraph({
+export async function SchemaGraph({
   data,
   id = "schema-org-graph",
 }: SchemaGraphProps) {
-  const json = data ?? buildOrganizationGraph();
+  const json = data ?? (await buildOrganizationGraph());
   return (
     <script
       type="application/ld+json"

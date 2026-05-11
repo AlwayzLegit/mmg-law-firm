@@ -23,6 +23,7 @@ export type CountyRow = {
   fips: string | null;
   seat: string | null;
   region: string | null;
+  superior_court_address: string | null;
   intro_md?: string | null;
   local_stats_md?: string | null;
   meta_description?: string | null;
@@ -63,7 +64,7 @@ export async function getPublishedCounties(): Promise<CountyRow[]> {
   const { data, error } = await supabase
     .from("counties")
     .select(
-      "slug, name, short_name, fips, seat, region, intro_md, local_stats_md, meta_description, is_published",
+      "slug, name, short_name, fips, seat, region, superior_court_address, intro_md, local_stats_md, meta_description, is_published",
     )
     .eq("is_published", true);
   if (error) {
@@ -82,7 +83,7 @@ export async function getCountyBySlug(slug: string): Promise<CountyRow | null> {
   const { data, error } = await supabase
     .from("counties")
     .select(
-      "slug, name, short_name, fips, seat, region, intro_md, local_stats_md, meta_description, is_published",
+      "slug, name, short_name, fips, seat, region, superior_court_address, intro_md, local_stats_md, meta_description, is_published",
     )
     .eq("slug", slug)
     .eq("is_published", true)
@@ -103,6 +104,7 @@ function toCountyRow(c: CountySeed): CountyRow {
     fips: c.fips,
     seat: c.seat,
     region: c.region,
+    superior_court_address: null,
     intro_md: null,
     local_stats_md: null,
     meta_description: null,

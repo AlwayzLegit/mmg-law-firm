@@ -1,6 +1,16 @@
+/**
+ * Firm-level constants. Attorney-specific facts (bio, bar admission date,
+ * education, languages, sameAs URLs) live in the `attorney_profiles` table
+ * and are edited at /admin/content/attorneys/[id]. The fields below are
+ * either truly firm-level (phone, address, hours) or are seed fallbacks
+ * used only when Supabase isn't yet configured — `getAttorneyProfile()` in
+ * src/lib/data/attorney.ts is the canonical source for everything else.
+ */
 export const FIRM = {
   legalName: "MMG Law Firm",
+  /** Lead attorney name. Canonical source: attorney_profiles.full_name where slug='mihran-ghazaryan'. */
   attorneyName: "Mihran M. Ghazaryan",
+  /** Lead attorney bar #. Canonical source: attorney_profiles.bar_number. */
   barNumber: "311455",
   phone: "(818) 568-5818",
   phoneTel: "+18185685818",
@@ -15,15 +25,18 @@ export const FIRM = {
   },
   geo: { lat: 34.1466, lng: -118.2553 },
   hours: "Mon–Fri 9:00–18:00",
-  // TODO(human): confirm languages spoken by the attorney.
+  /** Languages — seed fallback. Canonical source: attorney_profiles.languages. */
   languages: ["English", "Armenian", "Russian"],
-  // TODO(human): confirm founding year of the firm.
+  /** Founding year — seed fallback. Canonical source: firm_settings.founded_year. */
   founded: 2018,
   socials: {
     yelp: "https://www.yelp.com/biz/mmg-law-firm-glendale",
+    /** Lead attorney's Super Lawyers profile — seed fallback.
+     *  Canonical source: attorney_profiles.super_lawyers_url. */
     superLawyers:
       "https://profiles.superlawyers.com/california/glendale/lawfirm/mmg-law-firm/68073bd3-6378-44e2-9f67-582e4c41c5d5.html",
-    // TODO(human): add real Avvo / Justia / LinkedIn URLs once confirmed.
+    /** Avvo / Justia / LinkedIn — seed fallbacks (empty until DB is populated).
+     *  Canonical source: attorney_profiles.{avvo_url, justia_url, linkedin_url}. */
     avvo: "",
     justia: "",
     linkedin: "",

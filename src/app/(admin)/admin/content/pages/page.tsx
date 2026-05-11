@@ -9,33 +9,42 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function ContentPagesAdmin() {
   const supabase = await getServerSupabase();
-  const [counties, cities, locationPages, practiceAreas] = await Promise.all([
-    supabase
-      .from("counties")
-      .select("id, slug, name, is_published")
-      .order("name"),
-    supabase
-      .from("cities")
-      .select("id, slug, name, is_published, is_priority, county_id")
-      .order("name"),
-    supabase
-      .from("location_pages")
-      .select(
-        `
-          id,
-          is_published,
-          last_reviewed_at,
-          local_angle_md,
-          cities!inner(slug, name, counties!inner(slug, name)),
-          practice_areas!inner(slug, name)
-        `,
-      )
-      .order("last_reviewed_at", { ascending: true, nullsFirst: true }),
-    supabase
-      .from("practice_areas")
-      .select("id, slug, name, is_published, display_order")
-      .order("display_order"),
-  ]);
+  const [counties, cities, locationPages, practiceAreas, attorneys, legal] =
+    await Promise.all([
+      supabase
+        .from("counties")
+        .select("id, slug, name, is_published")
+        .order("name"),
+      supabase
+        .from("cities")
+        .select("id, slug, name, is_published, is_priority, county_id")
+        .order("name"),
+      supabase
+        .from("location_pages")
+        .select(
+          `
+            id,
+            is_published,
+            last_reviewed_at,
+            local_angle_md,
+            cities!inner(slug, name, counties!inner(slug, name)),
+            practice_areas!inner(slug, name)
+          `,
+        )
+        .order("last_reviewed_at", { ascending: true, nullsFirst: true }),
+      supabase
+        .from("practice_areas")
+        .select("id, slug, name, is_published, display_order")
+        .order("display_order"),
+      supabase
+        .from("attorney_profiles")
+        .select("id, slug, full_name, is_published")
+        .order("display_order"),
+      supabase
+        .from("legal_pages")
+        .select("id, slug, title, is_published")
+        .order("display_order"),
+    ]);
 
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
@@ -100,6 +109,19 @@ export default async function ContentPagesAdmin() {
             practiceAreas.data?.filter((p) => p.is_published).length ?? 0
           }
           total={practiceAreas.data?.length ?? 0}
+          href="/admin/content/practice-areas"
+        />
+        <RowSummary
+          title="Attorneys"
+          published={attorneys.data?.filter((a) => a.is_published).length ?? 0}
+          total={attorneys.data?.length ?? 0}
+          href="/admin/content/attorneys"
+        />
+        <RowSummary
+          title="Legal pages"
+          published={legal.data?.filter((p) => p.is_published).length ?? 0}
+          total={legal.data?.length ?? 0}
+          href="/admin/content/legal"
         />
       </div>
 

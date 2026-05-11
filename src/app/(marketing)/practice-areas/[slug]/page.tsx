@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
@@ -10,7 +12,7 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
-import { PRACTICE_AREA_CONTENT } from "@/lib/data/practice-area-content";
+import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage } from "@/lib/seo/schema";
@@ -20,8 +22,6 @@ export const dynamicParams = false;
 export const revalidate = 86400;
 
 export async function generateStaticParams() {
-  // Group D will swap to Supabase: only return practice_areas.is_published.
-  // Static seed treats every entry as available.
   return PRACTICE_AREAS.map((p) => ({ slug: p.slug }));
 }
 
@@ -38,9 +38,12 @@ export async function generateMetadata({ params }: Props) {
       noindex: true,
     });
   }
+  const resolved = await getPracticeAreaContent(slug);
   return buildMetadata({
     title: `California ${area.name} Lawyer`,
-    description: `${area.intro} Free consultation with ${FIRM.attorneyName}.`,
+    description:
+      resolved?.meta_description ??
+      `${resolved?.intro ?? area.intro} Free consultation with ${FIRM.attorneyName}.`,
     path: `/practice-areas/${area.slug}`,
   });
 }
@@ -50,17 +53,18 @@ export default async function PracticeAreaPage({ params }: Props) {
   const area = findPracticeArea(slug);
   if (!area) notFound();
 
-  const content = PRACTICE_AREA_CONTENT[area.slug];
+  const content = await getPracticeAreaContent(slug);
+  if (!content) notFound();
+
   const path = `/practice-areas/${area.slug}`;
 
-  // Per-page LegalService JSON-LD scoped to this practice area + FAQ schema.
   const legalService = {
     "@context": "https://schema.org",
     "@type": "LegalService",
     name: `${FIRM.legalName} — ${area.name}`,
     url: canonicalUrl(path),
     image: defaultOgImageUrl(),
-    description: area.intro,
+    description: content.intro,
     telephone: FIRM.phone,
     address: {
       "@type": "PostalAddress",
@@ -74,9 +78,7 @@ export default async function PracticeAreaPage({ params }: Props) {
     serviceType: area.lawyerPhrase,
   };
 
-  const faqGraph = content?.faqs?.length
-    ? buildFaqPage(content.faqs)
-    : null;
+  const faqGraph = content.faqs.length > 0 ? buildFaqPage(content.faqs) : null;
 
   return (
     <>
@@ -109,7 +111,7 @@ export default async function PracticeAreaPage({ params }: Props) {
           { label: area.name },
         ]}
         title={`California ${area.name} Attorney`}
-        description={area.intro}
+        description={content.intro}
         actions={
           <div className="flex flex-wrap items-center gap-3">
             <Link
@@ -138,11 +140,19 @@ export default async function PracticeAreaPage({ params }: Props) {
       <article className="container-page py-16 md:py-20">
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
           <div className="prose-area">
-            <p className="text-lg leading-relaxed text-muted-foreground">
-              {content?.body ?? area.intro}
-            </p>
+            {content.body_from_db ? (
+              <div className="prose prose-neutral max-w-none text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {content.body_md}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-lg leading-relaxed text-muted-foreground">
+                {content.body_md || content.intro}
+              </p>
+            )}
 
-            {content?.subtopics?.length ? (
+            {content.subtopics.length > 0 ? (
               <section className="mt-12">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                   What we handle
@@ -165,7 +175,7 @@ export default async function PracticeAreaPage({ params }: Props) {
               </section>
             ) : null}
 
-            {content?.process?.length ? (
+            {content.process.length > 0 ? (
               <section className="mt-12">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                   How we work
@@ -190,7 +200,7 @@ export default async function PracticeAreaPage({ params }: Props) {
               </section>
             ) : null}
 
-            {content?.whatToDo?.length ? (
+            {content.whatToDo.length > 0 ? (
               <section className="mt-12 rounded-2xl border border-border bg-secondary/40 p-8">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                   What to do right away
@@ -224,7 +234,7 @@ export default async function PracticeAreaPage({ params }: Props) {
         </div>
       </article>
 
-      {content?.faqs?.length ? (
+      {content.faqs.length > 0 ? (
         <Faq items={content.faqs} heading={`${area.shortName} FAQ`} />
       ) : null}
 

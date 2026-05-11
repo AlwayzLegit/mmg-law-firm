@@ -1,10 +1,12 @@
 /**
- * Per-practice-area editorial content. Keyed by slug. Mirrors what will
- * eventually live in `practice_areas.body_md` / `faq_json` in Supabase.
+ * Per-practice-area editorial content — the in-code fallback rendered when
+ * the matching `practice_areas` row isn't published. Once the attorney edits
+ * a row at /admin/content/practice-areas/[id] and publishes it, the DB
+ * content takes precedence; this module remains the dev-without-Supabase
+ * fallback and the attorney's starting reference inside the editor.
  *
- * TODO(human): attorney must review and finalize each section before any of
- * these pages publish. The copy below is a conservative process-and-scope
- * starting point — not legal advice — and avoids result/outcome claims.
+ * The copy below is a conservative process-and-scope starting point — not
+ * legal advice — and avoids result/outcome claims.
  */
 
 import type { FaqItem } from "@/lib/data/faqs";

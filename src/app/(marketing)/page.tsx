@@ -8,7 +8,7 @@ import { LocationsList } from "@/components/marketing/locations-list";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { WhyMmg } from "@/components/marketing/why-mmg";
-import { HOMEPAGE_FAQS } from "@/lib/data/faqs";
+import { getHomepageFaqs } from "@/lib/data/firm-settings";
 import {
   getApprovedTestimonials,
   getPublishedCaseResults,
@@ -25,9 +25,10 @@ export const metadata = buildMetadata({
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [caseResults, testimonials] = await Promise.all([
+  const [caseResults, testimonials, faqs] = await Promise.all([
     getPublishedCaseResults(3),
     getApprovedTestimonials(3),
+    getHomepageFaqs(),
   ]);
   return (
     <>
@@ -69,7 +70,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <Faq items={HOMEPAGE_FAQS} />
+      <Faq items={faqs} />
       <CtaBand />
     </>
   );

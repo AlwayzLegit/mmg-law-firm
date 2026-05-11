@@ -1,4 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ArrowRight, Award, GraduationCap, Languages, Scale } from "lucide-react";
 
 import { CtaBand } from "@/components/marketing/cta-band";
@@ -7,34 +11,52 @@ import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM } from "@/lib/constants";
+import {
+  attorneySameAs,
+  getAttorneyProfile,
+  type AttorneyProfile,
+} from "@/lib/data/attorney";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { cn } from "@/lib/utils";
 
 const PATH = "/attorneys/mihran-ghazaryan";
+const SLUG = "mihran-ghazaryan";
 
-export const metadata = buildMetadata({
-  title: `${FIRM.attorneyName} — California Personal-Injury Attorney`,
-  description: `${FIRM.attorneyName} (CA Bar #${FIRM.barNumber}) leads ${FIRM.legalName}, a personal-injury practice based in Glendale serving California statewide. Bilingual representation in ${FIRM.languages.join(", ")}.`,
-  path: PATH,
-  ogType: "profile",
-});
+export async function generateMetadata() {
+  const profile = await getAttorneyProfile(SLUG);
+  if (!profile) {
+    return buildMetadata({
+      title: "Attorney profile not found",
+      description: "We couldn't find this attorney profile.",
+      path: PATH,
+      noindex: true,
+    });
+  }
+  const langs = profile.languages.join(", ");
+  return buildMetadata({
+    title: `${profile.full_name} — California Personal-Injury Attorney`,
+    description:
+      profile.short_bio ??
+      `${profile.full_name} (CA Bar #${profile.bar_number}) leads ${FIRM.legalName}, a personal-injury practice based in ${FIRM.address.city} serving California statewide.${
+        langs ? ` Bilingual representation in ${langs}.` : ""
+      }`,
+    path: PATH,
+    ogType: "profile",
+  });
+}
 
-// TODO(human): replace placeholder bio sections with attorney-approved copy.
-// TODO(human): drop a real headshot at /public/images/attorney/mihran.jpg
-//   then uncomment the <Image> in the hero card.
-// TODO(human): confirm exact bar admission date and law school for the
-//   Person schema's `alumniOf` field.
+export default async function AttorneyBioPage() {
+  const profile = await getAttorneyProfile(SLUG);
+  if (!profile) notFound();
 
-export default function AttorneyBioPage() {
-  // Person schema — the responsible attorney for this site, per CRPC 7.1.
   const personJsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
-    name: FIRM.attorneyName,
-    jobTitle: "Attorney",
+    name: profile.full_name,
+    jobTitle: profile.job_title ?? "Attorney",
     url: canonicalUrl(PATH),
-    image: `${siteUrl()}/images/attorney/mihran.jpg`,
+    image: profile.headshot_url ?? `${siteUrl()}/opengraph-image`,
     worksFor: {
       "@type": "LegalService",
       name: FIRM.legalName,
@@ -42,10 +64,10 @@ export default function AttorneyBioPage() {
     },
     memberOf: {
       "@type": "Organization",
-      name: "State Bar of California",
+      name: `State Bar of ${profile.bar_state}`,
     },
-    identifier: FIRM.barNumber,
-    knowsLanguage: FIRM.languages,
+    identifier: profile.bar_number,
+    knowsLanguage: profile.languages,
     address: {
       "@type": "PostalAddress",
       streetAddress: FIRM.address.street,
@@ -55,7 +77,25 @@ export default function AttorneyBioPage() {
       addressCountry: FIRM.address.country,
     },
     telephone: FIRM.phone,
-    sameAs: Object.values(FIRM.socials).filter(Boolean),
+    sameAs: attorneySameAs(profile),
+    ...(profile.law_school
+      ? {
+          alumniOf: [
+            {
+              "@type": "EducationalOrganization",
+              name: profile.law_school,
+            },
+            ...(profile.undergrad_school
+              ? [
+                  {
+                    "@type": "EducationalOrganization",
+                    name: profile.undergrad_school,
+                  },
+                ]
+              : []),
+          ],
+        }
+      : {}),
   };
 
   return (
@@ -63,7 +103,7 @@ export default function AttorneyBioPage() {
       <BreadcrumbJsonLd
         crumbs={[
           { name: "Home", path: "/" },
-          { name: FIRM.attorneyName, path: PATH },
+          { name: profile.full_name, path: PATH },
         ]}
       />
       <script
@@ -73,194 +113,18 @@ export default function AttorneyBioPage() {
         }}
       />
 
-      <section className="relative isolate overflow-hidden border-b border-border">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/60 via-background to-background" />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 opacity-[0.35]"
-          style={{
-            backgroundImage:
-              "radial-gradient(70% 60% at 80% 0%, color-mix(in oklab, var(--color-primary) 18%, transparent) 0%, transparent 60%)",
-          }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 -z-10 h-56 bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:32px_32px]"
-          style={{
-            maskImage:
-              "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
-          }}
-        />
-
-        <div className="container-page py-14 md:py-20">
-          <SectionEyebrow>About</SectionEyebrow>
-
-          <div className="mt-10 grid gap-10 md:grid-cols-[320px_1fr] md:items-start lg:gap-14">
-            <div className="relative">
-              <div
-                aria-hidden
-                className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/30"
-              />
-              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
-                {/* TODO(human): drop /public/images/attorney/mihran.jpg
-                  and replace this gradient block with a real photo. */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "linear-gradient(155deg, var(--color-brand-700) 0%, var(--color-brand-500) 60%, var(--color-brand-300) 100%)",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  className="absolute inset-0 opacity-[0.18]"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)",
-                    backgroundSize: "32px 32px",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  className="absolute inset-0 flex items-center justify-center text-[8rem] font-display font-medium tracking-tighter text-primary-foreground/15"
-                >
-                  {FIRM.attorneyName.split(/\s+/).map((p) => p[0]).join("").slice(0, 3)}
-                </div>
-                <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-3">
-                  <span className="rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground backdrop-blur">
-                    CA Bar #{FIRM.barNumber}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h1 className="font-display text-[2.4rem] font-medium leading-[1.05] tracking-tight md:text-5xl lg:text-[3.5rem]">
-                {FIRM.attorneyName}
-              </h1>
-              <p className="mt-3 text-base text-muted-foreground">
-                Founder & Lead Attorney, {FIRM.legalName}
-              </p>
-
-              <ul className="mt-6 grid gap-3 text-sm">
-                <Stat icon={<Scale className="h-4 w-4" aria-hidden />}
-                      label={`California State Bar #${FIRM.barNumber}`} />
-                <Stat icon={<GraduationCap className="h-4 w-4" aria-hidden />}
-                      label="Juris Doctor — TODO(human): confirm school + year" />
-                <Stat icon={<Languages className="h-4 w-4" aria-hidden />}
-                      label={`Counsel in ${FIRM.languages.join(", ")}`} />
-                <Stat icon={<Award className="h-4 w-4" aria-hidden />}
-                      label="Personal-injury practice exclusively" />
-              </ul>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/contact"
-                  className={cn(
-                    buttonVariants({ size: "marketing" }),
-                    "group/cta",
-                  )}
-                >
-                  <span>Free consultation</span>
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
-                    aria-hidden
-                  />
-                </Link>
-                <a
-                  href={`tel:${FIRM.phoneTel}`}
-                  className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
-                >
-                  Call {FIRM.phone}
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Hero profile={profile} />
 
       <article className="container-page py-16 md:py-24">
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
           <div>
-            <Section title="Why this practice">
-              <p>
-                {FIRM.attorneyName} founded {FIRM.legalName} to give injured
-                Californians an advocate who returns calls, explains every
-                option in plain language, and treats each case as if the
-                outcome affected his own family — because for the client, it
-                does. Solo practice is a deliberate choice: it means clients
-                work with a real attorney from the first conversation through
-                the final resolution, not a paralegal or a rotating cast of
-                associates.
-              </p>
-            </Section>
-
-            <Section title="Approach">
-              <p>
-                Personal-injury work rewards careful, early investigation and
-                a willingness to push back firmly when an insurer is being
-                unreasonable. Most matters resolve through pre-trial
-                settlement — but the settlement number is set by how prepared
-                the case is to go in front of a jury. We prepare every matter
-                that way, regardless of how it ultimately resolves.
-              </p>
-              <p>
-                We also believe communication is part of the job. Clients
-                routinely tell us they hired a previous attorney and never
-                heard from them again. We don&apos;t work that way: when you
-                call, you reach the attorney handling your case.
-              </p>
-            </Section>
-
-            <Section title="Languages and community">
-              <p>
-                The firm operates bilingually — matters can be handled in{" "}
-                {FIRM.languages.join(", ")}. {FIRM.address.city} sits at the
-                center of one of the country&apos;s largest Armenian-American
-                communities, and the practice is intentionally rooted there
-                while serving clients across the state.
-              </p>
-            </Section>
-
-            <Section title="Bar admissions">
-              <ul className="list-disc space-y-1 pl-5">
-                <li>
-                  State Bar of California (Bar No. {FIRM.barNumber}){" "}
-                  {/* TODO(human): admission year */}
-                </li>
-                {/* TODO(human): list any federal-court admissions
-                    (e.g., U.S. District Court, Central District of California).
-                  */}
-              </ul>
-            </Section>
-
-            <Section title="Education">
-              <ul className="list-disc space-y-1 pl-5">
-                <li>
-                  Juris Doctor — TODO(human): law school name and year
-                </li>
-                <li>
-                  Undergraduate — TODO(human): undergrad institution and degree
-                </li>
-              </ul>
-            </Section>
-
-            <Section title="Affiliations and recognition">
-              <ul className="list-disc space-y-1 pl-5">
-                <li>State Bar of California — Member in good standing</li>
-                {/* TODO(human): consumer-attorney organizations,
-                    Super Lawyers / Rising Stars selection years, Avvo rating,
-                    pro bono service. Do not invent. */}
-              </ul>
-            </Section>
+            <BioBody profile={profile} />
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <LeadForm
               variant="compact"
-              headline="Talk with Mihran directly"
+              headline={`Talk with ${profile.display_name ?? profile.full_name.split(" ")[0]} directly`}
               description="Free consultation. He'll call you back within one business hour during office hours."
             />
           </aside>
@@ -268,6 +132,247 @@ export default function AttorneyBioPage() {
       </article>
 
       <CtaBand />
+    </>
+  );
+}
+
+function Hero({ profile }: { profile: AttorneyProfile }) {
+  const initials = profile.full_name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 3);
+  const lawSchoolLabel = profile.law_school
+    ? profile.law_school_year
+      ? `Juris Doctor — ${profile.law_school}, ${profile.law_school_year}`
+      : `Juris Doctor — ${profile.law_school}`
+    : null;
+
+  return (
+    <section className="relative isolate overflow-hidden border-b border-border">
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/60 via-background to-background" />
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 opacity-[0.35]"
+        style={{
+          backgroundImage:
+            "radial-gradient(70% 60% at 80% 0%, color-mix(in oklab, var(--color-primary) 18%, transparent) 0%, transparent 60%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 -z-10 h-56 bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:32px_32px]"
+        style={{
+          maskImage:
+            "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+        }}
+      />
+
+      <div className="container-page py-14 md:py-20">
+        <SectionEyebrow>About</SectionEyebrow>
+
+        <div className="mt-10 grid gap-10 md:grid-cols-[320px_1fr] md:items-start lg:gap-14">
+          <div className="relative">
+            <div
+              aria-hidden
+              className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/30"
+            />
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
+              {profile.headshot_url ? (
+                <Image
+                  src={profile.headshot_url}
+                  alt={
+                    profile.headshot_alt ??
+                    `${profile.full_name}, ${FIRM.legalName}`
+                  }
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 320px, 100vw"
+                  priority
+                />
+              ) : (
+                <>
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(155deg, var(--color-brand-700) 0%, var(--color-brand-500) 60%, var(--color-brand-300) 100%)",
+                    }}
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 opacity-[0.18]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)",
+                      backgroundSize: "32px 32px",
+                    }}
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 flex items-center justify-center text-[8rem] font-display font-medium tracking-tighter text-primary-foreground/15"
+                  >
+                    {initials}
+                  </div>
+                </>
+              )}
+              <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-3">
+                <span className="rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground backdrop-blur">
+                  CA Bar #{profile.bar_number}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h1 className="font-display text-[2.4rem] font-medium leading-[1.05] tracking-tight md:text-5xl lg:text-[3.5rem]">
+              {profile.full_name}
+            </h1>
+            <p className="mt-3 text-base text-muted-foreground">
+              {profile.job_title ?? `Attorney, ${FIRM.legalName}`}
+            </p>
+
+            <ul className="mt-6 grid gap-3 text-sm">
+              <Stat
+                icon={<Scale className="h-4 w-4" aria-hidden />}
+                label={`${profile.bar_state} State Bar #${profile.bar_number}`}
+              />
+              {lawSchoolLabel ? (
+                <Stat
+                  icon={<GraduationCap className="h-4 w-4" aria-hidden />}
+                  label={lawSchoolLabel}
+                />
+              ) : null}
+              {profile.languages.length > 0 ? (
+                <Stat
+                  icon={<Languages className="h-4 w-4" aria-hidden />}
+                  label={`Counsel in ${profile.languages.join(", ")}`}
+                />
+              ) : null}
+              <Stat
+                icon={<Award className="h-4 w-4" aria-hidden />}
+                label="Personal-injury practice exclusively"
+              />
+            </ul>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/contact"
+                className={cn(
+                  buttonVariants({ size: "marketing" }),
+                  "group/cta",
+                )}
+              >
+                <span>Free consultation</span>
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
+                  aria-hidden
+                />
+              </Link>
+              <a
+                href={`tel:${FIRM.phoneTel}`}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "marketing" }),
+                )}
+              >
+                Call {FIRM.phone}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BioBody({ profile }: { profile: AttorneyProfile }) {
+  return (
+    <>
+      {profile.bio_md ? (
+        <Section title="Biography">
+          <div className="prose prose-neutral max-w-none text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {profile.bio_md}
+            </ReactMarkdown>
+          </div>
+        </Section>
+      ) : (
+        <Section title="Biography">
+          <p>
+            {profile.full_name} founded {FIRM.legalName} to give injured
+            Californians an advocate who returns calls, explains every option
+            in plain language, and treats each case as if the outcome affected
+            his own family — because for the client, it does.
+          </p>
+        </Section>
+      )}
+
+      <Section title="Bar admissions">
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            State Bar of {profile.bar_state} (Bar No. {profile.bar_number})
+            {profile.bar_admission_date
+              ? ` — admitted ${formatDate(profile.bar_admission_date)}`
+              : ""}
+          </li>
+          {profile.federal_court_admissions.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      </Section>
+
+      {(profile.law_school || profile.undergrad_school) && (
+        <Section title="Education">
+          <ul className="list-disc space-y-1 pl-5">
+            {profile.law_school ? (
+              <li>
+                Juris Doctor — {profile.law_school}
+                {profile.law_school_year ? `, ${profile.law_school_year}` : ""}
+              </li>
+            ) : null}
+            {profile.undergrad_school ? (
+              <li>
+                {profile.undergrad_degree ?? "Undergraduate"} —{" "}
+                {profile.undergrad_school}
+                {profile.undergrad_year ? `, ${profile.undergrad_year}` : ""}
+              </li>
+            ) : null}
+          </ul>
+        </Section>
+      )}
+
+      {profile.bar_associations.length > 0 ? (
+        <Section title="Bar associations">
+          <ul className="list-disc space-y-1 pl-5">
+            {profile.bar_associations.map((a) => (
+              <li key={a}>{a}</li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
+      {profile.honors_md ? (
+        <Section title="Recognition">
+          <div className="prose prose-neutral max-w-none text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {profile.honors_md}
+            </ReactMarkdown>
+          </div>
+        </Section>
+      ) : null}
+
+      {profile.languages.length > 0 ? (
+        <Section title="Languages and community">
+          <p>
+            The firm operates in {profile.languages.join(", ")}.{" "}
+            {FIRM.address.city} sits at the center of one of the country&apos;s
+            largest Armenian-American communities, and the practice is
+            intentionally rooted there while serving clients across the state.
+          </p>
+        </Section>
+      ) : null}
     </>
   );
 }
@@ -298,4 +403,14 @@ function Section({
       <div className="mt-4 space-y-4 text-muted-foreground">{children}</div>
     </section>
   );
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }

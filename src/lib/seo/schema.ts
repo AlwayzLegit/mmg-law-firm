@@ -1,4 +1,5 @@
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
+import { firmSameAs, getFirmSettings } from "@/lib/data/firm-settings";
 import { canonicalUrl, defaultOgImageUrl, siteUrl } from "@/lib/seo/canonical";
 
 type GraphNode = Record<string, unknown>;
@@ -7,8 +8,7 @@ const FIRM_ID = `${siteUrl()}#legal-service`;
 const ATTORNEY_ID = `${siteUrl()}#attorney-mihran`;
 const WEBSITE_ID = `${siteUrl()}#website`;
 
-function legalServiceNode(): GraphNode {
-  const sameAs = Object.values(FIRM.socials).filter(Boolean);
+function legalServiceNode(sameAs: string[]): GraphNode {
   return {
     "@type": "LegalService",
     "@id": FIRM_ID,
@@ -64,10 +64,15 @@ function websiteNode(): GraphNode {
   };
 }
 
-export function buildOrganizationGraph(): GraphNode {
+export async function buildOrganizationGraph(): Promise<GraphNode> {
+  const settings = await getFirmSettings();
   return {
     "@context": "https://schema.org",
-    "@graph": [legalServiceNode(), attorneyNode(), websiteNode()],
+    "@graph": [
+      legalServiceNode(firmSameAs(settings)),
+      attorneyNode(),
+      websiteNode(),
+    ],
   };
 }
 

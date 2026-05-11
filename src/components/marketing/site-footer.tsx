@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 import { DISCLAIMERS, FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
+import { getFirmSettings } from "@/lib/data/firm-settings";
 
 import { BrandMark } from "./brand-mark";
 
@@ -32,7 +33,9 @@ const NAV_LEGAL = [
   { label: "Your CCPA Rights", href: "/legal/ccpa" },
 ];
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const settings = await getFirmSettings();
+  const founded = settings.founded_year;
   return (
     <footer className="relative isolate overflow-hidden border-t border-border bg-[var(--color-brand-900)] text-sm text-primary-foreground/85">
       {/* gold accent rail */}
@@ -123,8 +126,8 @@ export function SiteFooter() {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-2 text-xs text-primary-foreground/55 sm:flex-row sm:items-center">
           <p>
-            &copy; {new Date().getFullYear()} {FIRM.legalName}. All rights
-            reserved.
+            &copy; {new Date().getFullYear()} {FIRM.legalName}.
+            {founded ? ` Established ${founded}.` : ""} All rights reserved.
           </p>
           <p>CA State Bar #{FIRM.barNumber}</p>
         </div>

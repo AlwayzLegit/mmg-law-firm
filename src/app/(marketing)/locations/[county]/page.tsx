@@ -180,10 +180,18 @@ export default async function CountyPage({ params }: Props) {
                 </h2>
                 <p className="mt-3 text-muted-foreground">
                   The county seat is {c.seat}. Most {c.name} personal-injury
-                  matters are filed in the {c.name} Superior Court.{" "}
-                  {/* TODO(human): pull superior_court_address from
-                      counties.superior_court_address. */}
+                  matters are filed in the {c.name} Superior Court.
                 </p>
+                {c.superior_court_address ? (
+                  <address className="mt-4 not-italic rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+                    <span className="block text-xs font-medium uppercase tracking-wide text-foreground">
+                      {c.name} Superior Court
+                    </span>
+                    <span className="mt-1 block whitespace-pre-line">
+                      {c.superior_court_address}
+                    </span>
+                  </address>
+                ) : null}
               </section>
             ) : null}
           </div>
