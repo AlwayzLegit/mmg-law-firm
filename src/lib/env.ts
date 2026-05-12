@@ -1,10 +1,6 @@
 import { z } from "zod";
 
 const isProd = process.env.NODE_ENV === "production";
-// Skip the strict prod-required check during `next build` so that builds in
-// environments without secrets (CI, local prod-build smoke checks) succeed.
-// At true runtime, NEXT_PHASE is unset and the strict check applies.
-const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 
 const ServerEnvSchema = z.object({
   NODE_ENV: z
@@ -58,10 +54,14 @@ function loadEnv() {
   const missing = REQUIRED_IN_PROD.filter((k) => !parsed.data[k]);
   if (missing.length > 0) {
     const note = `[env] Missing env vars: ${missing.join(", ")}`;
-    if (isProd && !isBuildPhase) {
-      throw new Error(`${note} (required at runtime in production)`);
-    }
-    console.warn(`${note} (ok in dev / build; required at prod runtime)`);
+    // Production behavior is intentionally non-fatal: the data layer falls
+    // back to in-code seeds when Supabase isn't configured, and the lead
+    // form / admin / Resend / Turnstile call sites all degrade gracefully.
+    // This means an env-var oversight surfaces as missing functionality
+    // rather than a hard 500 — which matters most during initial deploy
+    // when env vars are still being filled in. Each call site that needs
+    // a specific var still throws at the point of use with a clear error.
+    console.warn(`${note} (using fallbacks; set in Vercel for full functionality)`);
   }
 
   return parsed.data;
