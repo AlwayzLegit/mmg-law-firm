@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { HOMEPAGE_FAQS } from "@/lib/data/faqs";
-import { getFirmSettings } from "@/lib/data/firm-settings";
+import { getFirmSettings, getFirmStats } from "@/lib/data/firm-settings";
 
 import EditForm from "./edit-form";
 
 export default async function FirmSettingsPage() {
   await requireAdmin();
-  const settings = await getFirmSettings();
+  const [settings, stats] = await Promise.all([
+    getFirmSettings(),
+    getFirmStats(),
+  ]);
 
   return (
     <div>
@@ -43,6 +46,10 @@ export default async function FirmSettingsPage() {
               : HOMEPAGE_FAQS
           }
           fallbackFaqs={HOMEPAGE_FAQS}
+          years_practicing={stats.years_practicing?.toString() ?? ""}
+          settlements_total_display={stats.settlements_total_display ?? ""}
+          cases_handled_display={stats.cases_handled_display ?? ""}
+          consultations_display={stats.consultations_display ?? ""}
         />
 
         <Card>

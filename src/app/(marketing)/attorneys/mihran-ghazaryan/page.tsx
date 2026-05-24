@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowRight, Award, GraduationCap, Languages, Scale } from "lucide-react";
 
+import { CredentialBadges } from "@/components/marketing/credential-badges";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
@@ -16,6 +17,7 @@ import {
   getAttorneyProfile,
   type AttorneyProfile,
 } from "@/lib/data/attorney";
+import { getFirmSettings } from "@/lib/data/firm-settings";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { cn } from "@/lib/utils";
@@ -47,7 +49,10 @@ export async function generateMetadata() {
 }
 
 export default async function AttorneyBioPage() {
-  const profile = await getAttorneyProfile(SLUG);
+  const [profile, firm] = await Promise.all([
+    getAttorneyProfile(SLUG),
+    getFirmSettings(),
+  ]);
   if (!profile) notFound();
 
   const personJsonLd = {
@@ -114,6 +119,8 @@ export default async function AttorneyBioPage() {
       />
 
       <Hero profile={profile} />
+
+      <CredentialBadges profile={profile} firm={firm} />
 
       <article className="container-page py-16 md:py-24">
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">

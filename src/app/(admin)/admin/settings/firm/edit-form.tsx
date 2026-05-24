@@ -21,6 +21,11 @@ type Props = {
    *  used to detect whether the editor is currently displaying the fallback
    *  vs DB content. */
   fallbackFaqs: FaqItem[];
+  // Stats (migration 0011)
+  years_practicing: string;
+  settlements_total_display: string;
+  cases_handled_display: string;
+  consultations_display: string;
 };
 
 export default function EditForm(props: Props) {
@@ -31,6 +36,10 @@ export default function EditForm(props: Props) {
         yelp_url: props.yelp_url,
         super_lawyers_url: props.super_lawyers_url,
         homepage_faqs: props.homepage_faqs,
+        years_practicing: props.years_practicing,
+        settlements_total_display: props.settlements_total_display,
+        cases_handled_display: props.cases_handled_display,
+        consultations_display: props.consultations_display,
       }),
     [props],
   );
@@ -39,6 +48,10 @@ export default function EditForm(props: Props) {
   const [yelp, setYelp] = React.useState(props.yelp_url);
   const [superLawyers, setSuperLawyers] = React.useState(props.super_lawyers_url);
   const [faqs, setFaqs] = React.useState<FaqItem[]>(props.homepage_faqs);
+  const [yearsPracticing, setYearsPracticing] = React.useState(props.years_practicing);
+  const [settlements, setSettlements] = React.useState(props.settlements_total_display);
+  const [cases, setCases] = React.useState(props.cases_handled_display);
+  const [consultations, setConsultations] = React.useState(props.consultations_display);
   const [pending, startTransition] = React.useTransition();
 
   const currentKey = JSON.stringify({
@@ -46,6 +59,10 @@ export default function EditForm(props: Props) {
     yelp_url: yelp,
     super_lawyers_url: superLawyers,
     homepage_faqs: faqs,
+    years_practicing: yearsPracticing,
+    settlements_total_display: settlements,
+    cases_handled_display: cases,
+    consultations_display: consultations,
   });
   const dirty = currentKey !== initialKey;
 
@@ -115,6 +132,70 @@ export default function EditForm(props: Props) {
               placeholder="https://profiles.superlawyers.com/..."
             />
           </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">By the numbers</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <p className="text-xs text-muted-foreground">
+            Optional trust-signal band rendered on the homepage between
+            the hero and practice areas. Leave everything empty to hide
+            the band entirely. Use only numbers Mihran can substantiate.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Years practicing"
+              hint='Renders as "{n}+ Years Practicing".'
+            >
+              <Input
+                name="years_practicing"
+                type="number"
+                min={1}
+                max={80}
+                value={yearsPracticing}
+                onChange={(e) => setYearsPracticing(e.currentTarget.value)}
+              />
+            </Field>
+            <Field
+              label="Total recovered"
+              hint='Free-form display — e.g. "$10M+ Recovered".'
+            >
+              <Input
+                name="settlements_total_display"
+                maxLength={40}
+                value={settlements}
+                onChange={(e) => setSettlements(e.currentTarget.value)}
+                placeholder="$10M+ Recovered"
+              />
+            </Field>
+            <Field
+              label="Cases handled"
+              hint='Free-form display — e.g. "200+ Cases Handled".'
+            >
+              <Input
+                name="cases_handled_display"
+                maxLength={40}
+                value={cases}
+                onChange={(e) => setCases(e.currentTarget.value)}
+                placeholder="200+ Cases Handled"
+              />
+            </Field>
+            <Field
+              label="Consultations"
+              hint='Free-form display — e.g. "Free Consultations" or "24/7 Intake".'
+            >
+              <Input
+                name="consultations_display"
+                maxLength={40}
+                value={consultations}
+                onChange={(e) => setConsultations(e.currentTarget.value)}
+                placeholder="Free Consultations"
+              />
+            </Field>
+          </div>
         </CardContent>
       </Card>
 

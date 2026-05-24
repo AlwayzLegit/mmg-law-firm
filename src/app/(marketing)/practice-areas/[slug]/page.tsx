@@ -5,14 +5,17 @@ import remarkGfm from "remark-gfm";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { CaseResultCard } from "@/components/marketing/case-result-card";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
+import { RelatedPracticeAreas } from "@/components/marketing/related-practice-areas";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
+import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage } from "@/lib/seo/schema";
@@ -53,7 +56,10 @@ export default async function PracticeAreaPage({ params }: Props) {
   const area = findPracticeArea(slug);
   if (!area) notFound();
 
-  const content = await getPracticeAreaContent(slug);
+  const [content, inlineResults] = await Promise.all([
+    getPracticeAreaContent(slug),
+    getCaseResultsForPracticeArea(slug, 3),
+  ]);
   if (!content) notFound();
 
   const path = `/practice-areas/${area.slug}`;
@@ -221,6 +227,35 @@ export default async function PracticeAreaPage({ params }: Props) {
                 </p>
               </section>
             ) : null}
+
+            {inlineResults.length > 0 ? (
+              <section className="mt-12">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+                    Recent {area.shortName.toLowerCase()} results
+                  </h2>
+                  <Link
+                    href="/case-results"
+                    className="group/link inline-flex items-center gap-1.5 text-sm font-medium text-primary"
+                  >
+                    <span className="underline-offset-4 group-hover/link:underline">
+                      View all results
+                    </span>
+                    <span className="transition-transform group-hover/link:translate-x-0.5">
+                      &rarr;
+                    </span>
+                  </Link>
+                </div>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {inlineResults.map((r) => (
+                    <CaseResultCard key={r.id} result={r} />
+                  ))}
+                </div>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  {DISCLAIMERS.results}
+                </p>
+              </section>
+            ) : null}
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
@@ -237,6 +272,8 @@ export default async function PracticeAreaPage({ params }: Props) {
       {content.faqs.length > 0 ? (
         <Faq items={content.faqs} heading={`${area.shortName} FAQ`} />
       ) : null}
+
+      <RelatedPracticeAreas currentSlug={area.slug} max={4} />
 
       <CtaBand
         heading={`Injured in a ${area.nounSingular}?`}

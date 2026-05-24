@@ -1,5 +1,5 @@
+import { CaseResultsFilterable } from "@/components/marketing/case-results-filterable";
 import { CtaBand } from "@/components/marketing/cta-band";
-import { CaseResultsSection } from "@/components/marketing/case-result-card";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
@@ -15,7 +15,7 @@ export const metadata = buildMetadata({
 export const revalidate = 86400;
 
 export default async function CaseResultsPage() {
-  const results = await getPublishedCaseResults();
+  const results = await getPublishedCaseResults(120);
   return (
     <>
       <BreadcrumbJsonLd
@@ -35,7 +35,12 @@ export default async function CaseResultsPage() {
         }
       />
 
-      <CaseResultsSection results={results} />
+      <CaseResultsFilterable results={results} />
+
+      <p className="container-page pb-12 text-xs leading-relaxed text-muted-foreground">
+        {DISCLAIMERS.results}
+      </p>
+
       <CtaBand />
     </>
   );

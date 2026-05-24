@@ -69,3 +69,58 @@ export async function getHomepageFaqs(): Promise<FaqItem[]> {
     ? settings.homepage_faqs
     : HOMEPAGE_FAQS;
 }
+
+// =========================================================================
+// Firm stats — optional "by the numbers" homepage band fields.
+// Loaded via a SEPARATE query so this can ship before migration 0011 runs:
+// if the new columns don't exist yet, the SELECT errors and we return an
+// empty stats object, leaving the band hidden.
+// =========================================================================
+
+export type FirmStats = {
+  years_practicing: number | null;
+  settlements_total_display: string | null;
+  cases_handled_display: string | null;
+  consultations_display: string | null;
+};
+
+const EMPTY_STATS: FirmStats = {
+  years_practicing: null,
+  settlements_total_display: null,
+  cases_handled_display: null,
+  consultations_display: null,
+};
+
+const STATS_COLS = `years_practicing, settlements_total_display, cases_handled_display, consultations_display` as const;
+
+export async function getFirmStats(): Promise<FirmStats> {
+  if (!isSupabaseConfigured()) return EMPTY_STATS;
+  const supabase = getStaticSupabase();
+  const { data, error } = await supabase
+    .from("firm_settings")
+    .select(STATS_COLS)
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) {
+    // Most commonly: migration 0011 hasn't been applied yet → column does
+    // not exist. We swallow silently — the band stays hidden until then.
+    return EMPTY_STATS;
+  }
+  if (!data) return EMPTY_STATS;
+  return {
+    years_practicing: data.years_practicing,
+    settlements_total_display: data.settlements_total_display,
+    cases_handled_display: data.cases_handled_display,
+    consultations_display: data.consultations_display,
+  };
+}
+
+/** True when any stat is populated — drives whether to render the section. */
+export function hasAnyFirmStat(s: FirmStats): boolean {
+  return Boolean(
+    s.years_practicing ||
+      s.settlements_total_display ||
+      s.cases_handled_display ||
+      s.consultations_display,
+  );
+}

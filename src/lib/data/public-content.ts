@@ -57,6 +57,41 @@ export async function getPublishedCaseResults(
   }));
 }
 
+/** Case results filtered to a single practice-area slug. Used to render
+ *  inline result cards on /practice-areas/[slug]. */
+export async function getCaseResultsForPracticeArea(
+  slug: string,
+  limit = 3,
+): Promise<CaseResult[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getStaticSupabase();
+  // Join practice_areas, filter by slug, take recent published rows.
+  const { data, error } = await supabase
+    .from("case_results")
+    .select(
+      `id, headline, amount_display, year, anonymized_summary_md,
+       practice_areas!inner(slug, name), counties(short_name)`,
+    )
+    .eq("is_published", true)
+    .eq("practice_areas.slug", slug)
+    .order("year", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn("[public-content] case-results-for-practice-area:", error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as DbCaseResult[]).map((r) => ({
+    id: r.id,
+    headline: r.headline,
+    amountDisplay: r.amount_display ?? undefined,
+    practiceArea: r.practice_areas?.name,
+    county: r.counties?.short_name,
+    year: r.year ?? undefined,
+    summary: r.anonymized_summary_md,
+  }));
+}
+
 export async function getApprovedTestimonials(
   limit = 24,
 ): Promise<Testimonial[]> {

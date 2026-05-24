@@ -3,6 +3,7 @@ import { CaseResultsSection } from "@/components/marketing/case-result-card";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { Faq } from "@/components/marketing/faq";
 import { Hero } from "@/components/marketing/hero";
+import { HomepageStats } from "@/components/marketing/homepage-stats";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { LocationsList } from "@/components/marketing/locations-list";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
@@ -33,6 +34,7 @@ export default async function HomePage() {
   return (
     <>
       <Hero />
+      <HomepageStats />
       <PracticeAreaGrid />
       <WhyMmg />
       <AttorneyBioCard />

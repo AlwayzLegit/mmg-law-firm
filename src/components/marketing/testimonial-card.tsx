@@ -95,8 +95,9 @@ export function TestimonialsSection({
         {testimonials.length === 0 ? (
           <div className="mt-12 rounded-2xl border border-dashed border-border bg-card p-12 text-center">
             <p className="text-muted-foreground">
-              Approved client testimonials will appear here once attorney has
-              reviewed them for publication.
+              Client testimonials appear here once they&apos;ve been reviewed
+              and approved for publication. In the meantime, see Yelp or
+              Google for public reviews of the firm.
             </p>
           </div>
         ) : (

@@ -98,8 +98,15 @@ export function CaseResultsSection({ results, className }: SectionProps) {
       {results.length === 0 ? (
         <div className="mt-12 rounded-2xl border border-dashed border-border bg-secondary/30 p-12 text-center">
           <p className="text-muted-foreground">
-            Verified case results will appear here once attorney has reviewed
-            and approved them for publication.
+            Verified case results appear here once they&apos;ve been reviewed
+            and approved for publication. In the meantime, explore the{" "}
+            <Link
+              href="/practice-areas"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              practice areas
+            </Link>{" "}
+            to see how we approach each kind of matter.
           </p>
         </div>
       ) : (

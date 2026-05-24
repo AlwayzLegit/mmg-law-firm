@@ -3,6 +3,7 @@ import { Phone, Mail, MapPin } from "lucide-react";
 
 import { DISCLAIMERS, FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { getFirmSettings } from "@/lib/data/firm-settings";
+import { TIER_1_LOCATIONS } from "@/lib/data/locations";
 
 import { BrandMark } from "./brand-mark";
 
@@ -33,6 +34,26 @@ const NAV_LEGAL = [
   { label: "Your CCPA Rights", href: "/legal/ccpa" },
 ];
 
+/** Cities surfaced in the footer column. Pulls the LA / OC / inland top
+ *  cities — SEO juice + lateral discovery. Keep this short; sitemap.xml
+ *  is the comprehensive list. */
+const FOOTER_CITY_SLUGS = new Set<string>([
+  "glendale",
+  "los-angeles",
+  "burbank",
+  "pasadena",
+  "long-beach",
+  "santa-monica",
+  "anaheim",
+  "san-diego",
+]);
+const NAV_CITIES = TIER_1_LOCATIONS.filter((c) =>
+  FOOTER_CITY_SLUGS.has(c.citySlug),
+).map((c) => ({
+  label: c.cityName,
+  href: `/locations/${c.countySlug}/${c.citySlug}`,
+}));
+
 export async function SiteFooter() {
   const settings = await getFirmSettings();
   const founded = settings.founded_year;
@@ -55,7 +76,7 @@ export async function SiteFooter() {
       />
 
       <div className="container-page py-16">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-1">
             <BrandMark inverted />
 
@@ -106,6 +127,7 @@ export async function SiteFooter() {
           </div>
 
           <FooterColumn title="Practice Areas" items={NAV_PRACTICE} />
+          <FooterColumn title="Cities We Serve" items={NAV_CITIES} />
           <FooterColumn title="Firm" items={NAV_FIRM} />
           <FooterColumn title="Legal" items={NAV_LEGAL} />
         </div>
