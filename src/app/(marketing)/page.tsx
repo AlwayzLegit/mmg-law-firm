@@ -9,6 +9,7 @@ import { LocationsList } from "@/components/marketing/locations-list";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { WhyMmg } from "@/components/marketing/why-mmg";
+import { FIRM } from "@/lib/constants";
 import { getHomepageFaqs } from "@/lib/data/firm-settings";
 import {
   getApprovedTestimonials,
@@ -60,12 +61,12 @@ export default async function HomePage() {
             <p className="mt-4 text-sm text-muted-foreground">
               Prefer to call?{" "}
               <a
-                href={`tel:+18185685818`}
+                href={`tel:${FIRM.phoneTel}`}
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
-                (818) 568-5818
+                {FIRM.phone}
               </a>
-              {" "}— Mon–Fri 9:00 to 18:00.
+              {" "}— {FIRM.hours}.
             </p>
           </div>
           <LeadForm variant="compact" />
