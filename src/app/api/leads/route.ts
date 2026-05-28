@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const ip = clientIp(request);
   const userAgent = request.headers.get("user-agent") ?? undefined;
 
-  const limit = checkRateLimit(`leads:${ip}`, 5);
+  const limit = await checkRateLimit(`leads:${ip}`, 5);
   if (!limit.allowed) {
     return NextResponse.json(
       {

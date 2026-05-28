@@ -70,6 +70,10 @@ in order. Paste the contents of each file into a new query and click
 | 6 | `0006_legal_pages.sql` | `legal_pages` table + seeds 4 canonical rows (unpublished). |
 | 7 | `0007_firm_settings.sql` | Singleton `firm_settings` row for founding year + sameAs URLs. |
 | 8 | `0008_homepage_faqs.sql` | Adds `homepage_faqs_json` column to `firm_settings`. |
+| 9 | `0009_security_hardening.sql` | Pins `set_updated_at()` search_path; locks down `attorney-headshots` listing; revokes `is_admin()` EXECUTE. |
+| 10 | `0010_restore_is_admin_execute.sql` | Restores `is_admin()` EXECUTE for `anon`/`authenticated` (RLS policies need it). |
+| 11 | `0011_firm_stats.sql` | Adds `years_practicing`, `settlements_total_display`, `cases_handled_display`, `consultations_display` to `firm_settings` (homepage "by the numbers" band). |
+| 12 | `0012_rate_limits.sql` | Postgres-backed cross-instance rate limiter (`rate_limits` table + `bump_rate_limit()` RPC). Service-role-only writes. |
 
 If you prefer the CLI:
 
@@ -109,17 +113,15 @@ the firm owner email, click the link in the email.
 
 ### 3b. Insert the admin row
 
-In **Project → SQL Editor**, find your auth user UUID:
-
-```sql
-select id, email from auth.users order by created_at desc limit 5;
-```
-
-Then insert the admin row using that UUID:
+In **Project → SQL Editor**, paste this one query and edit the email
+to match the one you signed in with — no UUID lookup needed:
 
 ```sql
 insert into admin_profiles (user_id, role, full_name)
-values ('<paste-uuid-here>', 'owner', 'Mihran M. Ghazaryan');
+select id, 'owner', 'Site Owner'
+from auth.users
+where email = 'your-email@example.com'
+on conflict (user_id) do nothing;
 ```
 
 Reload `/admin` — you should now reach the dashboard. Without this row,
@@ -194,7 +196,7 @@ In **Settings → Environment Variables**, add every variable from
 
 | Variable | Required for prod? | Notes |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | Yes | Set to `https://www.mmg-lawfirm.com` (no trailing slash) |
+| `NEXT_PUBLIC_SITE_URL` | Yes | Set to `https://www.mmg-lawfirm.com` (no trailing slash). **⚠️ Critical for SEO**: every canonical tag, `og:url`, JSON-LD `url`, sitemap `<loc>`, and robots `Host:` is derived from this. If it points to the wrong hostname (e.g. a branch preview alias like `mmg-law-firm-git-main-….vercel.app`), Google treats that hostname as canonical and ignores your real domain. Update + redeploy any time the canonical URL changes. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | From step 2d |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | From step 2d |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | From step 2d — secret |

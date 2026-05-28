@@ -27,6 +27,7 @@ export type CountyRow = {
   intro_md?: string | null;
   local_stats_md?: string | null;
   meta_description?: string | null;
+  updated_at?: string | null;
 };
 
 export type CityRow = {
@@ -37,6 +38,7 @@ export type CityRow = {
   intro_md?: string | null;
   local_stats_md?: string | null;
   meta_description?: string | null;
+  updated_at?: string | null;
 };
 
 export type LocationPageRow = {
@@ -50,6 +52,7 @@ export type LocationPageRow = {
   local_angle_md: string | null;
   meta_description: string | null;
   faq_json: Array<{ question: string; answer: string }>;
+  updated_at?: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -64,7 +67,7 @@ export async function getPublishedCounties(): Promise<CountyRow[]> {
   const { data, error } = await supabase
     .from("counties")
     .select(
-      "slug, name, short_name, fips, seat, region, superior_court_address, intro_md, local_stats_md, meta_description, is_published",
+      "slug, name, short_name, fips, seat, region, superior_court_address, intro_md, local_stats_md, meta_description, is_published, updated_at",
     )
     .eq("is_published", true);
   if (error) {
@@ -176,7 +179,7 @@ export async function getAllPublishedCities(): Promise<CityRow[]> {
   const { data, error } = await supabase
     .from("cities")
     .select(
-      "slug, name, intro_md, local_stats_md, meta_description, counties!inner(slug, name)",
+      "slug, name, intro_md, local_stats_md, meta_description, updated_at, counties!inner(slug, name)",
     )
     .eq("is_published", true);
   if (error) {
@@ -192,6 +195,7 @@ type DbCityWithCounty = {
   intro_md?: string | null;
   local_stats_md?: string | null;
   meta_description?: string | null;
+  updated_at?: string | null;
   counties: { slug: string; name: string };
 };
 
@@ -204,6 +208,7 @@ function flattenCity(row: DbCityWithCounty): CityRow {
     intro_md: row.intro_md ?? null,
     local_stats_md: row.local_stats_md ?? null,
     meta_description: row.meta_description ?? null,
+    updated_at: row.updated_at ?? null,
   };
 }
 
@@ -254,6 +259,7 @@ export async function getPublishedLocationPages(): Promise<LocationPageRow[]> {
         local_angle_md,
         meta_description,
         faq_json,
+        updated_at,
         cities!inner(slug, name, counties!inner(slug, name)),
         practice_areas!inner(slug, name)
       `,
@@ -338,6 +344,7 @@ type DbLocationPage = {
   local_angle_md: string | null;
   meta_description: string | null;
   faq_json: Array<{ question: string; answer: string }> | null;
+  updated_at?: string | null;
   cities: {
     slug: string;
     name: string;
@@ -358,5 +365,6 @@ function flattenLocationPage(row: DbLocationPage): LocationPageRow {
     local_angle_md: row.local_angle_md,
     meta_description: row.meta_description,
     faq_json: row.faq_json ?? [],
+    updated_at: row.updated_at ?? null,
   };
 }

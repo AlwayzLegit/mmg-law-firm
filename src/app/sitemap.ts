@@ -58,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const c of counties) {
       entries.push({
         url: canonicalUrl(`/locations/${c.slug}`),
-        lastModified,
+        lastModified: c.updated_at ? new Date(c.updated_at) : lastModified,
         changeFrequency: "monthly",
         priority: 0.7,
       });
@@ -73,7 +73,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const city of cities) {
       entries.push({
         url: canonicalUrl(`/locations/${city.county_slug}/${city.slug}`),
-        lastModified,
+        lastModified: city.updated_at
+          ? new Date(city.updated_at)
+          : lastModified,
         changeFrequency: "monthly",
         priority: 0.6,
       });
@@ -91,7 +93,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: canonicalUrl(
           `/locations/${page.county_slug}/${page.city_slug}/${page.practice_area_slug}`,
         ),
-        lastModified,
+        lastModified: page.updated_at
+          ? new Date(page.updated_at)
+          : lastModified,
         changeFrequency: "monthly",
         priority: 0.5,
       });
