@@ -17,12 +17,24 @@ export default async function LeadDetailPage({ params }: Props) {
 
   const { data: lead, error } = await supabase
     .from("leads")
-    .select("*")
+    .select(
+      `
+        *,
+        practice_areas(name),
+        counties(name),
+        cities(name)
+      `,
+    )
     .eq("id", id)
     .maybeSingle();
 
   if (error) throw error;
   if (!lead) notFound();
+
+  const practiceAreaName =
+    (lead.practice_areas as { name: string } | null)?.name ?? null;
+  const countyName = (lead.counties as { name: string } | null)?.name ?? null;
+  const cityName = (lead.cities as { name: string } | null)?.name ?? null;
 
   const { data: notes } = await supabase
     .from("lead_notes")
@@ -88,9 +100,9 @@ export default async function LeadDetailPage({ params }: Props) {
               <CardTitle className="text-base">Case</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
-              <Pair label="Practice area" value={lead.practice_area_id ?? "—"} />
-              <Pair label="County" value={lead.county_id ?? "—"} />
-              <Pair label="City" value={lead.city_id ?? "—"} />
+              <Pair label="Practice area" value={practiceAreaName ?? "—"} />
+              <Pair label="County" value={countyName ?? "—"} />
+              <Pair label="City" value={cityName ?? "—"} />
               <Pair label="Incident date" value={lead.incident_date ?? "—"} />
               <Pair
                 label="Has attorney"

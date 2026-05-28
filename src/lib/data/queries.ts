@@ -267,6 +267,40 @@ export async function getPublishedLocationPages(): Promise<LocationPageRow[]> {
   return ((data ?? []) as unknown as DbLocationPage[]).map(flattenLocationPage);
 }
 
+/**
+ * Returns the practice-area slugs that have a published location_pages row
+ * for the given (countySlug, citySlug). Used by the city page to decide
+ * whether to link to `/locations/{county}/{city}/{practice}` or fall back
+ * to the always-available `/practice-areas/{practice}` hub.
+ */
+export async function getPublishedPracticeSlugsForCity(
+  countySlug: string,
+  citySlug: string,
+): Promise<Set<string>> {
+  if (!isSupabaseConfigured()) return new Set();
+  const supabase = getStaticSupabase();
+  const { data, error } = await supabase
+    .from("location_pages")
+    .select(
+      `
+        cities!inner(slug, counties!inner(slug)),
+        practice_areas!inner(slug)
+      `,
+    )
+    .eq("is_published", true)
+    .eq("cities.slug", citySlug)
+    .eq("cities.counties.slug", countySlug)
+    .not("local_angle_md", "is", null);
+  if (error) {
+    console.warn("[queries] practice-slugs-for-city:", error.message);
+    return new Set();
+  }
+  type Row = { practice_areas: { slug: string } };
+  return new Set(
+    ((data ?? []) as unknown as Row[]).map((r) => r.practice_areas.slug),
+  );
+}
+
 export async function getLocationPage(
   countySlug: string,
   citySlug: string,

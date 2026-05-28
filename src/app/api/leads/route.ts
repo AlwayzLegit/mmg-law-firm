@@ -195,16 +195,31 @@ export async function POST(request: NextRequest) {
           Sent by ${FIRM.legalName} intake system. ${FIRM_FULL_ADDRESS}.
         </p>
       `;
+      // Fire-and-forget notifications — never block the user-facing response.
+      // But surface failures in logs with the lead ID so the admin can
+      // recover (manually email/SMS the firm) when Resend or Twilio errors.
       void sendEmail({
         to: env.LEAD_NOTIFY_EMAIL,
         subject,
         html,
         replyTo: parsed.data.email ?? undefined,
+      }).then((r) => {
+        if (!r.ok) {
+          console.error(
+            `[leads] email notify failed for lead=${leadId ?? "?"}: ${r.error ?? "unknown"}`,
+          );
+        }
       });
 
       void sendSms({
         to: FIRM.phoneTel,
         body: `New lead: ${parsed.data.full_name} — ${parsed.data.phone}`,
+      }).then((r) => {
+        if (!r.ok && r.reason !== "twilio-unconfigured") {
+          console.error(
+            `[leads] sms notify failed for lead=${leadId ?? "?"}: ${r.reason ?? "unknown"}`,
+          );
+        }
       });
     }
   } else {

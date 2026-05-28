@@ -42,10 +42,21 @@ export default async function BlogIndexPage() {
 
       <section className="container-page py-20 md:py-24">
         {posts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-12 text-center">
-            <p className="text-muted-foreground">
-              Articles will appear here once published. In the meantime, the
-              practice-area pages cover the most common questions.
+          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-10 text-center md:p-12">
+            <p className="font-display text-xl font-medium tracking-tight md:text-2xl">
+              Fresh writing on the way.
+            </p>
+            <p className="mx-auto mt-3 max-w-prose text-muted-foreground">
+              We&apos;re drafting articles on what to do after an accident,
+              how California claims actually work, and the questions our
+              clients ask most often. Until then, the{" "}
+              <Link
+                href="/practice-areas"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                practice-area pages
+              </Link>{" "}
+              cover the basics — and we&apos;re a phone call away.
             </p>
           </div>
         ) : (

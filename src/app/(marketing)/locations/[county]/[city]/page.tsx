@@ -12,6 +12,7 @@ import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
   getAllPublishedCities,
   getCityBySlug,
+  getPublishedPracticeSlugsForCity,
 } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -51,6 +52,11 @@ export default async function CityPage({ params }: Props) {
   const { county, city } = await params;
   const c = await getCityBySlug(county, city);
   if (!c) notFound();
+
+  const publishedPracticeSlugs = await getPublishedPracticeSlugsForCity(
+    c.county_slug,
+    c.slug,
+  );
 
   const path = `/locations/${c.county_slug}/${c.slug}`;
 
@@ -99,7 +105,12 @@ export default async function CityPage({ params }: Props) {
         title={`${c.name} Personal-Injury Attorney`}
         description={
           c.intro_md ??
-          `${FIRM.legalName} represents ${c.name} clients across the full range of personal-injury matters in ${c.county_name}. Free consultation. Bilingual counsel.`
+          // Fallback used when the attorney hasn't written city-specific
+          // intro copy yet. We still want the page to feel less like a
+          // template — pull in the Glendale-office framing and the
+          // languages we work in. The page is structurally useful as a
+          // navigation hub even before per-city copy lands.
+          `From our Glendale office, ${FIRM.legalName} represents ${c.name} clients across ${c.county_name} in personal-injury matters only — auto, motorcycle and bike crashes, slip-and-fall, dog bites, and wrongful death. Free consultation in ${FIRM.languages.join(", ")}.`
         }
         actions={
           <div className="flex flex-wrap items-center gap-3">
@@ -137,20 +148,29 @@ export default async function CityPage({ params }: Props) {
               <ul className="mt-6 grid gap-3 sm:grid-cols-2">
                 {PRACTICE_AREAS.sort(
                   (a, b) => a.displayOrder - b.displayOrder,
-                ).map((area) => (
-                  <li key={area.slug}>
-                    <Link
-                      href={`/locations/${c.county_slug}/${c.slug}/${area.slug}`}
-                      className="group flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/30"
-                    >
-                      <span className="font-medium">{area.name}</span>
-                      <ArrowUpRight
-                        className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary"
-                        aria-hidden
-                      />
-                    </Link>
-                  </li>
-                ))}
+                ).map((area) => {
+                  // Prefer the city × practice page when the attorney has
+                  // published unique copy for that combo. Otherwise fall back
+                  // to the always-available practice-area hub — never link
+                  // to a route that would 404.
+                  const href = publishedPracticeSlugs.has(area.slug)
+                    ? `/locations/${c.county_slug}/${c.slug}/${area.slug}`
+                    : `/practice-areas/${area.slug}`;
+                  return (
+                    <li key={area.slug}>
+                      <Link
+                        href={href}
+                        className="group flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/30"
+                      >
+                        <span className="font-medium">{area.name}</span>
+                        <ArrowUpRight
+                          className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary"
+                          aria-hidden
+                        />
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
 

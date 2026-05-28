@@ -90,7 +90,12 @@ export default async function AdminLayout({
           </nav>
         </aside>
 
-        <main className="flex-1 bg-background px-6 py-8">{children}</main>
+        <main
+          id="main-content"
+          className="flex-1 bg-background px-6 py-8"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

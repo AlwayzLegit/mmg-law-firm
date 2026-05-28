@@ -96,17 +96,20 @@ export function CaseResultsSection({ results, className }: SectionProps) {
       </div>
 
       {results.length === 0 ? (
-        <div className="mt-12 rounded-2xl border border-dashed border-border bg-secondary/30 p-12 text-center">
-          <p className="text-muted-foreground">
-            Verified case results appear here once they&apos;ve been reviewed
-            and approved for publication. In the meantime, explore the{" "}
+        <div className="mt-12 rounded-2xl border border-dashed border-border bg-secondary/30 p-10 text-center md:p-12">
+          <p className="font-display text-xl font-medium tracking-tight md:text-2xl">
+            Examples available on request.
+          </p>
+          <p className="mx-auto mt-3 max-w-prose text-muted-foreground">
+            For anonymized examples in matters similar to yours, call us — or
+            see how we approach each kind of case on the{" "}
             <Link
               href="/practice-areas"
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
-              practice areas
-            </Link>{" "}
-            to see how we approach each kind of matter.
+              practice-area pages
+            </Link>
+            .
           </p>
         </div>
       ) : (

@@ -93,11 +93,22 @@ export function TestimonialsSection({
         </div>
 
         {testimonials.length === 0 ? (
-          <div className="mt-12 rounded-2xl border border-dashed border-border bg-card p-12 text-center">
-            <p className="text-muted-foreground">
-              Client testimonials appear here once they&apos;ve been reviewed
-              and approved for publication. In the meantime, see Yelp or
-              Google for public reviews of the firm.
+          <div className="mt-12 rounded-2xl border border-dashed border-border bg-card p-10 text-center md:p-12">
+            <p className="font-display text-xl font-medium tracking-tight md:text-2xl">
+              See what clients are saying.
+            </p>
+            <p className="mx-auto mt-3 max-w-prose text-muted-foreground">
+              We&apos;re curating verified client quotes for this page. In
+              the meantime, public reviews are on{" "}
+              <a
+                href="https://www.yelp.com/biz/mmg-law-firm-glendale"
+                target="_blank"
+                rel="noopener"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Yelp
+              </a>{" "}
+              and Google.
             </p>
           </div>
         ) : (

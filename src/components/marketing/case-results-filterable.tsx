@@ -1,9 +1,13 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
+import { buttonVariants } from "@/components/ui/button";
 import type { CaseResult } from "@/components/marketing/case-result-card";
 import { CaseResultCard } from "@/components/marketing/case-result-card";
+import { FIRM } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 type Props = {
   results: CaseResult[];
@@ -48,11 +52,31 @@ export function CaseResultsFilterable({ results }: Props) {
   if (results.length === 0) {
     return (
       <div className="container-page py-12">
-        <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-12 text-center">
-          <p className="text-muted-foreground">
-            Verified case results will appear here once the attorney has
-            reviewed and approved them for publication.
+        <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-10 text-center md:p-12">
+          <p className="font-display text-xl font-medium tracking-tight md:text-2xl">
+            Examples available on request.
           </p>
+          <p className="mt-3 text-muted-foreground">
+            We&apos;re updating our case-result page. For anonymized examples
+            similar to your situation, call us — we&apos;ll walk through what
+            we&apos;ve recovered in matters like yours.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href={`tel:${FIRM.phoneTel}`}
+              className={cn(buttonVariants({ size: "marketing" }))}
+            >
+              Call {FIRM.phone}
+            </a>
+            <Link
+              href="/contact"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "marketing" }),
+              )}
+            >
+              Free consultation
+            </Link>
+          </div>
         </div>
       </div>
     );
