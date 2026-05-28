@@ -69,14 +69,22 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
   }, [siteKey, loaded, onToken, action]);
 
   if (!siteKey) {
-    return (
-      <p className={className}>
-        <span className="text-xs text-muted-foreground">
-          (CAPTCHA disabled in dev — set NEXT_PUBLIC_TURNSTILE_SITE_KEY to
-          enable)
-        </span>
-      </p>
-    );
+    // In dev we surface the missing-key reason out loud so the developer
+    // knows the form is in stub mode. In production a visitor never sees
+    // that — they get nothing where the widget would render, so the form
+    // looks normal. Submission will fail server-side (turnstile-secret-
+    // missing) and the form's onSubmit catch shows the user-facing error.
+    if (process.env.NODE_ENV !== "production") {
+      return (
+        <p className={className}>
+          <span className="text-xs text-muted-foreground">
+            (CAPTCHA disabled in dev — set NEXT_PUBLIC_TURNSTILE_SITE_KEY to
+            enable)
+          </span>
+        </p>
+      );
+    }
+    return null;
   }
 
   return (

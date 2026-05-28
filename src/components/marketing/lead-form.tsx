@@ -124,6 +124,12 @@ export function LeadForm({
           toast.error("Please check the highlighted fields.");
           return;
         }
+        if (data?.error === "turnstile-failed") {
+          toast.error(
+            `Bot-protection failed to load. Please call us at ${FIRM.phone} or email ${FIRM.intakeEmail}.`,
+          );
+          return;
+        }
         toast.error(
           "We couldn't submit your request. Please try again, or call us directly.",
         );
