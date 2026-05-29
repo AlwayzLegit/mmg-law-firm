@@ -54,16 +54,18 @@ export function Hero({ className }: HeroProps) {
             <SectionEyebrow>Attorney Advertising</SectionEyebrow>
 
             <h1 className="mt-5 max-w-[18ch] font-display text-[2.6rem] font-medium leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]">
-              When the unexpected happens,
+              Focus on your recovery
               <span className="block text-primary">
-                the call you make next matters.
+                while we fight for you.
               </span>
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              {FIRM.legalName} represents Californians injured in car, truck,
-              motorcycle, pedestrian, bicycle, rideshare, and slip-and-fall
-              accidents. Free consultation. No fee unless we win your case.
+              Have you been injured in an accident because someone else was
+              negligent or careless? You may be entitled to compensation.{" "}
+              {FIRM.attorneyName} at {FIRM.legalName} represents personal-injury
+              clients across California — and we will fight to help you get the
+              money you need and deserve.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">

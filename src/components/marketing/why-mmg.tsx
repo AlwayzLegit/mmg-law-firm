@@ -10,26 +10,30 @@ import { cn } from "@/lib/utils";
 
 import { SectionEyebrow } from "./section-eyebrow";
 
+// Pillars mirror the live mmg-lawfirm.com hero — those three are the
+// brand promises the firm has been making for years. The fourth is the
+// firm's stated "client priority" positioning from its About page,
+// written for the new site's solo-attorney framing.
 const POINTS: { icon: LucideIcon; title: string; body: string }[] = [
   {
-    icon: HandCoins,
-    title: "No fee unless we win",
-    body: "Contingency representation across all matters. The consultation is free and the fee comes from the recovery — not your pocket.",
+    icon: MessageSquareHeart,
+    title: "Individualized attention",
+    body: "Pursuing compensation after an accident is one of the most important things you'll do. As our client, you are our top priority — we'll go above and beyond as we fight for the compensation you need and deserve.",
   },
   {
     icon: ShieldCheck,
-    title: "Insurance know-how",
-    body: "We know how California PI insurers think. We move quickly to lock in evidence and we don't let an adjuster's first offer set the conversation.",
+    title: "Respected attorney",
+    body: "Mihran M. Ghazaryan is licensed to practice in California state and federal courts. The firm has built its reputation representing plaintiffs injured in truck, motorcycle, and car accidents and in slips and falls.",
   },
   {
-    icon: MessageSquareHeart,
-    title: "A real attorney handles your case",
-    body: "Not a paralegal who passes you off. Mihran personally manages every matter, returns calls, and walks you through each decision.",
+    icon: HandCoins,
+    title: "No fee unless we win",
+    body: "Legal representation at MMG Law Firm is on a contingency-fee basis. The firm does not collect a fee unless it achieves a successful result on your case. The initial consultation is always free.",
   },
   {
     icon: Scale,
-    title: "Bilingual, plain-language counsel",
-    body: "We translate the legal complexity into a clear plan and explain every option in the language that's most comfortable for you.",
+    title: "A real attorney handles your case",
+    body: "MMG Law Firm is a premier civil-litigation firm dedicated to representing plaintiffs, handling a limited number of cases at a time so each one gets the attention it deserves.",
   },
 ];
 
