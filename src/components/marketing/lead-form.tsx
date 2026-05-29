@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, CheckCircle2, Mail, Phone, ShieldCheck, User } from "lucide-react";
 import { toast } from "sonner";
@@ -60,11 +60,16 @@ export function LeadForm({
 }: LeadFormProps) {
   const isFull = variant === "full";
 
-  // Type the third generic explicitly so Control<...> stays consistent —
-  // otherwise zodResolver infers the transformed (output) type for
-  // TTransformedValues, which conflicts with LeadFormValues used by Control.
+  // LeadSchema uses .preprocess() / .transform(), so zodResolver's inferred
+  // input type collapses to `unknown` and conflicts with LeadFormValues used
+  // by Controller. The cast narrows the resolver to the form's value shape
+  // — types are still checked at the call sites that read field.value.
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
-    resolver: zodResolver(LeadSchema) as never,
+    resolver: zodResolver(LeadSchema) as unknown as Resolver<
+      LeadFormValues,
+      unknown,
+      LeadFormValues
+    >,
     mode: "onBlur",
     defaultValues: {
       ...leadFormDefaults,

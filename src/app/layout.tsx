@@ -1,14 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import dynamic from "next/dynamic";
 import Script from "next/script";
 import { Inter, Fraunces } from "next/font/google";
 
 import { SchemaGraph } from "@/components/seo/schema-graph";
-import { Toaster } from "@/components/ui/sonner";
 import { FIRM, SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { siteUrl } from "@/lib/seo/canonical";
 
 import "./globals.css";
+
+// Sonner ships its own CSS-in-JS + portal; nothing renders until a toast
+// fires, so the runtime can defer the chunk entirely.
+const Toaster = dynamic(() =>
+  import("@/components/ui/sonner").then((m) => m.Toaster),
+);
 
 const inter = Inter({
   subsets: ["latin"],

@@ -8,6 +8,8 @@
  * is what the bio surfaces render.
  */
 
+import { cache } from "react";
+
 import { FIRM } from "@/lib/constants";
 import {
   getStaticSupabase,
@@ -90,7 +92,11 @@ const SEED_PROFILES: AttorneyProfile[] = [
   },
 ];
 
-export async function getAttorneyProfile(
+/**
+ * `cache()` deduplicates this lookup within a single render — the homepage
+ * AttorneyBioCard and the bio page can each call it without two DB round-trips.
+ */
+export const getAttorneyProfile = cache(async function getAttorneyProfile(
   slug: string,
 ): Promise<AttorneyProfile | null> {
   if (!isSupabaseConfigured()) {
@@ -108,7 +114,7 @@ export async function getAttorneyProfile(
     return SEED_PROFILES.find((p) => p.slug === slug) ?? null;
   }
   return (data as AttorneyProfile) ?? null;
-}
+});
 
 /** Variant for the bio page: returns the row even when unpublished, so admins
  *  can verify how the page will look before flipping the switch. RLS still

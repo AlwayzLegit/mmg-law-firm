@@ -1,15 +1,23 @@
+import dynamic from "next/dynamic";
+
 import { AttorneyBioCard } from "@/components/marketing/attorney-bio-card";
 import { CaseResultsSection } from "@/components/marketing/case-result-card";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { Faq } from "@/components/marketing/faq";
 import { Hero } from "@/components/marketing/hero";
 import { HomepageStats } from "@/components/marketing/homepage-stats";
-import { LeadForm } from "@/components/marketing/lead-form";
 import { LocationsList } from "@/components/marketing/locations-list";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { RecognitionStrip } from "@/components/marketing/recognition-strip";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { WhyMmg } from "@/components/marketing/why-mmg";
+
+// LeadForm pulls in react-hook-form + zod + Turnstile — it sits well below
+// the fold on the homepage, so lazy-load its client chunk while still
+// SSRing the markup so the form is present for crawlers.
+const LeadForm = dynamic(() =>
+  import("@/components/marketing/lead-form").then((m) => m.LeadForm),
+);
 import { FIRM } from "@/lib/constants";
 import { getHomepageFaqs } from "@/lib/data/firm-settings";
 import {
