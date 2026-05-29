@@ -12,8 +12,12 @@ export const FIRM = {
   attorneyName: "Mihran M. Ghazaryan",
   /** Lead attorney bar #. Canonical source: attorney_profiles.bar_number. */
   barNumber: "311455",
-  phone: "(818) 568-5818",
-  phoneTel: "+18185685818",
+  // Phone matches the number published on the live mmg-lawfirm.com site
+  // and on Yelp, Super Lawyers, and the state bar listing (May 2026).
+  // If the firm runs a separate tracking line for this new site, update
+  // here — every page-level link routes through these two values.
+  phone: "(818) 539-7969",
+  phoneTel: "+18185397969",
   email: "info@mmg-lawfirm.com",
   intakeEmail: "intake@mmg-lawfirm.com",
   address: {
@@ -35,11 +39,12 @@ export const FIRM = {
      *  Canonical source: attorney_profiles.super_lawyers_url. */
     superLawyers:
       "https://profiles.superlawyers.com/california/glendale/lawfirm/mmg-law-firm/68073bd3-6378-44e2-9f67-582e4c41c5d5.html",
-    /** Avvo / Justia / LinkedIn — seed fallbacks (empty until DB is populated).
+    /** Avvo / Justia / LinkedIn — seed fallbacks, sourced from the live
+     *  mmg-lawfirm.com site + the public attorney directories (May 2026).
      *  Canonical source: attorney_profiles.{avvo_url, justia_url, linkedin_url}. */
-    avvo: "",
-    justia: "",
-    linkedin: "",
+    avvo: "https://www.avvo.com/attorneys/91210-ca-mihran-ghazaryan-4850655.html",
+    justia: "https://lawyers.justia.com/lawyer/mihran-m-ghazaryan-1552557",
+    linkedin: "https://www.linkedin.com/in/mihran-ghazaryan-bab30050/",
   },
 } as const;
 
