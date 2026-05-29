@@ -43,7 +43,7 @@ export default async function HomePage() {
       <TestimonialsSection testimonials={testimonials} />
       <LocationsList />
 
-      <section className="container-page py-16 md:py-24">
+      <section className="container-page py-20 md:py-28">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">

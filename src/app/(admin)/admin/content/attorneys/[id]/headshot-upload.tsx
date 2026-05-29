@@ -19,7 +19,15 @@ const ACCEPT = "image/jpeg,image/png,image/webp";
 
 export default function HeadshotUpload({ id, currentUrl, alt }: Props) {
   const [pending, startTransition] = React.useTransition();
+  // `freshlyUploaded` only holds a URL set during this component lifetime
+  // — it takes precedence over the server-provided `currentUrl` so the
+  // preview updates instantly after a successful upload without waiting
+  // for a full server re-render.
+  const [freshlyUploaded, setFreshlyUploaded] = React.useState<string | null>(
+    null,
+  );
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const previewUrl = freshlyUploaded ?? currentUrl;
 
   function onPick() {
     inputRef.current?.click();
@@ -38,8 +46,14 @@ export default function HeadshotUpload({ id, currentUrl, alt }: Props) {
     fd.set("file", file);
     startTransition(async () => {
       const result = await uploadAttorneyHeadshot(fd);
-      if (result.ok) toast.success("Headshot uploaded.");
-      else toast.error(result.error);
+      if (result.ok) {
+        toast.success("Headshot uploaded.");
+        // Show the new image immediately instead of waiting for a full
+        // page reload. The server action already revalidated the path.
+        if (result.url) setFreshlyUploaded(result.url);
+      } else {
+        toast.error(result.error);
+      }
     });
     e.currentTarget.value = "";
   }
@@ -47,12 +61,12 @@ export default function HeadshotUpload({ id, currentUrl, alt }: Props) {
   return (
     <div className="grid gap-3">
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-border bg-secondary">
-        {currentUrl ? (
+        {previewUrl ? (
           // Plain <img> in admin — avoids the next/image remotePatterns gymnastics
           // for arbitrary upload paths.
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={currentUrl}
+            src={previewUrl}
             alt={alt}
             className="absolute inset-0 h-full w-full object-cover"
           />
@@ -82,7 +96,7 @@ export default function HeadshotUpload({ id, currentUrl, alt }: Props) {
         <Upload className="h-3.5 w-3.5" aria-hidden />
         {pending
           ? "Uploading..."
-          : currentUrl
+          : previewUrl
             ? "Replace headshot"
             : "Upload headshot"}
       </Button>

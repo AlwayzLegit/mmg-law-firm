@@ -3,6 +3,7 @@ import Link from "next/link";
 import * as Icons from "lucide-react";
 import { ArrowUpRight } from "lucide-react";
 
+import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
 import { PRACTICE_AREAS, type PracticeArea } from "@/lib/data/practice-areas";
 import { cn } from "@/lib/utils";
 
@@ -21,10 +22,7 @@ export function PracticeAreaGrid({
     <section className={cn("container-page py-20 md:py-28", className)}>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div className="max-w-xl">
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-            <span className="block h-px w-8 bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-[var(--color-gold-500)]" />
-            What we handle
-          </p>
+          <SectionEyebrow>What we handle</SectionEyebrow>
           <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
             {heading}
           </h2>

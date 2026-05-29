@@ -41,7 +41,7 @@ export function RelatedPracticeAreas({
   if (others.length === 0) return null;
 
   return (
-    <section className={cn("container-page py-16 md:py-20", className)}>
+    <section className={cn("container-page py-20 md:py-28", className)}>
       <SectionEyebrow>Related practice areas</SectionEyebrow>
       <h2 className="mt-4 font-display text-2xl font-medium tracking-tight md:text-3xl">
         We also handle

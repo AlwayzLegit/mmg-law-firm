@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -50,10 +51,7 @@ export function Hero({ className }: HeroProps) {
       <div className="container-page py-14 md:py-20 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:items-center lg:gap-16">
           <div>
-            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-              <span className="block h-px w-8 bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-[var(--color-gold-500)]" />
-              Attorney Advertising
-            </p>
+            <SectionEyebrow>Attorney Advertising</SectionEyebrow>
 
             <h1 className="mt-5 max-w-[18ch] font-display text-[2.6rem] font-medium leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]">
               When the unexpected happens,

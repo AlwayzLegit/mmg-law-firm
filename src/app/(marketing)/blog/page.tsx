@@ -40,7 +40,7 @@ export default async function BlogIndexPage() {
         description="Practical articles on what to do after an accident, how the claim process actually works, and California-specific legal context."
       />
 
-      <section className="container-page py-20 md:py-24">
+      <section className="container-page py-20 md:py-28">
         {posts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-10 text-center md:p-12">
             <p className="font-display text-xl font-medium tracking-tight md:text-2xl">

@@ -26,7 +26,7 @@ export function CredentialBadges({ profile, firm, className }: Props) {
   if (badges.length === 0) return null;
 
   return (
-    <section className={cn("container-page py-10 md:py-12", className)}>
+    <section className={cn("container-page py-16 md:py-20", className)}>
       <ul
         className={cn(
           "grid gap-3",

@@ -49,7 +49,7 @@ export function CtaBand({
         }}
       />
 
-      <div className="container-page flex flex-col items-start justify-between gap-8 py-16 md:flex-row md:items-center md:py-20">
+      <div className="container-page flex flex-col items-start justify-between gap-8 py-20 md:flex-row md:items-center md:py-28">
         <div className="max-w-2xl text-primary-foreground">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-gold-300)]">
             Free consultation

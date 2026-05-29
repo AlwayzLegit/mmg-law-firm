@@ -65,7 +65,7 @@ export function WhyMmg({ className }: { className?: string }) {
         }}
       />
 
-      <div className="container-page py-20 md:py-24">
+      <div className="container-page py-20 md:py-28">
         <div className="max-w-2xl">
           <SectionEyebrow inverted>Why MMG</SectionEyebrow>
           <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
