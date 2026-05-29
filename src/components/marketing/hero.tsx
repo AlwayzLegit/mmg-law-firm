@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Award,
@@ -143,7 +144,23 @@ function CredentialsCard() {
         aria-hidden
         className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-primary/10"
       />
-      <article className="relative rounded-2xl border border-border bg-card p-7 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur md:p-8">
+      <article className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur">
+        <div className="relative aspect-[5/4] w-full overflow-hidden bg-secondary">
+          <Image
+            src="/attorney-headshot.webp"
+            alt={`${FIRM.attorneyName}, founder and managing attorney of ${FIRM.legalName}`}
+            fill
+            priority
+            sizes="(min-width: 1024px) 480px, (min-width: 768px) 60vw, 100vw"
+            className="object-cover object-top"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card via-card/70 to-transparent"
+          />
+        </div>
+
+        <div className="px-7 pb-7 pt-2 md:px-8 md:pb-8">
         <div className="flex items-center justify-between">
           <span className="rounded-full bg-success/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-success">
             Free consultation
@@ -205,6 +222,7 @@ function CredentialsCard() {
               </span>
             ))}
           </div>
+        </div>
         </div>
       </article>
     </div>
