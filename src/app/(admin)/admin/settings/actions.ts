@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { siteUrl } from "@/lib/seo/canonical";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { logAudit } from "@/lib/audit";
 
 const InviteInput = z.object({
   email: z.string().trim().email("Enter a valid email"),
@@ -68,7 +69,7 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
     return { ok: false, error: upErr.message };
   }
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "admin_profiles",
     entity_id: invite.user.id,

@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 const UpdateInput = z.object({
   id: z.string().uuid(),
@@ -52,7 +53,7 @@ export async function updateCounty(formData: FormData): Promise<ActionResult> {
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "counties",
     entity_id: parsed.data.id,
@@ -84,7 +85,7 @@ export async function togglePublishCounty(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "counties",
     entity_id: parsed.data.id,

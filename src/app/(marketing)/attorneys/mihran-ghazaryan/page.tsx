@@ -10,6 +10,7 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { jsonLd } from "@/lib/seo/json-ld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM } from "@/lib/constants";
 import {
@@ -113,9 +114,7 @@ export default async function AttorneyBioPage() {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(personJsonLd) }}
       />
 
       <Hero profile={profile} />

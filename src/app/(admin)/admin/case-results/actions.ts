@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 const CreateInput = z.object({
   headline: z.string().trim().min(8).max(220),
@@ -76,7 +77,7 @@ export async function createCaseResult(
     return { ok: false, error: error?.message ?? "Couldn't create row." };
   }
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "case_results",
     entity_id: data.id,
@@ -135,7 +136,7 @@ export async function updateCaseResult(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "case_results",
     entity_id: parsed.data.id,
@@ -167,7 +168,7 @@ export async function togglePublishCaseResult(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "case_results",
     entity_id: parsed.data.id,
@@ -209,7 +210,7 @@ export async function deleteCaseResult(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "case_results",
     entity_id: parsed.data.id,

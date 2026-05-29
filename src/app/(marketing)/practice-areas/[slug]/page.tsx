@@ -17,6 +17,7 @@ import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
+import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ export default async function PracticeAreaPage({ params }: Props) {
   const legalService = {
     "@context": "https://schema.org",
     "@type": "LegalService",
+    "@id": `${canonicalUrl(path)}#legal-service`,
     name: `${FIRM.legalName} — ${area.name}`,
     url: canonicalUrl(path),
     image: defaultOgImageUrl(),
@@ -97,16 +99,12 @@ export default async function PracticeAreaPage({ params }: Props) {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(legalService).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }}
       />
       {faqGraph ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(faqGraph).replace(/</g, "\\u003c"),
-          }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }}
         />
       ) : null}
 

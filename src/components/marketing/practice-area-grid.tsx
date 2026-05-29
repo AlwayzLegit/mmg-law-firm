@@ -55,10 +55,10 @@ function PracticeAreaCard({
       href={`/practice-areas/${area.slug}`}
       className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 ring-1 ring-border/40 transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_30px_60px_-25px_rgba(20,30,80,0.3)] md:p-8"
     >
-      {/* Always-visible top gold strip — premium plate feel */}
+      {/* Top rule — appears only on hover, so gold stays signature-rare. */}
       <span
         aria-hidden
-        className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-gold-500)] via-primary to-[var(--color-gold-500)] opacity-70 transition-opacity group-hover:opacity-100"
+        className="absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-[var(--color-gold-500)] via-primary to-[var(--color-gold-500)] transition-transform duration-300 group-hover:scale-x-100"
       />
       {/* Ambient gradient blob on hover — top right */}
       <span

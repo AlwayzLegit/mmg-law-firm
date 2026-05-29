@@ -81,25 +81,28 @@ export function WhyMmg({ className }: { className?: string }) {
           </p>
         </div>
 
-        <ul className="mt-14 grid gap-x-10 gap-y-12 md:grid-cols-2">
+        <ul className="mt-14 grid gap-x-12 gap-y-12 md:grid-cols-2">
           {POINTS.map((p, i) => (
-            <li key={p.title} className="flex items-start gap-5">
+            <li
+              key={p.title}
+              className="relative flex items-start gap-6 border-l border-primary-foreground/15 pl-6"
+            >
               <span
                 aria-hidden
-                className="select-none font-display text-3xl font-medium tracking-tight text-[var(--color-gold-500)]"
+                className="select-none font-display text-5xl font-medium leading-none tracking-tight text-[var(--color-gold-500)] md:text-6xl"
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-foreground/10 text-primary-foreground ring-1 ring-inset ring-primary-foreground/20">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-foreground/10 text-primary-foreground ring-1 ring-inset ring-primary-foreground/20">
                     <p.icon className="h-4 w-4" aria-hidden />
                   </span>
-                  <h3 className="font-display text-lg font-medium tracking-tight">
+                  <h3 className="font-display text-lg font-medium tracking-tight md:text-xl">
                     {p.title}
                   </h3>
                 </div>
-                <p className="mt-3 text-primary-foreground/80">{p.body}</p>
+                <p className="mt-3 text-primary-foreground/85">{p.body}</p>
               </div>
             </li>
           ))}

@@ -61,6 +61,12 @@ export function firmSameAs(settings: FirmSettings): string[] {
   );
 }
 
+/** Build the attorney-level sameAs array used in the Person JSON-LD.
+ *  The Super Lawyers profile is attorney-specific so it belongs here too. */
+export function attorneySameAs(settings: FirmSettings): string[] {
+  return [settings.super_lawyers_url].filter((u): u is string => Boolean(u));
+}
+
 /** Resolved homepage FAQ list — DB content when populated, in-code
  *  HOMEPAGE_FAQS fallback otherwise. */
 export async function getHomepageFaqs(): Promise<FaqItem[]> {

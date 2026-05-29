@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
@@ -162,7 +163,7 @@ export async function createAttorneyProfile(
     return { ok: false, error: error?.message ?? "Couldn't create profile." };
   }
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "attorney_profiles",
     entity_id: data.id,
@@ -280,7 +281,7 @@ export async function updateAttorneyProfile(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "attorney_profiles",
     entity_id: parsed.data.id,
@@ -332,7 +333,7 @@ export async function togglePublishAttorneyProfile(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "attorney_profiles",
     entity_id: parsed.data.id,
@@ -377,7 +378,7 @@ export async function deleteAttorneyProfile(
     .eq("id", id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "attorney_profiles",
     entity_id: id,

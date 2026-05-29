@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 /**
  * Slug derivation: lowercase, ASCII fold, non-alphanumerics → hyphen,
@@ -119,7 +120,7 @@ export async function createBlogPost(
     return { ok: false, error: error?.message ?? "Couldn't create post." };
   }
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "blog_posts",
     entity_id: data.id,
@@ -210,7 +211,7 @@ export async function updateBlogPost(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "blog_posts",
     entity_id: parsed.data.id,
@@ -261,7 +262,7 @@ export async function togglePublishBlogPost(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "blog_posts",
     entity_id: parsed.data.id,
@@ -302,7 +303,7 @@ export async function deleteBlogPost(
   const { error } = await supabase.from("blog_posts").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "blog_posts",
     entity_id: id,

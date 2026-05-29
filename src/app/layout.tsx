@@ -20,7 +20,9 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
   display: "swap",
-  axes: ["opsz", "SOFT"],
+  // Only opsz is actually referenced from CSS. SOFT added a second
+  // preload woff2 with no visual effect — dropped.
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {

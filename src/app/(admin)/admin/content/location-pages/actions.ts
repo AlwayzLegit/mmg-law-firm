@@ -1,11 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 const CreateInput = z.object({
   city_id: z.string().uuid(),
@@ -80,7 +81,7 @@ export async function createLocationPage(
     return { ok: false, error: error?.message ?? "Couldn't create row." };
   }
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "location_pages",
     entity_id: data.id,
@@ -128,7 +129,7 @@ export async function updateLocationPage(
   }
 
   const supabase = await getServerSupabase();
-  const { error } = await supabase
+  const { data: row, error } = await supabase
     .from("location_pages")
     .update({
       intro_md: emptyToNull(parsed.data.intro_md),
@@ -136,10 +137,14 @@ export async function updateLocationPage(
       meta_description: emptyToNull(parsed.data.meta_description),
       last_reviewed_at: new Date().toISOString(),
     })
-    .eq("id", parsed.data.id);
+    .eq("id", parsed.data.id)
+    .select(
+      `cities!inner(slug, counties!inner(slug)), practice_areas!inner(slug)`,
+    )
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "location_pages",
     entity_id: parsed.data.id,
@@ -149,8 +154,17 @@ export async function updateLocationPage(
   revalidatePath(`/admin/content/location-pages/${parsed.data.id}`);
   revalidatePath("/admin/content/location-pages");
   revalidatePath("/admin/content/pages");
-  // Tag-based revalidation of any public route that cached this row.
-  revalidateTag(`location-page:${parsed.data.id}`, "max");
+  // Public page revalidation. `getLocationPage` is uncached, so we revalidate
+  // the rendered path directly rather than relying on a cache tag.
+  if (row) {
+    const r = row as unknown as {
+      cities: { slug: string; counties: { slug: string } };
+      practice_areas: { slug: string };
+    };
+    revalidatePath(
+      `/locations/${r.cities.counties.slug}/${r.cities.slug}/${r.practice_areas.slug}`,
+    );
+  }
 
   return { ok: true };
 }
@@ -201,7 +215,7 @@ export async function togglePublish(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "location_pages",
     entity_id: parsed.data.id,
@@ -231,7 +245,7 @@ export async function touchReviewed(formData: FormData): Promise<ActionResult> {
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "location_pages",
     entity_id: parsed.data.id,

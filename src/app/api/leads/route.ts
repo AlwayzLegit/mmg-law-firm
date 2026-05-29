@@ -14,10 +14,18 @@ import { LeadSchema } from "@/lib/validation/lead";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const IP_RE = /^[0-9a-fA-F:.]{3,45}$/;
+
 function clientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]!.trim();
-  return request.headers.get("x-real-ip") ?? "unknown";
+  const raw = forwarded
+    ? forwarded.split(",")[0]?.trim()
+    : (request.headers.get("x-real-ip") ?? null);
+  if (!raw) return "unknown";
+  // Cap length and accept only plausible IPv4/IPv6 shapes so a forged
+  // header can't poison the rate-limit key or audit_log payload.
+  const candidate = raw.slice(0, 45);
+  return IP_RE.test(candidate) ? candidate : "unknown";
 }
 
 function escape(s: string): string {

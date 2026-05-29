@@ -22,13 +22,10 @@ export function BrandMark({
   inverted = false,
 }: Props) {
   return (
-    <span
-      className={cn("inline-flex items-center gap-2.5", className)}
-      aria-label="MMG Law Firm"
-    >
+    <span className={cn("inline-flex items-center gap-2.5", className)}>
       <Image
         src="/mmg-logo.png"
-        alt=""
+        alt={withWordmark ? "" : "MMG Law Firm"}
         width={36}
         height={36}
         priority

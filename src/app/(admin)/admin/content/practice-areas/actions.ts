@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 const SubtopicSchema = z.object({
   title: z.string().trim().min(1).max(160),
@@ -137,7 +138,7 @@ export async function updatePracticeArea(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "practice_areas",
     entity_id: parsed.data.id,
@@ -186,7 +187,7 @@ export async function togglePublishPracticeArea(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "practice_areas",
     entity_id: parsed.data.id,

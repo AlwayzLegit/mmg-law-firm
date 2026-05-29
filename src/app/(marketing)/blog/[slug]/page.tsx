@@ -7,7 +7,8 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { FIRM } from "@/lib/constants";
 import { getPostBySlug, getPublishedPosts } from "@/lib/data/blog";
-import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
+import { defaultOgImageUrl } from "@/lib/seo/canonical";
+import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildArticle } from "@/lib/seo/schema";
 
@@ -67,9 +68,7 @@ export default async function BlogPostPage({ params }: Props) {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(articleJson).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(articleJson) }}
       />
 
       <article className="container-prose py-16 md:py-20">
@@ -143,9 +142,6 @@ export default async function BlogPostPage({ params }: Props) {
       </article>
 
       <CtaBand />
-
-      {/* canonical reference for self-link */}
-      <link rel="canonical" href={canonicalUrl(path)} />
     </>
   );
 }

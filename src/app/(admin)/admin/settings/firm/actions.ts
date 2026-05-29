@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 const FaqSchema = z.object({
   question: z.string().trim().min(1).max(400),
@@ -160,7 +161,7 @@ export async function updateFirmSettings(
   }
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "firm_settings",
     entity_id: null,

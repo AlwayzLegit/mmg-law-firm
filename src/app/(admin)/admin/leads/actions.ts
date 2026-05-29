@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { logAuditMany } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -60,9 +61,8 @@ export async function bulkUpdateStatus(
     .select("id");
   if (error) return { ok: false, error: error.message };
 
-  // Best-effort audit log per row.
   if (data && data.length > 0) {
-    void supabase.from("audit_log").insert(
+    logAuditMany(
       data.map((r) => ({
         actor_id: user.id,
         entity: "leads",
@@ -102,7 +102,7 @@ export async function bulkAssignToMe(
   if (error) return { ok: false, error: error.message };
 
   if (data && data.length > 0) {
-    void supabase.from("audit_log").insert(
+    logAuditMany(
       data.map((r) => ({
         actor_id: user.id,
         entity: "leads",

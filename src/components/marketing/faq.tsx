@@ -25,8 +25,13 @@ export function Faq({
 }: Props) {
   if (items.length === 0) return null;
   return (
-    <section className={cn("container-page py-20 md:py-28", className)}>
-      <div className="grid gap-12 lg:grid-cols-[1fr_2fr] lg:gap-20">
+    <section
+      className={cn(
+        "relative border-y border-border/50 bg-secondary/30 py-20 md:py-28",
+        className,
+      )}
+    >
+      <div className="container-page grid gap-12 lg:grid-cols-[1fr_2fr] lg:gap-20">
         <div>
           <SectionEyebrow>FAQ</SectionEyebrow>
           <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">

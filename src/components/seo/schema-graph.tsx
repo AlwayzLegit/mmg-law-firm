@@ -1,3 +1,4 @@
+import { jsonLd } from "@/lib/seo/json-ld";
 import { buildOrganizationGraph } from "@/lib/seo/schema";
 
 type SchemaGraphProps = {
@@ -14,9 +15,7 @@ export async function SchemaGraph({
     <script
       type="application/ld+json"
       id={id}
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify(json).replace(/</g, "\\u003c"),
-      }}
+      dangerouslySetInnerHTML={{ __html: jsonLd(json) }}
     />
   );
 }

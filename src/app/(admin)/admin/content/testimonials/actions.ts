@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 import { TESTIMONIAL_SOURCES as SOURCES } from "./constants";
 
@@ -86,7 +87,7 @@ export async function createTestimonial(
     return { ok: false, error: error?.message ?? "Couldn't create row." };
   }
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "testimonials",
     entity_id: data.id,
@@ -142,7 +143,7 @@ export async function updateTestimonial(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "testimonials",
     entity_id: parsed.data.id,
@@ -177,7 +178,7 @@ export async function toggleApprove(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "testimonials",
     entity_id: parsed.data.id,
@@ -206,7 +207,7 @@ export async function deleteTestimonial(
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "testimonials",
     entity_id: parsed.data.id,

@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 import { LEAD_STATUSES, type LeadStatus } from "./statuses";
 
@@ -72,7 +73,7 @@ export async function updateLeadStatus(
   }
 
   // Best-effort audit log; don't fail the request on this.
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "leads",
     entity_id: parsed.data.leadId,
@@ -184,7 +185,7 @@ export async function runConflictCheck(
     })
     .eq("id", subject.id);
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "leads",
     entity_id: subject.id,
@@ -221,7 +222,7 @@ export async function addLeadNote(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: error.message };
   }
 
-  void supabase.from("audit_log").insert({
+  logAudit({
     actor_id: user.id,
     entity: "leads",
     entity_id: parsed.data.leadId,

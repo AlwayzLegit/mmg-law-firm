@@ -1,5 +1,9 @@
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
-import { firmSameAs, getFirmSettings } from "@/lib/data/firm-settings";
+import {
+  attorneySameAs,
+  firmSameAs,
+  getFirmSettings,
+} from "@/lib/data/firm-settings";
 import { canonicalUrl, defaultOgImageUrl, siteUrl } from "@/lib/seo/canonical";
 
 type GraphNode = Record<string, unknown>;
@@ -38,7 +42,7 @@ function legalServiceNode(sameAs: string[]): GraphNode {
   };
 }
 
-function attorneyNode(): GraphNode {
+function attorneyNode(sameAs: string[]): GraphNode {
   return {
     "@type": "Person",
     "@id": ATTORNEY_ID,
@@ -51,6 +55,7 @@ function attorneyNode(): GraphNode {
     },
     identifier: FIRM.barNumber,
     url: canonicalUrl("/attorneys/mihran-ghazaryan"),
+    ...(sameAs.length > 0 ? { sameAs } : {}),
   };
 }
 
@@ -70,7 +75,7 @@ export async function buildOrganizationGraph(): Promise<GraphNode> {
     "@context": "https://schema.org",
     "@graph": [
       legalServiceNode(firmSameAs(settings)),
-      attorneyNode(),
+      attorneyNode(attorneySameAs(settings)),
       websiteNode(),
     ],
   };

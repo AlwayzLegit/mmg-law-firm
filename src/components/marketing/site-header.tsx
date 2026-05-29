@@ -84,20 +84,22 @@ export function SiteHeader() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <a
             href={`tel:${FIRM.phoneTel}`}
-            className="hidden items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-secondary md:inline-flex"
+            className="group hidden items-center gap-2.5 rounded-full border border-border/70 bg-card/60 py-1.5 pl-1.5 pr-3.5 text-sm font-semibold tracking-tight text-foreground shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_1px_2px_rgba(20,30,80,0.05)] transition-all hover:border-primary/30 hover:bg-card hover:shadow-[0_8px_20px_-12px_rgba(20,30,80,0.25)] md:inline-flex"
           >
-            <Phone className="h-4 w-4 text-primary" aria-hidden />
-            <span>{FIRM.phone}</span>
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform group-hover:scale-105">
+              <Phone className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <span className="tabular-nums">{FIRM.phone}</span>
           </a>
 
           <Link
             href="/contact"
             className={cn(
               buttonVariants({ size: "sm" }),
-              "hidden sm:inline-flex",
+              "hidden rounded-full sm:inline-flex",
             )}
           >
             Free Consultation

@@ -59,15 +59,6 @@ export function Hero({ className }: HeroProps) {
             "radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7), transparent 70%)",
         }}
       />
-      {/* Decorative concentric rings — bottom left, slow rotation */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-20 -left-20 -z-10 h-96 w-96 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, transparent 40%, var(--color-primary) 41%, var(--color-primary) 42%, transparent 43%, transparent 60%, var(--color-primary) 61%, var(--color-primary) 62%, transparent 63%, transparent 80%, var(--color-primary) 81%, var(--color-primary) 82%, transparent 83%)",
-        }}
-      />
 
       <div className="container-page py-14 md:py-20 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:items-center lg:gap-16">
@@ -159,10 +150,10 @@ function InlineSignal({
 function CredentialsCard() {
   return (
     <div className="relative">
-      {/* offset shadow card behind */}
+      {/* Offset gold "plate" sibling — the signature card object. */}
       <div
         aria-hidden
-        className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-primary/10"
+        className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/25"
       />
       <article className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur">
         <div className="relative aspect-[5/4] w-full overflow-hidden bg-secondary">

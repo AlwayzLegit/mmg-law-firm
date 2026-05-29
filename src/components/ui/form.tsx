@@ -42,6 +42,8 @@ const FormField = <
 
 type FormItemContextValue = {
   id: string;
+  hasDescription: boolean;
+  setHasDescription: (v: boolean) => void;
 };
 
 const FormItemContext = React.createContext<FormItemContextValue>(
@@ -59,7 +61,7 @@ const useFormField = () => {
     throw new Error("useFormField should be used within <FormField>");
   }
 
-  const { id } = itemContext;
+  const { id, hasDescription, setHasDescription } = itemContext;
 
   return {
     id,
@@ -67,15 +69,22 @@ const useFormField = () => {
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
+    hasDescription,
+    setHasDescription,
     ...fieldState,
   };
 };
 
 function FormItem({ className, ...props }: React.ComponentProps<"div">) {
   const id = React.useId();
+  const [hasDescription, setHasDescription] = React.useState(false);
+  const value = React.useMemo(
+    () => ({ id, hasDescription, setHasDescription }),
+    [id, hasDescription],
+  );
 
   return (
-    <FormItemContext.Provider value={{ id }}>
+    <FormItemContext.Provider value={value}>
       <div
         data-slot="form-item"
         className={cn("grid gap-2", className)}
@@ -106,19 +115,20 @@ function FormControl<T extends React.ElementType = "div">({
   as,
   ...props
 }: { as?: T } & React.ComponentPropsWithoutRef<T>) {
-  const { error, formItemId, formDescriptionId, formMessageId } =
+  const { error, formItemId, formDescriptionId, formMessageId, hasDescription } =
     useFormField();
   const Component = (as ?? "div") as React.ElementType;
+
+  const describedBy =
+    [hasDescription ? formDescriptionId : null, error ? formMessageId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   return (
     <Component
       data-slot="form-control"
       id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
+      aria-describedby={describedBy}
       aria-invalid={!!error}
       {...props}
     />
@@ -126,7 +136,12 @@ function FormControl<T extends React.ElementType = "div">({
 }
 
 function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
-  const { formDescriptionId } = useFormField();
+  const { formDescriptionId, setHasDescription } = useFormField();
+
+  React.useEffect(() => {
+    setHasDescription(true);
+    return () => setHasDescription(false);
+  }, [setHasDescription]);
 
   return (
     <p

@@ -18,6 +18,7 @@ import {
   getPublishedLocationPages,
 } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
+import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
@@ -116,16 +117,12 @@ export default async function CityPracticePage({ params }: Props) {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(legalService).replace(/</g, "\\u003c"),
-        }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }}
       />
       {faqGraph ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(faqGraph).replace(/</g, "\\u003c"),
-          }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }}
         />
       ) : null}
 

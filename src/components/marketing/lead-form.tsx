@@ -76,6 +76,13 @@ export function LeadForm({
 
   const [submitted, setSubmitted] = React.useState(false);
 
+  const handleTurnstileToken = React.useCallback(
+    (token: string) => {
+      form.setValue("turnstileToken", token);
+    },
+    [form],
+  );
+
   // Capture page metadata client-side once.
   React.useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
@@ -433,7 +440,7 @@ export function LeadForm({
                   onBlur={field.onBlur}
                   name={field.name}
                 />
-                <FormDescription className="text-xs text-muted-foreground/80">
+                <FormDescription className="text-xs">
                   Do not include sensitive medical details — we&apos;ll discuss
                   those securely after we connect.
                 </FormDescription>
@@ -476,7 +483,7 @@ export function LeadForm({
               <FormItem>
                 <Turnstile
                   siteKey={env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  onToken={(t) => form.setValue("turnstileToken", t)}
+                  onToken={handleTurnstileToken}
                   action="lead-form"
                 />
                 <input type="hidden" {...field} value={field.value ?? ""} />
@@ -527,7 +534,7 @@ export function LeadForm({
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground/80">
+          <p className="text-xs text-muted-foreground">
             By submitting, you confirm you have read and agreed to our{" "}
             <a
               href="/legal/privacy"

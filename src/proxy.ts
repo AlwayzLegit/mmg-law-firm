@@ -12,7 +12,9 @@ import { env } from "@/lib/env";
  * The runtime is Node only — `edge` is not supported in `proxy`.
  */
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+  ],
 };
 
 export async function proxy(request: NextRequest) {
@@ -68,12 +70,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect already-signed-in users away from /login.
+  // Redirect already-signed-in admins away from /login. We verify
+  // admin_profiles here so a non-admin Supabase user doesn't get sent into
+  // an /admin → /login bounce loop.
   if (request.nextUrl.pathname === "/login" && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin";
-    url.searchParams.delete("next");
-    return NextResponse.redirect(url);
+    const { data: adminRow } = await supabase
+      .from("admin_profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (adminRow) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      url.searchParams.delete("next");
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;
