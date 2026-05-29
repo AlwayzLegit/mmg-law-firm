@@ -28,24 +28,44 @@ export function Hero({ className }: HeroProps) {
         className,
       )}
     >
-      {/* Layered background: warm wash + soft radial + subtle grid */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/60 via-background to-background" />
+      {/* Layered background: warm wash + ambient gradient orbs + grid */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/70 via-background to-background" />
+      {/* Primary gradient orb — top right */}
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 opacity-[0.4]"
+        className="pointer-events-none absolute -right-32 -top-32 -z-10 h-[640px] w-[640px] rounded-full opacity-60 blur-3xl"
         style={{
-          backgroundImage:
-            "radial-gradient(80% 60% at 75% 20%, color-mix(in oklab, var(--color-primary) 18%, transparent) 0%, transparent 60%)",
+          background:
+            "radial-gradient(circle, color-mix(in oklab, var(--color-primary) 22%, transparent) 0%, transparent 70%)",
         }}
       />
+      {/* Gold accent orb — left mid */}
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-72 bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:32px_32px]"
+        className="pointer-events-none absolute -left-40 top-1/3 -z-10 h-[480px] w-[480px] rounded-full opacity-40 blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in oklab, var(--color-gold-500) 28%, transparent) 0%, transparent 70%)",
+        }}
+      />
+      {/* Subtle grid — fades into the page */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:36px_36px]"
         style={{
           maskImage:
-            "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+            "radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7), transparent 70%)",
           WebkitMaskImage:
-            "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+            "radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7), transparent 70%)",
+        }}
+      />
+      {/* Decorative concentric rings — bottom left, slow rotation */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-20 -left-20 -z-10 h-96 w-96 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, transparent 40%, var(--color-primary) 41%, var(--color-primary) 42%, transparent 43%, transparent 60%, var(--color-primary) 61%, var(--color-primary) 62%, transparent 63%, transparent 80%, var(--color-primary) 81%, var(--color-primary) 82%, transparent 83%)",
         }}
       />
 

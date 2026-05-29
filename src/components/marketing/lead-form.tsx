@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Phone } from "lucide-react";
+import { ArrowRight, CheckCircle2, Mail, Phone, ShieldCheck, User } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -150,44 +150,39 @@ export function LeadForm({
     return (
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-[0_30px_60px_-30px_rgba(20,30,80,0.25)] md:p-8",
+          "relative overflow-hidden rounded-3xl border border-success/30 bg-card p-7 shadow-[0_40px_80px_-40px_rgba(34,179,128,0.35)] ring-1 ring-success/10 md:p-9",
           className,
         )}
       >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-gradient-to-br from-success/25 via-success/10 to-transparent blur-3xl"
+        />
         <span
           aria-hidden
-          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-success to-transparent"
+          className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-success to-transparent"
         />
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-success/15 text-success">
-            <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden>
-              <path
-                d="M5 10l3 3 7-7"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+        <div className="relative flex items-center gap-2.5">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-success/15 text-success ring-4 ring-success/5">
+            <CheckCircle2 className="h-5 w-5" aria-hidden />
           </span>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-success">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-success">
             Received
           </p>
         </div>
-        <h3 className="mt-4 font-display text-2xl font-medium tracking-tight md:text-3xl">
+        <h3 className="relative mt-5 font-display text-2xl font-medium leading-tight tracking-tight md:text-3xl">
           Your request is in.
         </h3>
-        <p className="mt-3 leading-relaxed text-muted-foreground">
+        <p className="relative mt-3 leading-relaxed text-muted-foreground">
           We&apos;ll call you back within one business hour during office
           hours. If your matter is urgent, please call us directly.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="relative mt-7 flex flex-wrap gap-3">
           <a
             href={`tel:${FIRM.phoneTel}`}
             className={cn(
               buttonVariants({ size: "marketing" }),
-              "gap-2",
+              "gap-2 py-3.5",
             )}
           >
             <Phone className="h-4 w-4" aria-hidden />
@@ -198,6 +193,7 @@ export function LeadForm({
             onClick={() => setSubmitted(false)}
             className={cn(
               buttonVariants({ variant: "outline", size: "marketing" }),
+              "py-3.5",
             )}
           >
             Submit another
@@ -210,24 +206,30 @@ export function LeadForm({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-[0_30px_60px_-30px_rgba(20,30,80,0.18)] md:p-8",
+        "relative overflow-hidden rounded-3xl border border-border/80 bg-card p-7 shadow-[0_40px_80px_-40px_rgba(20,30,80,0.28)] ring-1 ring-border/30 md:p-9",
         className,
       )}
     >
+      {/* Decorative gradient corner — subtle premium-feeling */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-gradient-to-br from-[var(--color-gold-500)]/20 via-primary/10 to-transparent blur-3xl"
+      />
       <span
         aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-transparent"
+        className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-transparent"
       />
 
-      <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="relative mb-7 flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+          <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
             Free consultation
           </p>
-          <h3 className="mt-2 font-display text-2xl font-medium tracking-tight md:text-3xl">
+          <h3 className="mt-3 font-display text-2xl font-medium leading-tight tracking-tight md:text-3xl">
             {headline}
           </h3>
-          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+          <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">{description}</p>
         </div>
       </div>
 
@@ -235,16 +237,30 @@ export function LeadForm({
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           noValidate
-          className="grid gap-5"
+          className="relative grid gap-6"
         >
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="full_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full name</FormLabel>
-                  <FormControl as={Input} autoComplete="name" {...field} />
+                  <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Full name
+                  </FormLabel>
+                  <div className="relative mt-1.5">
+                    <User
+                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary"
+                      aria-hidden
+                    />
+                    <FormControl
+                      as={Input}
+                      autoComplete="name"
+                      placeholder="Jane Doe"
+                      className="h-12 pl-10 text-base shadow-sm"
+                      {...field}
+                    />
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -254,14 +270,23 @@ export function LeadForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl
-                    as={Input}
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="(555) 555-1234"
-                    {...field}
-                  />
+                  <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Phone
+                  </FormLabel>
+                  <div className="relative mt-1.5">
+                    <Phone
+                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60"
+                      aria-hidden
+                    />
+                    <FormControl
+                      as={Input}
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="(555) 555-1234"
+                      className="h-12 pl-10 text-base shadow-sm"
+                      {...field}
+                    />
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -273,18 +298,26 @@ export function LeadForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Email <span className="text-muted-foreground">(optional)</span>
+                <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Email <span className="font-normal normal-case text-muted-foreground/70">(optional)</span>
                 </FormLabel>
-                <FormControl
-                  as={Input}
-                  type="email"
-                  autoComplete="email"
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  name={field.name}
-                />
+                <div className="relative mt-1.5">
+                  <Mail
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60"
+                    aria-hidden
+                  />
+                  <FormControl
+                    as={Input}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    className="h-12 pl-10 text-base shadow-sm"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                  />
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -292,19 +325,21 @@ export function LeadForm({
 
           {isFull ? (
             <>
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-6 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="practice_area"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type of matter</FormLabel>
+                      <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        Type of matter
+                      </FormLabel>
                       <Select
                         value={field.value ?? ""}
                         onValueChange={(v) => field.onChange(v || undefined)}
                       >
-                        <FormControl as={SelectTrigger}>
-                          <SelectValue placeholder="Select" />
+                        <FormControl as={SelectTrigger} className="mt-1.5 h-12 text-base shadow-sm">
+                          <SelectValue placeholder="Select an option" />
                         </FormControl>
                         <SelectContent>
                           {PRACTICE_AREAS.map((p) => (
@@ -323,7 +358,9 @@ export function LeadForm({
                   name="city_slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Where did it happen?</FormLabel>
+                      <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        Where did it happen?
+                      </FormLabel>
                       <Select
                         value={field.value ?? ""}
                         onValueChange={(v) => {
@@ -336,8 +373,8 @@ export function LeadForm({
                           }
                         }}
                       >
-                        <FormControl as={SelectTrigger}>
-                          <SelectValue placeholder="City" />
+                        <FormControl as={SelectTrigger} className="mt-1.5 h-12 text-base shadow-sm">
+                          <SelectValue placeholder="Pick a city" />
                         </FormControl>
                         <SelectContent>
                           {TIER_1_LOCATIONS.map((l) => (
@@ -357,13 +394,14 @@ export function LeadForm({
                 name="incident_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
+                    <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Date of incident{" "}
-                      <span className="text-muted-foreground">(if known)</span>
+                      <span className="font-normal normal-case text-muted-foreground/70">(if known)</span>
                     </FormLabel>
                     <FormControl
                       as={Input}
                       type="date"
+                      className="mt-1.5 h-12 text-base shadow-sm"
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
@@ -381,18 +419,21 @@ export function LeadForm({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>What happened?</FormLabel>
+                <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  What happened?
+                </FormLabel>
                 <FormControl
                   as={Textarea}
                   rows={4}
                   maxLength={500}
                   placeholder="In a few sentences — type of incident, where, and how you're doing now."
+                  className="mt-1.5 min-h-32 resize-none text-base leading-relaxed shadow-sm"
                   value={field.value ?? ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   name={field.name}
                 />
-                <FormDescription>
+                <FormDescription className="text-xs text-muted-foreground/80">
                   Do not include sensitive medical details — we&apos;ll discuss
                   those securely after we connect.
                 </FormDescription>
@@ -405,16 +446,21 @@ export function LeadForm({
             control={form.control}
             name="consent_contact"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start gap-3 rounded-xl border border-border bg-secondary/30 p-4">
+              <FormItem className="group/consent relative flex flex-row items-start gap-3.5 rounded-2xl border border-border/80 bg-secondary/40 p-4 transition-colors hover:border-primary/30 has-aria-checked-true:border-success/40 has-aria-checked-true:bg-success/5 md:p-5">
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-[var(--color-gold-500)]/60 opacity-0 transition-opacity group-has-aria-checked-true/consent:opacity-100"
+                />
                 <FormControl
                   as={Checkbox}
                   checked={field.value === true}
                   onCheckedChange={(v: boolean | "indeterminate") =>
                     field.onChange(v === true)
                   }
+                  className="mt-0.5 size-5 shrink-0"
                 />
                 <div className="grid gap-1">
-                  <FormLabel className="text-xs leading-relaxed font-normal text-foreground/80">
+                  <FormLabel className="text-xs leading-relaxed font-normal text-foreground/85">
                     {TCPA_CONSENT_TEXT}
                   </FormLabel>
                   <FormMessage />
@@ -443,20 +489,45 @@ export function LeadForm({
             type="submit"
             size="marketing"
             disabled={form.formState.isSubmitting}
-            className="group/cta w-full justify-between"
+            className="group/cta relative w-full justify-between overflow-hidden bg-gradient-to-r from-primary via-primary to-[var(--color-brand-700,#18298c)] py-4 text-base shadow-[0_10px_30px_-10px_rgba(43,70,216,0.55)] transition-all hover:shadow-[0_18px_40px_-12px_rgba(43,70,216,0.65)] hover:translate-y-[-1px]"
           >
-            <span>
-              {form.formState.isSubmitting
-                ? "Sending..."
-                : "Request Free Consultation"}
+            <span className="relative z-10 flex items-center gap-2 text-base font-medium">
+              {form.formState.isSubmitting ? (
+                <>
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                  Sending…
+                </>
+              ) : (
+                <>Request Free Consultation</>
+              )}
             </span>
             <ArrowRight
-              className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
+              className="relative z-10 h-5 w-5 transition-transform group-hover/cta:translate-x-1"
               aria-hidden
+            />
+            <span
+              aria-hidden
+              className="absolute inset-y-0 left-[-30%] w-1/3 -skew-x-12 bg-white/15 opacity-0 transition-all duration-700 group-hover/cta:left-[120%] group-hover/cta:opacity-100"
             />
           </Button>
 
-          <p className="text-xs text-muted-foreground">
+          {/* Trust strip below the CTA — three short, scannable proofs */}
+          <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-5 text-[11px] leading-snug text-muted-foreground sm:gap-3">
+            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
+              <ShieldCheck className="h-4 w-4 flex-none text-primary" aria-hidden />
+              <span>No fee unless we win</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
+              <CheckCircle2 className="h-4 w-4 flex-none text-primary" aria-hidden />
+              <span>Reply in 1 business hr</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
+              <Phone className="h-4 w-4 flex-none text-primary" aria-hidden />
+              <span>Confidential intake</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground/80">
             By submitting, you confirm you have read and agreed to our{" "}
             <a
               href="/legal/privacy"

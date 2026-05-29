@@ -53,40 +53,47 @@ function PracticeAreaCard({
   return (
     <Link
       href={`/practice-areas/${area.slug}`}
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card p-7 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_48px_-24px_rgba(20,30,80,0.25)]"
+      className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card p-7 ring-1 ring-border/40 transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_30px_60px_-25px_rgba(20,30,80,0.3)] md:p-8"
     >
-      {/* hover-only gold accent strip */}
+      {/* Always-visible top gold strip — premium plate feel */}
       <span
         aria-hidden
-        className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-gradient-to-r from-[var(--color-gold-500)] via-primary to-[var(--color-gold-500)] transition-transform duration-300 group-hover:scale-x-100"
+        className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-gold-500)] via-primary to-[var(--color-gold-500)] opacity-70 transition-opacity group-hover:opacity-100"
+      />
+      {/* Ambient gradient blob on hover — top right */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-primary/15 via-primary/5 to-transparent opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
       />
 
-      <div className="flex items-start justify-between gap-4">
-        <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-inset ring-primary/[0.12] transition-colors group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary">
+      <div className="relative flex items-start justify-between gap-4">
+        <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-inset ring-primary/15 transition-all duration-300 group-hover:scale-110 group-hover:from-primary group-hover:to-[var(--color-brand-700,#18298c)] group-hover:text-primary-foreground group-hover:shadow-[0_12px_30px_-12px_rgba(43,70,216,0.6)] group-hover:ring-primary">
           {createElement(resolveIcon(area.icon), {
-            className: "h-6 w-6",
+            className: "h-7 w-7",
             "aria-hidden": true,
           })}
         </span>
         <span
-          className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+          className="font-display text-3xl font-medium tracking-tight text-muted-foreground/30 transition-colors group-hover:text-primary/40"
           aria-hidden
         >
           {String(index + 1).padStart(2, "0")}
         </span>
       </div>
 
-      <h3 className="mt-7 font-display text-xl font-medium tracking-tight">
+      <h3 className="relative mt-8 font-display text-xl font-medium tracking-tight transition-colors group-hover:text-primary md:text-[1.35rem]">
         {area.name}
       </h3>
-      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+      <p className="relative mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
         {area.intro}
       </p>
 
-      <span className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-        <span>Read more</span>
+      <span className="relative mt-7 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+        <span className="border-b border-transparent transition-colors group-hover:border-primary/60">
+          Read more
+        </span>
         <ArrowUpRight
-          className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1"
           aria-hidden
         />
       </span>

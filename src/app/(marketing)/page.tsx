@@ -7,6 +7,7 @@ import { HomepageStats } from "@/components/marketing/homepage-stats";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { LocationsList } from "@/components/marketing/locations-list";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
+import { RecognitionStrip } from "@/components/marketing/recognition-strip";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { WhyMmg } from "@/components/marketing/why-mmg";
 import { FIRM } from "@/lib/constants";
@@ -36,6 +37,7 @@ export default async function HomePage() {
     <>
       <Hero />
       <HomepageStats />
+      <RecognitionStrip />
       <PracticeAreaGrid />
       <WhyMmg />
       <AttorneyBioCard />
