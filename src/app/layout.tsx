@@ -39,9 +39,8 @@ export const metadata: Metadata = {
     "Armenian-speaking attorney",
     FIRM.legalName,
   ],
-  icons: {
-    icon: "/favicon.ico",
-  },
+  // No explicit `icons` — Next.js App Router auto-discovers
+  // src/app/icon.png and generates favicons in every required size.
 };
 
 export const viewport: Viewport = {
