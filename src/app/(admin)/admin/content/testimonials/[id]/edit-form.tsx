@@ -4,6 +4,7 @@ import * as React from "react";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 
+import { TestimonialLivePreview } from "@/components/admin/testimonial-live-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,15 @@ export default function EditForm(props: Props) {
   return (
     <form onSubmit={onSave} className="grid gap-6">
       <input type="hidden" name="id" value={props.id} />
+
+      <TestimonialLivePreview
+        quote={quote}
+        initials={initials}
+        city={city}
+        rating={rating}
+        practiceAreaId={practice}
+        practiceAreas={props.practiceAreas}
+      />
 
       <Card>
         <CardHeader>

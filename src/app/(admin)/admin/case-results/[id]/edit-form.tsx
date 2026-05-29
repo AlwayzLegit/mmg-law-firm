@@ -3,6 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 
+import { CaseResultLivePreview } from "@/components/admin/case-result-live-preview";
 import MarkdownEditField from "@/components/admin/markdown-edit-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +67,17 @@ export default function EditForm(props: Props) {
   return (
     <form onSubmit={onSave} className="grid gap-6">
       <input type="hidden" name="id" value={props.id} />
+
+      <CaseResultLivePreview
+        headline={headline}
+        amountDisplay={amountDisplay}
+        practiceAreaId={practice}
+        countyId={county}
+        year={year}
+        summary={summary}
+        practiceAreas={props.practiceAreas}
+        counties={props.counties}
+      />
 
       <Card>
         <CardHeader>
