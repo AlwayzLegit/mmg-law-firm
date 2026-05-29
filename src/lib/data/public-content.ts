@@ -27,6 +27,11 @@ type DbTestimonial = {
   practice_areas: { name: string } | null;
 };
 
+// TODO(human): mmg-lawfirm.com has never published case results — the live
+// site sitemap covers homepage + practice areas + about/contact, and
+// /case-results 404s. Per spec hard rule #6, nothing is invented here. To
+// populate this surface, the attorney enters anonymized results at
+// /admin/case-results; rows with is_published=true flow in automatically.
 export async function getPublishedCaseResults(
   limit = 24,
 ): Promise<CaseResult[]> {
@@ -92,6 +97,12 @@ export async function getCaseResultsForPracticeArea(
   }));
 }
 
+// TODO(human): the live site links out to Yelp (yelp.com/biz/mmg-law-firm-
+// glendale) rather than republishing testimonials. Yelp blocks automated
+// fetching, and CRPC 7.1 wants attorney review on every published quote, so
+// per spec hard rule #6 no testimonials are seeded. The attorney enters
+// initials + quote + rating at /admin/content/testimonials; rows with
+// is_approved=true flow in automatically.
 export async function getApprovedTestimonials(
   limit = 24,
 ): Promise<Testimonial[]> {
