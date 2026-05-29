@@ -126,7 +126,7 @@ export default function EditForm(props: Props) {
               name="practice_area_id"
               value={practice}
               onChange={(e) => setPractice(e.currentTarget.value)}
-              className="h-9 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(20,30,80,0.04)] transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <option value="">—</option>
               {props.practiceAreas.map((p) => (
@@ -141,7 +141,7 @@ export default function EditForm(props: Props) {
               name="county_id"
               value={county}
               onChange={(e) => setCounty(e.currentTarget.value)}
-              className="h-9 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(20,30,80,0.04)] transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <option value="">—</option>
               {props.counties.map((c) => (
@@ -151,16 +151,18 @@ export default function EditForm(props: Props) {
               ))}
             </select>
           </Field>
-          <Field label="Year">
+          <Field label="Year" hint="Optional">
             <Input
               name="year"
               type="number"
               min={1980}
               max={2100}
-              value={year || ""}
-              onChange={(e) =>
-                setYear(parseInt(e.currentTarget.value, 10) || 0)
-              }
+              value={year ? String(year) : ""}
+              onChange={(e) => {
+                const v = parseInt(e.currentTarget.value, 10);
+                setYear(Number.isFinite(v) ? v : 0);
+              }}
+              placeholder={String(new Date().getFullYear())}
             />
           </Field>
         </CardContent>

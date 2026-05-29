@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CaseResultsEmptyGuide } from "@/components/admin/case-results-empty-guide";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -52,6 +53,10 @@ export default async function CaseResultsAdmin() {
             <p className="text-sm text-destructive">{error.message}</p>
           </CardContent>
         </Card>
+      ) : rows.length === 0 ? (
+        <div className="mt-6">
+          <CaseResultsEmptyGuide />
+        </div>
       ) : (
         <div className="mt-6 grid gap-6">
           <Card>

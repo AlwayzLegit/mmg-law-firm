@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 
+import { TestimonialsEmptyGuide } from "@/components/admin/testimonials-empty-guide";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -49,6 +50,10 @@ export default async function ContentTestimonialsAdmin() {
             <p className="text-sm text-destructive">{error.message}</p>
           </CardContent>
         </Card>
+      ) : rows.length === 0 ? (
+        <div className="mt-6">
+          <TestimonialsEmptyGuide />
+        </div>
       ) : (
         <div className="mt-6 grid gap-6">
           <Card>

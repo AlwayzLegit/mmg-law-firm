@@ -109,7 +109,7 @@ export default function EditForm(props: Props) {
               name="practice_area_id"
               value={practice}
               onChange={(e) => setPractice(e.currentTarget.value)}
-              className="h-9 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(20,30,80,0.04)] transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <option value="">—</option>
               {props.practiceAreas.map((p) => (
@@ -124,7 +124,7 @@ export default function EditForm(props: Props) {
               name="source"
               value={source}
               onChange={(e) => setSource(e.currentTarget.value)}
-              className="h-9 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(20,30,80,0.04)] transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <option value="">—</option>
               {TESTIMONIAL_SOURCES.map((s) => (
