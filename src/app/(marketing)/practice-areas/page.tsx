@@ -1,6 +1,10 @@
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
+import {
+  PracticeAreasHeroAside,
+  practiceAreasHeroImageExists,
+} from "@/components/marketing/practice-areas-hero-aside";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -34,6 +38,7 @@ export default function PracticeAreasPage() {
           </>
         }
         description="We focus exclusively on personal injury — and within that, on the kinds of cases we know how to win. Pick the area that matches your situation, or call us if you're not sure where it fits."
+        aside={practiceAreasHeroImageExists() ? <PracticeAreasHeroAside /> : undefined}
       />
 
       <PracticeAreaGrid

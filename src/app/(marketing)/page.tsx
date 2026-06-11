@@ -6,6 +6,7 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { Faq } from "@/components/marketing/faq";
 import { Hero } from "@/components/marketing/hero";
 import { HomepageStats } from "@/components/marketing/homepage-stats";
+import { HowWeWork } from "@/components/marketing/how-we-work";
 import { LocationsList } from "@/components/marketing/locations-list";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { RecognitionStrip } from "@/components/marketing/recognition-strip";
@@ -48,6 +49,7 @@ export default async function HomePage() {
       <RecognitionStrip />
       <PracticeAreaGrid />
       <WhyMmg />
+      <HowWeWork />
       <AttorneyBioCard />
       <CaseResultsSection results={caseResults} />
       <TestimonialsSection testimonials={testimonials} />
