@@ -150,6 +150,24 @@ export function LeadForm({
 
       setSubmitted(true);
       toast.success("We received your request — we'll be in touch shortly.");
+      // PostHog conversion event. No PII — we never send name, phone, email,
+      // or the incident description. Just the routing/attribution dimensions
+      // marketing actually needs (which page, which practice area, source).
+      if (typeof window !== "undefined") {
+        const posthog = (
+          window as unknown as {
+            posthog?: { capture: (e: string, p?: Record<string, unknown>) => void };
+          }
+        ).posthog;
+        posthog?.capture("lead_submitted", {
+          variant,
+          practice_area: values.practice_area || undefined,
+          county_slug: values.county_slug || undefined,
+          city_slug: values.city_slug || undefined,
+          preferred_contact: values.preferred_contact || undefined,
+          has_attorney: values.has_attorney ?? undefined,
+        });
+      }
       form.reset(leadFormDefaults);
     } catch {
       toast.error(

@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createMDX from "@next/mdx";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
@@ -42,4 +43,16 @@ const withMDX = createMDX({
   },
 });
 
-export default withMDX(nextConfig);
+// Sentry's build plugin uploads source maps and wires error monitoring.
+// It only does work when SENTRY_AUTH_TOKEN + SENTRY_ORG + SENTRY_PROJECT
+// are set; in their absence the wrapper is a no-op.
+export default withSentryConfig(withMDX(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  // Strip source maps from the public build output after upload. Sentry
+  // still resolves stack frames via its uploaded copy.
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+});

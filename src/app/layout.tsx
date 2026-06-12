@@ -16,6 +16,15 @@ const Toaster = dynamic(() =>
   import("@/components/ui/sonner").then((m) => m.Toaster),
 );
 
+// PostHog runs entirely client-side; lazy-loaded so the analytics chunk
+// doesn't block hydration. When NEXT_PUBLIC_POSTHOG_KEY isn't set the
+// provider passes children through unchanged.
+const PostHogProvider = dynamic(() =>
+  import("@/components/analytics/posthog-provider").then(
+    (m) => m.PostHogProvider,
+  ),
+);
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -78,7 +87,7 @@ export default function RootLayout({
 
         <SchemaGraph />
 
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
 
         <Toaster richColors closeButton />
 

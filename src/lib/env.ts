@@ -25,6 +25,18 @@ const ServerEnvSchema = z.object({
 
   NEXT_PUBLIC_GA_ID: z.string().default(""),
 
+  // Sentry — error tracking. Public DSN is fine to expose; the auth token
+  // is used at build time only by the Next.js plugin to upload source maps.
+  NEXT_PUBLIC_SENTRY_DSN: z.string().url().or(z.literal("")).default(""),
+  SENTRY_AUTH_TOKEN: z.string().default(""),
+  SENTRY_ORG: z.string().default(""),
+  SENTRY_PROJECT: z.string().default(""),
+
+  // PostHog — product analytics. Public project API key plus host (use
+  // https://us.i.posthog.com unless the project lives on the EU cloud).
+  NEXT_PUBLIC_POSTHOG_KEY: z.string().default(""),
+  NEXT_PUBLIC_POSTHOG_HOST: z.string().url().or(z.literal("")).default("https://us.i.posthog.com"),
+
   REVALIDATE_SECRET: z.string().default(""),
 });
 
