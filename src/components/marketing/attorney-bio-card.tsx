@@ -17,6 +17,11 @@ type Props = {
 
 const DEFAULT_SLUG = "mihran-ghazaryan";
 
+/** Used when an attorney profile has no headshot_url set in the DB.
+ *  The brand portrait lives in /public/brand/ and is committed to the repo,
+ *  so the homepage "Meet" section never falls back to the gradient initials. */
+const DEFAULT_HEADSHOT_URL = "/brand/attorney-portrait.webp";
+
 export async function AttorneyBioCard({
   className,
   slug = DEFAULT_SLUG,
@@ -31,6 +36,8 @@ export async function AttorneyBioCard({
     .map((p) => p[0])
     .join("")
     .slice(0, 3);
+
+  const headshotUrl = profile.headshot_url ?? DEFAULT_HEADSHOT_URL;
 
   const lawSchoolLine = profile.law_school
     ? profile.law_school_year
@@ -47,9 +54,9 @@ export async function AttorneyBioCard({
             className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/30"
           />
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
-            {profile.headshot_url ? (
+            {headshotUrl ? (
               <Image
-                src={profile.headshot_url}
+                src={headshotUrl}
                 alt={profile.headshot_alt ?? `${profile.full_name}, ${FIRM.legalName}`}
                 fill
                 className="object-cover"
