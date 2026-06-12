@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
+import { CompensationSection } from "@/components/marketing/compensation-section";
 import { CtaBand } from "@/components/marketing/cta-band";
+import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -173,6 +175,31 @@ export default async function CityPracticePage({ params }: Props) {
               </div>
             </section>
 
+            {content?.subtopics?.length ? (
+              <section className="mt-12">
+                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+                  Types of {area?.nounPlural ?? row.practice_area_name.toLowerCase()} cases we handle
+                </h2>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {content.subtopics.map((s) => (
+                    <div
+                      key={s.title}
+                      className="rounded-2xl border border-border bg-card p-5"
+                    >
+                      <h3 className="font-display text-base font-medium tracking-tight">
+                        {s.title}
+                      </h3>
+                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                        {s.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <CompensationSection nounSingular={area?.nounSingular} />
+
             {content?.process?.length ? (
               <section className="mt-12">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
@@ -219,6 +246,8 @@ export default async function CityPracticePage({ params }: Props) {
                 </p>
               </section>
             ) : null}
+
+            <DeadlinesCallout />
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
