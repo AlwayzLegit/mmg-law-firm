@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Users,
   FileText,
+  Image as ImageIcon,
   BarChart3,
   Settings,
   ScrollText,
@@ -33,6 +34,7 @@ const NAV = [
     icon: FileText,
     exact: true,
   },
+  { href: "/admin/media", label: "Media", icon: ImageIcon, exact: true },
   {
     href: "/admin/analytics",
     label: "Analytics",
