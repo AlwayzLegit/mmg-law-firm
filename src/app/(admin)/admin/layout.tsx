@@ -5,6 +5,7 @@ import {
   FileText,
   BarChart3,
   Settings,
+  ScrollText,
   LogOut,
 } from "lucide-react";
 
@@ -20,9 +21,31 @@ export const metadata = {
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/leads", label: "Leads", icon: Users, exact: false },
-  { href: "/admin/content/pages", label: "Content", icon: FileText, exact: false },
-  { href: "/admin/case-results", label: "Case Results", icon: FileText, exact: true },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: true },
+  {
+    href: "/admin/content/pages",
+    label: "Content",
+    icon: FileText,
+    exact: false,
+  },
+  {
+    href: "/admin/case-results",
+    label: "Case Results",
+    icon: FileText,
+    exact: true,
+  },
+  {
+    href: "/admin/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    exact: true,
+  },
+  {
+    href: "/admin/audit",
+    label: "Audit Log",
+    icon: ScrollText,
+    exact: true,
+    ownerOnly: true,
+  },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: true },
 ];
 
@@ -32,10 +55,13 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const { profile } = await requireAdmin();
+  const nav = NAV.filter(
+    (item) => !("ownerOnly" in item) || profile.role === "owner",
+  );
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-border bg-background">
+      <header className="border-border bg-background border-b">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <Link
@@ -44,7 +70,7 @@ export default async function AdminLayout({
             >
               {FIRM.legalName}
             </Link>
-            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium uppercase tracking-wide">
+            <span className="bg-secondary rounded-md px-2 py-0.5 text-xs font-medium tracking-wide uppercase">
               Admin
             </span>
           </div>
@@ -58,30 +84,33 @@ export default async function AdminLayout({
       </header>
 
       <div className="flex flex-1">
-        <aside className="hidden w-56 flex-none border-r border-border bg-secondary/30 lg:block">
+        <aside className="border-border bg-secondary/30 hidden w-56 flex-none border-r lg:block">
           <nav className="px-3 py-6" aria-label="Admin">
             <ul className="grid gap-1">
-              {NAV.map((item) => {
+              {nav.map((item) => {
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-background"
+                      className="hover:bg-background flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium"
                     >
-                      <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
+                      <Icon
+                        className="text-muted-foreground h-4 w-4"
+                        aria-hidden
+                      />
                       <span>{item.label}</span>
                     </Link>
                   </li>
                 );
               })}
             </ul>
-            <div className="mt-6 border-t border-border pt-6">
+            <div className="border-border mt-6 border-t pt-6">
               <Link
                 href="/"
                 target="_blank"
                 rel="noopener"
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium"
               >
                 <LogOut className="h-4 w-4" aria-hidden />
                 <span>View public site</span>
@@ -90,10 +119,7 @@ export default async function AdminLayout({
           </nav>
         </aside>
 
-        <main
-          id="main-content"
-          className="flex-1 bg-background px-6 py-8"
-        >
+        <main id="main-content" className="bg-background flex-1 px-6 py-8">
           {children}
         </main>
       </div>
