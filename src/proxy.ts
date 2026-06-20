@@ -17,10 +17,73 @@ export const config = {
   ],
 };
 
+type RedirectRule = { destination: string; permanent: boolean };
+
+// Per-instance cache of admin-managed redirects so we hit the DB at most
+// once per TTL window rather than on every request.
+let redirectCache: { map: Map<string, RedirectRule>; expires: number } | null =
+  null;
+const REDIRECT_TTL_MS = 60_000;
+
+async function getRedirects(): Promise<Map<string, RedirectRule>> {
+  if (redirectCache && redirectCache.expires > Date.now()) {
+    return redirectCache.map;
+  }
+  const map = new Map<string, RedirectRule>();
+  try {
+    const res = await fetch(
+      `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/redirects?select=source_path,destination,permanent`,
+      {
+        headers: {
+          apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          authorization: `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        cache: "no-store",
+      },
+    );
+    if (res.ok) {
+      const rows = (await res.json()) as Array<{
+        source_path: string;
+        destination: string;
+        permanent: boolean;
+      }>;
+      for (const r of rows) {
+        map.set(r.source_path, {
+          destination: r.destination,
+          permanent: r.permanent,
+        });
+      }
+    }
+  } catch {
+    // Redirects are best-effort — never block a request on this lookup.
+  }
+  redirectCache = { map, expires: Date.now() + REDIRECT_TTL_MS };
+  return map;
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   });
+
+  const { pathname } = request.nextUrl;
+
+  // Admin-managed redirects run first (cheapest path, cached). Skip the
+  // admin app and login so an errant rule can't lock anyone out.
+  if (
+    env.NEXT_PUBLIC_SUPABASE_URL &&
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/login")
+  ) {
+    const rule = (await getRedirects()).get(pathname);
+    if (rule) {
+      const dest = /^https?:\/\//.test(rule.destination)
+        ? rule.destination
+        : new URL(rule.destination, request.url).toString();
+      return NextResponse.redirect(dest, rule.permanent ? 308 : 307);
+    }
+  }
 
   // If Supabase isn't configured (typical in local dev without secrets),
   // fall through without attempting the session refresh.

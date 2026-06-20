@@ -72,7 +72,8 @@ export default async function ContentPagesAdmin() {
   });
 
   const missingAngle = lpRows.filter(
-    (p) => p.is_published && (!p.local_angle_md || p.local_angle_md.trim() === ""),
+    (p) =>
+      p.is_published && (!p.local_angle_md || p.local_angle_md.trim() === ""),
   );
 
   return (
@@ -80,7 +81,7 @@ export default async function ContentPagesAdmin() {
       <h1 className="font-display text-2xl font-medium tracking-tight">
         Content
       </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="text-muted-foreground mt-1 text-sm">
         Counties, cities, city × practice landing pages, and practice areas.
       </p>
 
@@ -125,14 +126,20 @@ export default async function ContentPagesAdmin() {
         />
       </div>
 
+      <div className="mt-6">
+        <Link
+          href="/admin/content/redirects"
+          className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium"
+        >
+          Manage URL redirects →
+        </Link>
+      </div>
+
       {(stalePages.length > 0 || missingAngle.length > 0) && (
-        <Card className="mt-8 border-warning/40 bg-warning/5">
+        <Card className="border-warning/40 bg-warning/5 mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle
-                className="h-4 w-4 text-warning"
-                aria-hidden
-              />
+              <AlertTriangle className="text-warning h-4 w-4" aria-hidden />
               Pages needing attention
             </CardTitle>
           </CardHeader>
@@ -144,10 +151,10 @@ export default async function ContentPagesAdmin() {
                   {missingAngle.length === 1 ? "" : "s"} with empty
                   local_angle_md
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Per CRPC compliance, city x practice pages must have
-                  unique locally-relevant content. RLS already hides these
-                  publicly, but they should be unpublished or filled in.
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Per CRPC compliance, city x practice pages must have unique
+                  locally-relevant content. RLS already hides these publicly,
+                  but they should be unpublished or filled in.
                 </p>
                 <ul className="mt-2 grid gap-1">
                   {missingAngle.slice(0, 10).map((p) => (
@@ -164,10 +171,10 @@ export default async function ContentPagesAdmin() {
                   {stalePages.length === 1 ? "" : "s"} not reviewed in 12+
                   months
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Spec §10.4: pages must be reviewed within 12 months to
-                  remain published. Open each row, confirm the content is
-                  current, and update last_reviewed_at.
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Spec §10.4: pages must be reviewed within 12 months to remain
+                  published. Open each row, confirm the content is current, and
+                  update last_reviewed_at.
                 </p>
                 <ul className="mt-2 grid gap-1">
                   {stalePages.slice(0, 10).map((p) => (
@@ -184,17 +191,17 @@ export default async function ContentPagesAdmin() {
         <CardHeader>
           <CardTitle className="text-base">Editor coming soon</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
+        <CardContent className="text-muted-foreground text-sm">
           {/* TODO(group-e): full inline editor with markdown preview, publish
               toggle, last-reviewed-at warning when older than 12 months. For
               now, edits go through the Supabase SQL editor or table editor. */}
           The inline page editor is on the roadmap. Until it lands, edit rows
           directly via the Supabase Studio table editor and toggle{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 text-xs">
+          <code className="bg-secondary rounded px-1 py-0.5 text-xs">
             is_published
           </code>{" "}
           there. City x practice pages additionally require non-empty{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 text-xs">
+          <code className="bg-secondary rounded px-1 py-0.5 text-xs">
             local_angle_md
           </code>{" "}
           to render publicly (RLS enforces this).
@@ -209,16 +216,20 @@ function PageRow({
 }: {
   row: {
     id: string;
-    cities: { slug: string; name: string; counties: { slug: string; name: string } };
+    cities: {
+      slug: string;
+      name: string;
+      counties: { slug: string; name: string };
+    };
     practice_areas: { slug: string; name: string };
     last_reviewed_at: string | null;
   };
 }) {
   return (
-    <li className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-xs">
+    <li className="border-border bg-card flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-xs">
       <Link
         href={`/admin/content/location-pages/${row.id}`}
-        className="truncate font-medium hover:text-primary"
+        className="hover:text-primary truncate font-medium"
       >
         {row.cities.name} · {row.practice_areas.name}
       </Link>
@@ -244,25 +255,23 @@ function RowSummary({
 }) {
   const body = (
     <CardContent className="pt-6">
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+      <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
         {title}
       </p>
-      <p className="mt-2 font-display text-3xl font-medium tracking-tight">
+      <p className="font-display mt-2 text-3xl font-medium tracking-tight">
         {published}
-        <span className="ml-1 text-base text-muted-foreground">
+        <span className="text-muted-foreground ml-1 text-base">
           / {total} published
         </span>
       </p>
-      {href ? (
-        <p className="mt-3 text-xs text-primary">Manage →</p>
-      ) : null}
+      {href ? <p className="text-primary mt-3 text-xs">Manage →</p> : null}
     </CardContent>
   );
 
   if (href) {
     return (
       <Link href={href} className="block">
-        <Card className="transition-colors hover:border-primary/30">
+        <Card className="hover:border-primary/30 transition-colors">
           {body}
         </Card>
       </Link>
