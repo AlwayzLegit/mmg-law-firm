@@ -233,3 +233,51 @@ export async function addLeadNote(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+const FollowUpInput = z.object({
+  leadId: z.string().uuid(),
+  // datetime-local value ("YYYY-MM-DDTHH:MM") or empty to clear.
+  follow_up_at: z.string().trim().optional(),
+});
+
+/** Set or clear a lead's follow-up reminder. Empty value clears it. */
+export async function setLeadFollowUp(
+  formData: FormData,
+): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = FollowUpInput.safeParse({
+    leadId: formData.get("leadId"),
+    follow_up_at: formData.get("follow_up_at") ?? undefined,
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  let iso: string | null = null;
+  if (parsed.data.follow_up_at) {
+    const when = new Date(parsed.data.follow_up_at);
+    if (Number.isNaN(when.getTime())) {
+      return { ok: false, error: "Invalid date." };
+    }
+    iso = when.toISOString();
+  }
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase
+    .from("leads")
+    .update({ follow_up_at: iso })
+    .eq("id", parsed.data.leadId);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: iso ? "follow_up_set" : "follow_up_clear",
+    ...(iso ? { diff: { follow_up_at: iso } } : {}),
+  });
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+

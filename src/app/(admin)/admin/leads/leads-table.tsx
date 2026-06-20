@@ -17,6 +17,7 @@ export type LeadRow = {
   email: string | null;
   status: string;
   created_at: string;
+  follow_up_at?: string | null;
 };
 
 type Props = {
@@ -27,6 +28,8 @@ type Props = {
 export default function LeadsTable({ rows, status }: Props) {
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [pending, startTransition] = React.useTransition();
+  // Captured once so render stays pure (no Date.now() during render).
+  const [now] = React.useState(() => Date.now());
 
   const allChecked = rows.length > 0 && selected.size === rows.length;
   const someChecked = selected.size > 0 && !allChecked;
@@ -165,6 +168,7 @@ export default function LeadsTable({ rows, status }: Props) {
               <th className="px-2 py-3 text-left">Phone</th>
               <th className="px-2 py-3 text-left">Email</th>
               <th className="px-2 py-3 text-left">Status</th>
+              <th className="px-2 py-3 text-left">Follow-up</th>
             </tr>
           </thead>
           <tbody>
@@ -218,6 +222,25 @@ export default function LeadsTable({ rows, status }: Props) {
                   >
                     {l.status}
                   </span>
+                </td>
+                <td className="px-2 py-3 align-top text-xs">
+                  {l.follow_up_at ? (
+                    <time
+                      dateTime={l.follow_up_at}
+                      className={
+                        new Date(l.follow_up_at).getTime() < now
+                          ? "font-medium text-destructive"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {new Date(l.follow_up_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </time>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </td>
               </tr>
             ))}
