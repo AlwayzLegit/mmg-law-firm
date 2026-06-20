@@ -7,7 +7,7 @@ export const metadata = {
 };
 
 type Props = {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; verify?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: Props) {
@@ -22,8 +22,8 @@ export default async function LoginPage({ searchParams }: Props) {
           Sign in to admin
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Enter your email and we&apos;ll send you a one-time sign-in link.
-          Only authorized firm staff have access.
+          Enter your email and password. A new device also needs a one-time
+          code we email you. Only authorized firm staff have access.
         </p>
 
         {params.error ? (
@@ -38,7 +38,14 @@ export default async function LoginPage({ searchParams }: Props) {
           </div>
         ) : null}
 
-        <LoginForm next={params.next} />
+        {params.verify ? (
+          <div className="mt-5 rounded-md border border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
+            This device needs to be verified. Sign in to receive a one-time
+            code.
+          </div>
+        ) : null}
+
+        <LoginForm next={params.next} verify={Boolean(params.verify)} />
       </div>
     </main>
   );

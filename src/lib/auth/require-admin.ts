@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
+import { isDeviceTrusted } from "@/lib/auth/device-trust";
 
 export type AdminProfile = {
   user_id: string;
@@ -43,6 +44,13 @@ export async function requireAdmin(): Promise<{
     // Signed in but not an admin — sign out and bounce them.
     await supabase.auth.signOut();
     redirect("/login?error=not-admin");
+  }
+
+  // Second factor: even with a valid session, an unverified device can't reach
+  // admin. The login flow emails a one-time code (or link) to verify it; the
+  // magic-link callback and code verification both mark the device trusted.
+  if (!(await isDeviceTrusted(user.id))) {
+    redirect("/login?verify=1");
   }
 
   return {

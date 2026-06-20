@@ -7,6 +7,7 @@ import { getFirmSettings } from "@/lib/data/firm-settings";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import InviteForm from "./invite-form";
+import SecurityCard from "./security-card";
 
 export default async function AdminSettingsPage() {
   const { user, profile } = await requireAdmin();
@@ -61,6 +62,10 @@ export default async function AdminSettingsPage() {
             />
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <SecurityCard />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

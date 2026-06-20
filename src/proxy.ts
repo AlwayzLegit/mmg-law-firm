@@ -72,12 +72,18 @@ export async function proxy(request: NextRequest) {
 
   // Redirect already-signed-in admins away from /login. We verify
   // admin_profiles here so a non-admin Supabase user doesn't get sent into
-  // an /admin → /login bounce loop.
-  if (request.nextUrl.pathname === "/login" && user) {
+  // an /admin → /login bounce loop. We skip this when `?verify=1` is present:
+  // that means requireAdmin() bounced an unverified device back here for the
+  // device second factor, and sending them to /admin would loop.
+  if (
+    request.nextUrl.pathname === "/login" &&
+    user &&
+    !request.nextUrl.searchParams.has("verify")
+  ) {
     const { data: adminRow } = await supabase
       .from("admin_profiles")
-      .select("id")
-      .eq("id", user.id)
+      .select("user_id")
+      .eq("user_id", user.id)
       .maybeSingle();
     if (adminRow) {
       const url = request.nextUrl.clone();

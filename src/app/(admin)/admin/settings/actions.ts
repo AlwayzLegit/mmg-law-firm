@@ -6,6 +6,8 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { siteUrl } from "@/lib/seo/canonical";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { revokeAllDevices, trustCurrentDevice } from "@/lib/auth/device-trust";
 import { logAudit } from "@/lib/audit";
 
 const InviteInput = z.object({
@@ -78,5 +80,61 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
   });
 
   revalidatePath("/admin/settings");
+  return { ok: true };
+}
+
+export type ActionResult = { ok: true } | { ok: false; error: string };
+
+const PasswordInput = z
+  .string()
+  .min(10, "Use at least 10 characters")
+  .max(72, "Passwords can be at most 72 characters");
+
+/**
+ * Set or change the signed-in admin's password. After this, the admin can use
+ * password login instead of the magic link (new devices still need the code).
+ */
+export async function setPassword(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = PasswordInput.safeParse(formData.get("password"));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const confirm = formData.get("confirm");
+  if (confirm !== parsed.data) {
+    return { ok: false, error: "Passwords don't match." };
+  }
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase.auth.updateUser({ password: parsed.data });
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  logAudit({
+    actor_id: user.id,
+    entity: "admin_profiles",
+    entity_id: user.id,
+    action: "set_password",
+  });
+
+  return { ok: true };
+}
+
+/**
+ * Forget every remembered device, then re-trust the current one. Other devices
+ * will need the email code again on their next sign-in.
+ */
+export async function signOutOtherDevices(): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+  await revokeAllDevices(user.id);
+  await trustCurrentDevice(user.id);
+  logAudit({
+    actor_id: user.id,
+    entity: "admin_profiles",
+    entity_id: user.id,
+    action: "revoke_devices",
+  });
   return { ok: true };
 }
