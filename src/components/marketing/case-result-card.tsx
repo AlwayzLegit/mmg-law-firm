@@ -68,11 +68,12 @@ type SectionProps = {
 };
 
 /**
- * Selected results section. Renders a fallback empty state when no results
- * exist — Group D will replace `results` with rows from Postgres. Per spec
- * §17, we never invent case results.
+ * Selected results section. Hidden entirely when there are no published
+ * results — we never show an empty placeholder on the public site. Per
+ * spec §17, we never invent case results.
  */
 export function CaseResultsSection({ results, className }: SectionProps) {
+  if (results.length === 0) return null;
   return (
     <section className={cn("container-page py-20 md:py-28", className)}>
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -95,30 +96,11 @@ export function CaseResultsSection({ results, className }: SectionProps) {
         </Link>
       </div>
 
-      {results.length === 0 ? (
-        <div className="mt-12 rounded-2xl border border-dashed border-border bg-secondary/30 p-10 text-center md:p-12">
-          <p className="font-display text-xl font-medium tracking-tight md:text-2xl">
-            Examples available on request.
-          </p>
-          <p className="mx-auto mt-3 max-w-prose text-muted-foreground">
-            For anonymized examples in matters similar to yours, call us — or
-            see how we approach each kind of case on the{" "}
-            <Link
-              href="/practice-areas"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              practice-area pages
-            </Link>
-            .
-          </p>
-        </div>
-      ) : (
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((r) => (
-            <CaseResultCard key={r.id} result={r} />
-          ))}
-        </div>
-      )}
+      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {results.map((r) => (
+          <CaseResultCard key={r.id} result={r} />
+        ))}
+      </div>
 
       <p className="mt-10 max-w-3xl text-xs leading-relaxed text-muted-foreground">
         {DISCLAIMERS.results}

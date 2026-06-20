@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import { CaseResultsFilterable } from "@/components/marketing/case-results-filterable";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -16,6 +18,9 @@ export const revalidate = 86400;
 
 export default async function CaseResultsPage() {
   const results = await getPublishedCaseResults(120);
+  // No published results → no page. The nav link and sitemap entry are
+  // suppressed in tandem, so this is only reachable by a direct URL.
+  if (results.length === 0) notFound();
   return (
     <>
       <BreadcrumbJsonLd

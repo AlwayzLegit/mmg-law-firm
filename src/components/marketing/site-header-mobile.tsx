@@ -15,14 +15,17 @@ import {
 import { FIRM } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-import { PRIMARY_NAV } from "./nav-items";
+import type { NavItem } from "./nav-items";
 
 /**
  * Client island for the mobile menu sheet. Server `SiteHeader` renders
  * everything else statically; this is the only piece that actually needs
  * client interactivity (open/close state + portal-rendered side panel).
+ *
+ * `items` is the already-filtered nav from the server header, so empty
+ * content surfaces (e.g. Case Results, Blog) don't appear here either.
  */
-export function SiteHeaderMobile() {
+export function SiteHeaderMobile({ items }: { items: readonly NavItem[] }) {
   const [open, setOpen] = React.useState(false);
   const closeMenu = React.useCallback(() => setOpen(false), []);
 
@@ -43,7 +46,7 @@ export function SiteHeaderMobile() {
         </SheetHeader>
         <nav aria-label="Mobile primary" className="px-4 pb-6">
           <ul className="grid gap-1">
-            {PRIMARY_NAV.map((item) => (
+            {items.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
