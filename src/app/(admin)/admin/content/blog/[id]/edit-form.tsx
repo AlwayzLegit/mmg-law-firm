@@ -5,6 +5,7 @@ import TextareaAutosize from "react-textarea-autosize";
 import { toast } from "sonner";
 
 import MarkdownEditField from "@/components/admin/markdown-edit-field";
+import SeoPreview from "@/components/admin/seo-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -139,7 +140,7 @@ export default function EditForm(props: Props) {
               maxLength={400}
               value={excerpt}
               onChange={(e) => setExcerpt(e.currentTarget.value)}
-              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
+              className="border-input bg-background focus:ring-ring w-full resize-none rounded-md border px-3 py-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
             />
           </Field>
           <Field
@@ -191,8 +192,24 @@ export default function EditForm(props: Props) {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Search &amp; social preview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SeoPreview
+            path={`/blog/${slug || "your-post"}`}
+            title={title}
+            description={meta || excerpt}
+            imageUrl={heroUrl || undefined}
+          />
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {dirty ? "You have unsaved changes." : "All changes saved."}
         </p>
         <Button type="submit" disabled={pending || !dirty}>
@@ -214,11 +231,11 @@ function Field({
 }) {
   return (
     <div className="grid gap-1.5">
-      <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+      <span className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
         {label}
       </span>
       {children}
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
     </div>
   );
 }
