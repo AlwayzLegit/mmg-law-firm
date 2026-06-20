@@ -35,9 +35,17 @@ const ServerEnvSchema = z.object({
   // PostHog — product analytics. Public project API key plus host (use
   // https://us.i.posthog.com unless the project lives on the EU cloud).
   NEXT_PUBLIC_POSTHOG_KEY: z.string().default(""),
-  NEXT_PUBLIC_POSTHOG_HOST: z.string().url().or(z.literal("")).default("https://us.i.posthog.com"),
+  NEXT_PUBLIC_POSTHOG_HOST: z
+    .string()
+    .url()
+    .or(z.literal(""))
+    .default("https://us.i.posthog.com"),
 
   REVALIDATE_SECRET: z.string().default(""),
+
+  // Admin API bearer token for programmatic access (e.g. posting blogs from
+  // an external tool). Secret. When unset, /api/admin/* returns 503.
+  ADMIN_API_KEY: z.string().default(""),
 });
 
 const REQUIRED_IN_PROD: ReadonlyArray<keyof z.infer<typeof ServerEnvSchema>> = [
@@ -73,7 +81,9 @@ function loadEnv() {
     // rather than a hard 500 — which matters most during initial deploy
     // when env vars are still being filled in. Each call site that needs
     // a specific var still throws at the point of use with a clear error.
-    console.warn(`${note} (using fallbacks; set in Vercel for full functionality)`);
+    console.warn(
+      `${note} (using fallbacks; set in Vercel for full functionality)`,
+    );
   }
 
   return parsed.data;
