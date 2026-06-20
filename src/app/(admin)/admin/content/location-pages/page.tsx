@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import CreateRow from "./create-row";
+import LocationPagesTable from "./location-pages-table";
 
 const STALE_AFTER_DAYS = 365;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -70,6 +70,17 @@ export default async function LocationPagesIndex() {
     );
   };
 
+  const tableRows = rows.map((r) => ({
+    id: r.id,
+    href: `/admin/content/location-pages/${r.id}`,
+    title: `${r.cities.name} · ${r.practice_areas.name}`,
+    path: `/${r.cities.counties.slug}/${r.cities.slug}/${r.practice_areas.slug}`,
+    hasAngle: Boolean(r.local_angle_md && r.local_angle_md.trim().length > 0),
+    isPublished: r.is_published,
+    lastReviewed: r.last_reviewed_at,
+    isStale: stale(r),
+  }));
+
   return (
     <div>
       <Link
@@ -108,85 +119,7 @@ export default async function LocationPagesIndex() {
               create your first draft.
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="px-2 py-3 text-left">Page</th>
-                    <th className="px-2 py-3 text-left">Local angle</th>
-                    <th className="px-2 py-3 text-left">Status</th>
-                    <th className="px-2 py-3 text-left">Last reviewed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => {
-                    const hasAngle = Boolean(
-                      r.local_angle_md && r.local_angle_md.trim().length > 0,
-                    );
-                    const isStale = stale(r);
-                    return (
-                      <tr key={r.id} className="border-b border-border/60">
-                        <td className="px-2 py-3 align-top">
-                          <Link
-                            href={`/admin/content/location-pages/${r.id}`}
-                            className="font-medium hover:text-primary"
-                          >
-                            {r.cities.name} · {r.practice_areas.name}
-                          </Link>
-                          <p className="text-xs text-muted-foreground">
-                            /{r.cities.counties.slug}/{r.cities.slug}/
-                            {r.practice_areas.slug}
-                          </p>
-                        </td>
-                        <td className="px-2 py-3 align-top">
-                          {hasAngle ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-success">
-                              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-                              Set
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-warning">
-                              <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
-                              Empty
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-2 py-3 align-top">
-                          <span
-                            className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-                              r.is_published
-                                ? "bg-success/10 text-success"
-                                : "bg-secondary text-muted-foreground"
-                            }`}
-                          >
-                            {r.is_published ? "Published" : "Draft"}
-                          </span>
-                        </td>
-                        <td className="px-2 py-3 align-top text-xs">
-                          {r.last_reviewed_at ? (
-                            <span
-                              className={isStale ? "text-warning" : "text-muted-foreground"}
-                            >
-                              {isStale ? (
-                                <AlertTriangle
-                                  className="mr-1 inline h-3 w-3"
-                                  aria-hidden
-                                />
-                              ) : null}
-                              {new Date(r.last_reviewed_at).toLocaleDateString(
-                                "en-US",
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">Never</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <LocationPagesTable rows={tableRows} />
           )}
         </CardContent>
       </Card>

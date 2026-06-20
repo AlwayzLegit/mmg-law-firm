@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { logAudit } from "@/lib/audit";
+import { logAudit, logAuditMany } from "@/lib/audit";
 
 const CreateInput = z.object({
   city_id: z.string().uuid(),
@@ -227,6 +227,96 @@ export async function togglePublish(
   revalidatePath("/admin/content/pages");
 
   return { ok: true };
+}
+
+const BulkPublishInput = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(200),
+  is_published: z.boolean(),
+});
+
+export type BulkResult =
+  | { ok: true; updated: number; skipped: number }
+  | { ok: false; error: string };
+
+/**
+ * Bulk publish / unpublish location pages. Publishing skips any row whose
+ * local_angle_md is empty (spec §17 #1) and reports the skip count rather
+ * than failing the whole batch. Stamps last_reviewed_at on publish and
+ * revalidates each affected public path.
+ */
+export async function bulkSetLocationPagePublished(
+  formData: FormData,
+): Promise<BulkResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = BulkPublishInput.safeParse({
+    ids: formData.getAll("ids").map(String).filter(Boolean),
+    is_published: formData.get("is_published") === "true",
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+  const { data, error: fetchErr } = await supabase
+    .from("location_pages")
+    .select(
+      `id, local_angle_md, cities!inner(slug, counties!inner(slug)), practice_areas!inner(slug)`,
+    )
+    .in("id", parsed.data.ids);
+  if (fetchErr) return { ok: false, error: fetchErr.message };
+
+  const all = (data ?? []) as unknown as Array<{
+    id: string;
+    local_angle_md: string | null;
+    cities: { slug: string; counties: { slug: string } };
+    practice_areas: { slug: string };
+  }>;
+
+  const targets = parsed.data.is_published
+    ? all.filter((r) => r.local_angle_md && r.local_angle_md.trim() !== "")
+    : all;
+  const skipped = all.length - targets.length;
+
+  if (targets.length === 0) {
+    return {
+      ok: false,
+      error: parsed.data.is_published
+        ? "None of the selected pages have a local angle yet — add content before publishing."
+        : "Nothing to update.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("location_pages")
+    .update({
+      is_published: parsed.data.is_published,
+      ...(parsed.data.is_published
+        ? { last_reviewed_at: new Date().toISOString() }
+        : {}),
+    })
+    .in(
+      "id",
+      targets.map((r) => r.id),
+    );
+  if (error) return { ok: false, error: error.message };
+
+  logAuditMany(
+    targets.map((r) => ({
+      actor_id: user.id,
+      entity: "location_pages",
+      entity_id: r.id,
+      action: parsed.data.is_published ? "bulk_publish" : "bulk_unpublish",
+    })),
+  );
+
+  revalidatePath("/admin/content/location-pages");
+  revalidatePath("/admin/content/pages");
+  for (const r of targets) {
+    revalidatePath(
+      `/locations/${r.cities.counties.slug}/${r.cities.slug}/${r.practice_areas.slug}`,
+    );
+  }
+
+  return { ok: true, updated: targets.length, skipped };
 }
 
 /** Touch last_reviewed_at to right now without changing any content. Used
