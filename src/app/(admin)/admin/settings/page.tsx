@@ -6,6 +6,7 @@ import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { getFirmSettings } from "@/lib/data/firm-settings";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import AdminRowActions from "./admin-row-actions";
 import InviteForm from "./invite-form";
 import SecurityCard from "./security-card";
 
@@ -90,9 +91,17 @@ export default async function AdminSettingsPage() {
                         {new Date(a.created_at).toLocaleDateString("en-US")}
                       </p>
                     </div>
-                    <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium capitalize">
-                      {a.role}
-                    </span>
+                    {profile.role === "owner" ? (
+                      <AdminRowActions
+                        userId={a.user_id}
+                        role={a.role}
+                        isSelf={a.user_id === user.id}
+                      />
+                    ) : (
+                      <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium capitalize">
+                        {a.role}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
