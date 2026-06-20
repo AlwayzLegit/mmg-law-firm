@@ -14,31 +14,43 @@ export default async function AdminDashboardPage() {
   const since7d = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
   const since30d = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [{ count: leads24h }, { count: leads7d }, signed30, total30, recent] =
-    await Promise.all([
-      supabase
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", since24h),
-      supabase
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", since7d),
-      supabase
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "signed")
-        .gte("created_at", since30d),
-      supabase
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", since30d),
-      supabase
-        .from("leads")
-        .select("id, full_name, phone, county_id, status, created_at")
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+  const [
+    { count: leads24h },
+    { count: leads7d },
+    signed30,
+    total30,
+    { count: dueCount },
+    recent,
+  ] = await Promise.all([
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since24h),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since7d),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "signed")
+      .gte("created_at", since30d),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since30d),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .not("follow_up_at", "is", null)
+      .lte("follow_up_at", new Date(now).toISOString())
+      .not("status", "in", "(signed,rejected,spam)"),
+    supabase
+      .from("leads")
+      .select("id, full_name, phone, county_id, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
 
   const conversion =
     total30.count && total30.count > 0
@@ -67,22 +79,34 @@ export default async function AdminDashboardPage() {
         />
       </div>
 
+      {dueCount && dueCount > 0 ? (
+        <Link
+          href="/admin/leads?due=1"
+          className="border-primary/30 bg-primary/5 hover:bg-primary/10 mt-6 flex items-center justify-between gap-4 rounded-lg border px-4 py-3 text-sm transition-colors"
+        >
+          <span className="text-primary font-medium">
+            {dueCount} follow-up{dueCount === 1 ? "" : "s"} due
+          </span>
+          <span className="text-muted-foreground text-xs">Review now →</span>
+        </Link>
+      ) : null}
+
       <Card className="mt-10">
         <CardHeader>
           <CardTitle>Recent leads</CardTitle>
         </CardHeader>
         <CardContent>
           {recent.error ? (
-            <p className="text-sm text-destructive">
+            <p className="text-destructive text-sm">
               Couldn&apos;t load leads: {recent.error.message}
             </p>
           ) : !recent.data || recent.data.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               No leads yet — once submissions come in via the public form
               they&apos;ll appear here.
             </p>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-border divide-y">
               {recent.data.map((l) => (
                 <li
                   key={l.id}
@@ -91,16 +115,16 @@ export default async function AdminDashboardPage() {
                   <div className="min-w-0">
                     <Link
                       href={`/admin/leads/${l.id}`}
-                      className="font-medium hover:text-primary"
+                      className="hover:text-primary font-medium"
                     >
                       {l.full_name}
                     </Link>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-muted-foreground truncate text-xs">
                       {l.phone}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs">
-                    <span className="rounded-md bg-secondary px-2 py-0.5 capitalize">
+                    <span className="bg-secondary rounded-md px-2 py-0.5 capitalize">
                       {l.status}
                     </span>
                     <time
@@ -137,14 +161,14 @@ function StatCard({
   return (
     <Card>
       <CardContent className="pt-6">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
           {label}
         </p>
-        <p className="mt-2 font-display text-3xl font-medium tracking-tight">
+        <p className="font-display mt-2 text-3xl font-medium tracking-tight">
           {value}
         </p>
         {sub ? (
-          <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{sub}</p>
         ) : null}
       </CardContent>
     </Card>

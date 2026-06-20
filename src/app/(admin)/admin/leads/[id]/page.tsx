@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import ConflictCheckButton from "./conflict-check";
+import FollowUpControl from "./follow-up-control";
 import NoteCompose from "./note-compose";
 import StatusControl from "./status-control";
 
@@ -174,6 +175,18 @@ export default async function LeadDetailPage({ params }: Props) {
                 leadId={lead.id}
                 currentStatus={lead.status}
                 currentReason={lead.rejection_reason}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Follow-up</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FollowUpControl
+                leadId={lead.id}
+                current={lead.follow_up_at ?? null}
               />
             </CardContent>
           </Card>
