@@ -146,10 +146,14 @@ export async function sendMagicLink(input: {
   if (!email.success) return { ok: false, error: "Enter a valid email." };
   const next = safeNext(input.next);
   const supabase = await getServerSupabase();
+  // shouldCreateUser: true so the very first sign-in (before any password is
+  // set) creates the auth user. Admin access is still gated by an
+  // admin_profiles row in requireAdmin(), so an unprivileged auth user that
+  // signs in this way can't reach /admin.
   const { error } = await supabase.auth.signInWithOtp({
     email: email.data,
     options: {
-      shouldCreateUser: false,
+      shouldCreateUser: true,
       emailRedirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });
