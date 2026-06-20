@@ -7,6 +7,11 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { generateBlogDraft, isAiConfigured } from "@/lib/ai/draft";
+
+const AI_REVIEW_BANNER =
+  "> ⚠️ **AI-generated draft — attorney review required before publishing.** " +
+  "Verify every legal statement for accuracy and CRPC §7.1 compliance, then delete this banner.\n\n";
 
 /**
  * Slug derivation: lowercase, ASCII fold, non-alphanumerics → hyphen,
@@ -137,6 +142,102 @@ export async function createBlogPostAndRedirect(
   formData: FormData,
 ): Promise<{ ok: false; error: string } | undefined> {
   const result = await createBlogPost(formData);
+  if (!result.ok) return result;
+  redirect(`/admin/content/blog/${result.id}`);
+}
+
+const DraftInput = z.object({
+  topic: z
+    .string()
+    .trim()
+    .min(8, "Describe the topic in a bit more detail.")
+    .max(400),
+});
+
+/**
+ * AI-assisted draft. Generates a first draft from a topic via Claude and saves
+ * it as an UNPUBLISHED post tagged "ai-draft", body prefixed with an
+ * attorney-review banner (spec §17 #7 — no AI content goes public without
+ * review). Returns the new id (the wrapper redirects into the editor).
+ */
+export async function draftBlogPostWithAI(
+  formData: FormData,
+): Promise<CreateOk | { ok: false; error: string }> {
+  const { user } = await requireAdmin();
+
+  if (!isAiConfigured()) {
+    return {
+      ok: false,
+      error: "AI drafting isn't configured. Set ANTHROPIC_API_KEY in Vercel.",
+    };
+  }
+
+  const parsed = DraftInput.safeParse({ topic: formData.get("topic") });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Enter a topic.",
+    };
+  }
+
+  let draft;
+  try {
+    draft = await generateBlogDraft(parsed.data.topic);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "AI drafting failed.",
+    };
+  }
+  if (!draft) {
+    return { ok: false, error: "AI drafting isn't configured." };
+  }
+
+  const supabase = await getServerSupabase();
+  const base = slugify(draft.title) || "untitled";
+  let slug = base;
+  for (let i = 2; i < 50; i++) {
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (!data) break;
+    slug = `${base}-${i}`;
+  }
+
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .insert({
+      slug,
+      title: draft.title,
+      excerpt: draft.excerpt || null,
+      meta_description: draft.meta_description || null,
+      body_md: AI_REVIEW_BANNER + draft.body_md,
+      tags: ["ai-draft"],
+      is_published: false,
+    })
+    .select("id, slug")
+    .single();
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "Couldn't save the draft." };
+  }
+
+  logAudit({
+    actor_id: user.id,
+    entity: "blog_posts",
+    entity_id: data.id,
+    action: "ai_draft",
+    diff: { slug: data.slug, topic: parsed.data.topic },
+  });
+  revalidatePath("/admin/content/blog");
+  return { ok: true, id: data.id, slug: data.slug };
+}
+
+export async function draftBlogPostWithAIAndRedirect(
+  formData: FormData,
+): Promise<{ ok: false; error: string } | undefined> {
+  const result = await draftBlogPostWithAI(formData);
   if (!result.ok) return result;
   redirect(`/admin/content/blog/${result.id}`);
 }

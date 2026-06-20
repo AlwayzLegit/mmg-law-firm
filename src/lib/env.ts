@@ -46,6 +46,10 @@ const ServerEnvSchema = z.object({
   // Admin API bearer token for programmatic access (e.g. posting blogs from
   // an external tool). Secret. When unset, /api/admin/* returns 503.
   ADMIN_API_KEY: z.string().default(""),
+
+  // Anthropic API key for AI-assisted drafting in the admin. Secret, server-
+  // only. When unset, the "Draft with AI" action is disabled.
+  ANTHROPIC_API_KEY: z.string().default(""),
 });
 
 const REQUIRED_IN_PROD: ReadonlyArray<keyof z.infer<typeof ServerEnvSchema>> = [
