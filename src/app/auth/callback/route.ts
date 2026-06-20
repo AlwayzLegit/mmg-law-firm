@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getServerSupabase } from "@/lib/supabase/server";
+import { trustCurrentDevice } from "@/lib/auth/device-trust";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,12 +27,18 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await getServerSupabase();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     url.pathname = "/login";
     url.search = "?error=auth-failed";
     return NextResponse.redirect(url);
+  }
+
+  // Clicking an emailed link proves control of the inbox, so this device is
+  // verified — remember it so the second factor isn't demanded next time.
+  if (data.user) {
+    await trustCurrentDevice(data.user.id);
   }
 
   // Clear the search params and send the user to their destination.
