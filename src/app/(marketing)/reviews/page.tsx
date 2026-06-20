@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
@@ -16,6 +18,9 @@ export const revalidate = 86400;
 
 export default async function ReviewsPage() {
   const testimonials = await getApprovedTestimonials();
+  // No approved testimonials → no page (nav link + sitemap entry are
+  // suppressed in tandem). Only reachable via a direct URL.
+  if (testimonials.length === 0) notFound();
   return (
     <>
       <BreadcrumbJsonLd

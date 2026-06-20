@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getPublishedPosts } from "@/lib/data/blog";
+import { getPublicContentFlags } from "@/lib/data/public-content";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
   getAllPublishedCities,
@@ -18,7 +19,11 @@ const STATIC_ROUTES: Array<{
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
 }> = [
   { path: "/", priority: 1.0, changeFrequency: "weekly" },
-  { path: "/attorneys/mihran-ghazaryan", priority: 0.9, changeFrequency: "monthly" },
+  {
+    path: "/attorneys/mihran-ghazaryan",
+    priority: 0.9,
+    changeFrequency: "monthly",
+  },
   { path: "/practice-areas", priority: 0.8, changeFrequency: "monthly" },
   { path: "/locations", priority: 0.8, changeFrequency: "monthly" },
   { path: "/case-results", priority: 0.6, changeFrequency: "monthly" },
@@ -34,7 +39,20 @@ const STATIC_ROUTES: Array<{
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
 
-  const entries: MetadataRoute.Sitemap = STATIC_ROUTES.map((r) => ({
+  // Don't advertise content index pages that have nothing published yet —
+  // they 404, so listing them would be a soft-404 in Search Console.
+  const flags = await getPublicContentFlags();
+  const staticRoutes = STATIC_ROUTES.filter((r) =>
+    r.path === "/case-results"
+      ? flags.hasCaseResults
+      : r.path === "/reviews"
+        ? flags.hasTestimonials
+        : r.path === "/blog"
+          ? flags.hasBlogPosts
+          : true,
+  );
+
+  const entries: MetadataRoute.Sitemap = staticRoutes.map((r) => ({
     url: canonicalUrl(r.path),
     lastModified,
     changeFrequency: r.changeFrequency,

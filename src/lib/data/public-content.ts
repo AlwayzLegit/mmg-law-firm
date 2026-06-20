@@ -4,9 +4,59 @@
  * the static build stays green during dev-without-Supabase.
  */
 
+import { cache } from "react";
+
 import type { CaseResult } from "@/components/marketing/case-result-card";
 import type { Testimonial } from "@/components/marketing/testimonial-card";
 import { getStaticSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
+
+export type PublicContentFlags = {
+  hasCaseResults: boolean;
+  hasTestimonials: boolean;
+  hasBlogPosts: boolean;
+};
+
+/**
+ * Whether each dynamic content surface has any live rows. Drives the
+ * "hide it entirely when empty" rule across the public site: sections,
+ * dedicated pages (which 404), nav links, and the sitemap all consult
+ * this so visitors never see an empty placeholder. Wrapped in React
+ * `cache` so header + footer + page share a single set of count queries
+ * per render.
+ */
+export const getPublicContentFlags = cache(
+  async (): Promise<PublicContentFlags> => {
+    if (!isSupabaseConfigured()) {
+      return {
+        hasCaseResults: false,
+        hasTestimonials: false,
+        hasBlogPosts: false,
+      };
+    }
+    const supabase = getStaticSupabase();
+    const nowIso = new Date().toISOString();
+    const [caseResults, testimonials, blog] = await Promise.all([
+      supabase
+        .from("case_results")
+        .select("id", { count: "exact", head: true })
+        .eq("is_published", true),
+      supabase
+        .from("testimonials")
+        .select("id", { count: "exact", head: true })
+        .eq("is_approved", true),
+      supabase
+        .from("blog_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("is_published", true)
+        .lte("published_at", nowIso),
+    ]);
+    return {
+      hasCaseResults: (caseResults.count ?? 0) > 0,
+      hasTestimonials: (testimonials.count ?? 0) > 0,
+      hasBlogPosts: (blog.count ?? 0) > 0,
+    };
+  },
+);
 
 type DbCaseResult = {
   id: string;
@@ -83,7 +133,10 @@ export async function getCaseResultsForPracticeArea(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn("[public-content] case-results-for-practice-area:", error.message);
+    console.warn(
+      "[public-content] case-results-for-practice-area:",
+      error.message,
+    );
     return [];
   }
   return ((data ?? []) as unknown as DbCaseResult[]).map((r) => ({

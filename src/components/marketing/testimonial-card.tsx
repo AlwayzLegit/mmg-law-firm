@@ -74,14 +74,15 @@ type SectionProps = {
 };
 
 /**
- * Testimonials section with empty state. Group E will pull from
- * Supabase `testimonials` where `is_approved=true`. Per spec §17, we never
- * invent client quotes.
+ * Testimonials section. Hidden entirely when there are no approved
+ * testimonials — we never show an empty placeholder on the public site.
+ * Per spec §17, we never invent client quotes.
  */
 export function TestimonialsSection({
   testimonials,
   className,
 }: SectionProps) {
+  if (testimonials.length === 0) return null;
   return (
     <section className={cn("border-y border-border bg-secondary/50", className)}>
       <div className="container-page py-20 md:py-28">
@@ -92,32 +93,11 @@ export function TestimonialsSection({
           </h2>
         </div>
 
-        {testimonials.length === 0 ? (
-          <div className="mt-12 rounded-2xl border border-dashed border-border bg-card p-10 text-center md:p-12">
-            <p className="font-display text-xl font-medium tracking-tight md:text-2xl">
-              See what clients are saying.
-            </p>
-            <p className="mx-auto mt-3 max-w-prose text-muted-foreground">
-              We&apos;re curating verified client quotes for this page. In
-              the meantime, public reviews are on{" "}
-              <a
-                href="https://www.yelp.com/biz/mmg-law-firm-glendale"
-                target="_blank"
-                rel="noopener"
-                className="font-medium text-primary underline-offset-4 hover:underline"
-              >
-                Yelp
-              </a>{" "}
-              and Google.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {testimonials.map((t) => (
-              <TestimonialCard key={t.id} testimonial={t} />
-            ))}
-          </div>
-        )}
+        <div className="mt-12 grid gap-4 md:grid-cols-3">
+          {testimonials.map((t) => (
+            <TestimonialCard key={t.id} testimonial={t} />
+          ))}
+        </div>
 
         <p className="mt-10 max-w-3xl text-xs leading-relaxed text-muted-foreground">
           {DISCLAIMERS.testimonial}

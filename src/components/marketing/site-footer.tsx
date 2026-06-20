@@ -4,14 +4,21 @@ import { Phone, Mail, MapPin } from "lucide-react";
 import { DISCLAIMERS, FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { getFirmSettings } from "@/lib/data/firm-settings";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
+import { getPublicContentFlags } from "@/lib/data/public-content";
 
 import { BrandMark } from "./brand-mark";
 
 const NAV_PRACTICE = [
   { label: "Car Accidents", href: "/practice-areas/car-accidents" },
   { label: "Truck Accidents", href: "/practice-areas/truck-accidents" },
-  { label: "Motorcycle Accidents", href: "/practice-areas/motorcycle-accidents" },
-  { label: "Pedestrian Accidents", href: "/practice-areas/pedestrian-accidents" },
+  {
+    label: "Motorcycle Accidents",
+    href: "/practice-areas/motorcycle-accidents",
+  },
+  {
+    label: "Pedestrian Accidents",
+    href: "/practice-areas/pedestrian-accidents",
+  },
   { label: "Bicycle Accidents", href: "/practice-areas/bicycle-accidents" },
   { label: "Slip and Fall", href: "/practice-areas/slip-and-fall" },
   { label: "Wrongful Death", href: "/practice-areas/wrongful-death" },
@@ -55,10 +62,23 @@ const NAV_CITIES = TIER_1_LOCATIONS.filter((c) =>
 }));
 
 export async function SiteFooter() {
-  const settings = await getFirmSettings();
+  const [settings, flags] = await Promise.all([
+    getFirmSettings(),
+    getPublicContentFlags(),
+  ]);
   const founded = settings.founded_year;
+  // Hide links to content surfaces with nothing published yet.
+  const firmNav = NAV_FIRM.filter((item) =>
+    item.href === "/case-results"
+      ? flags.hasCaseResults
+      : item.href === "/reviews"
+        ? flags.hasTestimonials
+        : item.href === "/blog"
+          ? flags.hasBlogPosts
+          : true,
+  );
   return (
-    <footer className="relative isolate overflow-hidden border-t border-border bg-[var(--color-brand-900)] text-sm text-primary-foreground/85">
+    <footer className="border-border text-primary-foreground/85 relative isolate overflow-hidden border-t bg-[var(--color-brand-900)] text-sm">
       {/* gold accent rail */}
       <div
         aria-hidden
@@ -80,7 +100,7 @@ export async function SiteFooter() {
           <div className="lg:col-span-1">
             <BrandMark inverted />
 
-            <p className="mt-5 text-primary-foreground/70">
+            <p className="text-primary-foreground/70 mt-5">
               California personal-injury counsel. Free consultation. No fee
               unless we win your case.
             </p>
@@ -91,7 +111,7 @@ export async function SiteFooter() {
                   className="mt-0.5 h-4 w-4 flex-none text-[var(--color-gold-500)]"
                   aria-hidden
                 />
-                <address className="not-italic text-primary-foreground/90">
+                <address className="text-primary-foreground/90 not-italic">
                   {FIRM_FULL_ADDRESS}
                 </address>
               </li>
@@ -102,7 +122,7 @@ export async function SiteFooter() {
                 />
                 <a
                   href={`tel:${FIRM.phoneTel}`}
-                  className="font-medium text-primary-foreground hover:text-[var(--color-gold-300)]"
+                  className="text-primary-foreground font-medium hover:text-[var(--color-gold-300)]"
                 >
                   {FIRM.phone}
                 </a>
@@ -121,20 +141,20 @@ export async function SiteFooter() {
               </li>
             </ul>
 
-            <p className="mt-4 text-xs text-primary-foreground/55">
+            <p className="text-primary-foreground/55 mt-4 text-xs">
               {FIRM.hours}
             </p>
           </div>
 
           <FooterColumn title="Practice Areas" items={NAV_PRACTICE} />
           <FooterColumn title="Cities We Serve" items={NAV_CITIES} />
-          <FooterColumn title="Firm" items={NAV_FIRM} />
+          <FooterColumn title="Firm" items={firmNav} />
           <FooterColumn title="Legal" items={NAV_LEGAL} />
         </div>
 
-        <div className="mt-12 grid gap-3 border-t border-primary-foreground/15 pt-8 text-xs leading-relaxed text-primary-foreground/65">
+        <div className="border-primary-foreground/15 text-primary-foreground/65 mt-12 grid gap-3 border-t pt-8 text-xs leading-relaxed">
           <p>
-            <span className="font-semibold uppercase tracking-wide text-[var(--color-gold-300)]">
+            <span className="font-semibold tracking-wide text-[var(--color-gold-300)] uppercase">
               Attorney Advertising.
             </span>{" "}
             {DISCLAIMERS.advertising} The attorney responsible for this
@@ -146,7 +166,7 @@ export async function SiteFooter() {
           <p>{DISCLAIMERS.testimonial}</p>
         </div>
 
-        <div className="mt-10 flex flex-col items-start justify-between gap-2 text-xs text-primary-foreground/55 sm:flex-row sm:items-center">
+        <div className="text-primary-foreground/55 mt-10 flex flex-col items-start justify-between gap-2 text-xs sm:flex-row sm:items-center">
           <p>
             &copy; {new Date().getFullYear()} {FIRM.legalName}.
             {founded ? ` Established ${founded}.` : ""} All rights reserved.
@@ -167,7 +187,7 @@ function FooterColumn({
 }) {
   return (
     <nav aria-label={title}>
-      <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-gold-300)]">
+      <h3 className="text-xs font-semibold tracking-[0.18em] text-[var(--color-gold-300)] uppercase">
         {title}
       </h3>
       <ul className="mt-4 space-y-2.5">
