@@ -41,7 +41,7 @@ export default async function LocationsHubPage() {
 
       <section className="container-page py-16 md:py-20">
         {Object.keys(grouped).length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-10 text-center">
+          <div className="border-border bg-secondary/30 rounded-2xl border border-dashed p-10 text-center">
             <p className="text-muted-foreground">
               Counties will appear here once they&apos;re published in admin.
             </p>
@@ -50,7 +50,7 @@ export default async function LocationsHubPage() {
           <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
             {Object.entries(grouped).map(([region, items]) => (
               <div key={region}>
-                <h2 className="font-display text-base font-medium uppercase tracking-wide text-muted-foreground">
+                <h2 className="font-display text-muted-foreground text-base font-medium tracking-wide uppercase">
                   {region}
                 </h2>
                 <ul className="mt-4 space-y-2">
@@ -58,7 +58,7 @@ export default async function LocationsHubPage() {
                     <li key={c.slug}>
                       <Link
                         href={`/locations/${c.slug}`}
-                        className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-secondary hover:text-primary"
+                        className="hover:bg-secondary hover:text-primary focus-visible:ring-ring block rounded-md px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
                       >
                         {c.name}
                       </Link>
