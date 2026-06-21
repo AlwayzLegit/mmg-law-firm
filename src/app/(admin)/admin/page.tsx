@@ -1,10 +1,16 @@
 import Link from "next/link";
 
+import LeadsChart from "@/components/admin/leads-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getLeadAnalytics } from "@/lib/data/lead-analytics";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 export default async function AdminDashboardPage() {
   const supabase = await getServerSupabase();
+
+  // 14-day trend for the at-a-glance sparkline (reuses the analytics
+  // aggregator so the dashboard and Analytics page stay consistent).
+  const analytics = await getLeadAnalytics(supabase, 14);
 
   // Lightweight queries — admin role bypasses public-only RLS via the
   // is_admin() policy on leads.
@@ -91,7 +97,22 @@ export default async function AdminDashboardPage() {
         </Link>
       ) : null}
 
-      <Card className="mt-10">
+      <Card className="mt-6">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3">
+          <CardTitle className="text-base">Leads — last 14 days</CardTitle>
+          <Link
+            href="/admin/analytics"
+            className="text-muted-foreground hover:text-primary text-xs"
+          >
+            Full analytics →
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <LeadsChart data={analytics.daily} />
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle>Recent leads</CardTitle>
         </CardHeader>
