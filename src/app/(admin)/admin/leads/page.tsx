@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Download,
   KanbanSquare,
+  PlayCircle,
   Search,
   Tag,
 } from "lucide-react";
@@ -231,6 +232,16 @@ export default async function LeadsPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Plain anchor: /admin/leads/next is a redirecting route handler,
+              not a page, so we want a full navigation (not RSC prefetch). */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a
+            href="/admin/leads/next"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium"
+          >
+            <PlayCircle className="h-3.5 w-3.5" aria-hidden />
+            Work next
+          </a>
           <Link
             href="/admin/leads/board"
             className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
