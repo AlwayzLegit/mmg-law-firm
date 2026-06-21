@@ -5,6 +5,12 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   reactStrictMode: true,
+  // Tree-shake the admin charting lib's barrel so analytics/dashboard route
+  // bundles only pull the chart pieces they use. (lucide-react is already in
+  // Next's built-in optimized list.)
+  experimental: {
+    optimizePackageImports: ["recharts"],
+  },
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
     // and Supabase-hosted media weight substantially for supporting browsers.
