@@ -5,6 +5,7 @@ import {
   Download,
   KanbanSquare,
   Search,
+  Tag,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -232,6 +233,13 @@ export default async function LeadsPage({
           >
             <KanbanSquare className="h-3.5 w-3.5" aria-hidden />
             Board view
+          </Link>
+          <Link
+            href="/admin/leads/tags"
+            className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+          >
+            <Tag className="h-3.5 w-3.5" aria-hidden />
+            Manage tags
           </Link>
           <a
             href={exportHref}
