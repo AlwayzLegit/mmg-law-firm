@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 
+import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
+import { ATTORNEY_IMAGES } from "@/lib/media";
 import { getApprovedTestimonials } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildReviewsSchema } from "@/lib/seo/schema";
@@ -45,6 +47,13 @@ export default async function ReviewsPage() {
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reviews" }]}
         title="What clients say."
         description={DISCLAIMERS.testimonial}
+        aside={
+          <AttorneyHeroAside
+            image={ATTORNEY_IMAGES.reviews}
+            alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
+            priority
+          />
+        }
       />
 
       <TestimonialsSection testimonials={testimonials} />

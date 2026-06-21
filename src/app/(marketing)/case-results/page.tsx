@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 
+import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CaseResultsFilterable } from "@/components/marketing/case-results-filterable";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
+import { ATTORNEY_IMAGES } from "@/lib/media";
 import { getPublishedCaseResults } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -34,15 +36,20 @@ export default async function CaseResultsPage() {
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Case Results" }]}
         title="Selected recent recoveries."
         description={
-          <>
-            Anonymized to protect client privacy. {DISCLAIMERS.results}
-          </>
+          <>Anonymized to protect client privacy. {DISCLAIMERS.results}</>
+        }
+        aside={
+          <AttorneyHeroAside
+            image={ATTORNEY_IMAGES.caseResults}
+            alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
+            priority
+          />
         }
       />
 
       <CaseResultsFilterable results={results} />
 
-      <p className="container-page pb-12 text-xs leading-relaxed text-muted-foreground">
+      <p className="container-page text-muted-foreground pb-12 text-xs leading-relaxed">
         {DISCLAIMERS.results}
       </p>
 
