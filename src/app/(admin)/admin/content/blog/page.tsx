@@ -2,17 +2,10 @@ import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { isAiConfigured } from "@/lib/ai/draft";
 
 import NewPostForm from "./new-post-form";
-import AiDraftForm from "./ai-draft-form";
-
-// The AI draft call to Claude Opus can take 10–30s; give the route headroom
-// beyond the default serverless timeout.
-export const maxDuration = 60;
 
 export default async function ContentBlogAdmin() {
-  const aiEnabled = isAiConfigured();
   const supabase = await getServerSupabase();
   const { data, error } = await supabase
     .from("blog_posts")
@@ -45,10 +38,7 @@ export default async function ContentBlogAdmin() {
             stay hidden until that time.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {aiEnabled ? <AiDraftForm /> : null}
-          <NewPostForm />
-        </div>
+        <NewPostForm />
       </div>
 
       <Card className="mt-6">

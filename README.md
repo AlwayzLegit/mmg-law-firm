@@ -86,11 +86,10 @@ Step-by-step deploy walkthrough: [`DEPLOY.md`](./DEPLOY.md).
 
 These are not required for the site to run, but each unlocks a feature when set in Vercel. All degrade gracefully when unset.
 
-| Var                 | Enables                                                                                                                                                                | When unset                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `ANTHROPIC_API_KEY` | "Draft with AI" in the admin blog editor (Claude). Drafts save unpublished + tagged `ai-draft` with an attorney-review banner.                                         | Button is hidden; the action returns a clear error. |
-| `CRON_SECRET`       | Weekly lead-digest email (`/api/cron/weekly-digest`, scheduled in `vercel.json` for Mondays 14:00 UTC). Vercel Cron sends it as `Authorization: Bearer <CRON_SECRET>`. | Endpoint returns `503 cron-not-configured`.         |
-| `ADMIN_API_KEY`     | Programmatic admin REST API at `/api/admin/*` (full blog CRUD), bearer-authenticated.                                                                                  | Routes return `503`.                                |
+| Var             | Enables                                                                                                                                                                | When unset                                  |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `CRON_SECRET`   | Weekly lead-digest email (`/api/cron/weekly-digest`, scheduled in `vercel.json` for Mondays 14:00 UTC). Vercel Cron sends it as `Authorization: Bearer <CRON_SECRET>`. | Endpoint returns `503 cron-not-configured`. |
+| `ADMIN_API_KEY` | Programmatic admin REST API at `/api/admin/*` (full blog CRUD), bearer-authenticated.                                                                                  | Routes return `503`.                        |
 
 Manually test the digest after setting `CRON_SECRET` (requires `LEAD_NOTIFY_EMAIL` + Resend, already configured):
 

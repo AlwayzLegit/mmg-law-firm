@@ -47,10 +47,6 @@ const ServerEnvSchema = z.object({
   // an external tool). Secret. When unset, /api/admin/* returns 503.
   ADMIN_API_KEY: z.string().default(""),
 
-  // Anthropic API key for AI-assisted drafting in the admin. Secret, server-
-  // only. When unset, the "Draft with AI" action is disabled.
-  ANTHROPIC_API_KEY: z.string().default(""),
-
   // Shared secret for cron-triggered routes (weekly digest). Vercel Cron
   // sends it as "Authorization: Bearer <CRON_SECRET>". When unset, the cron
   // endpoints return 401 so they can't be hit anonymously.
