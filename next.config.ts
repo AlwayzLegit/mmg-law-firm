@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   reactStrictMode: true,
   images: {
+    // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
+    // and Supabase-hosted media weight substantially for supporting browsers.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
