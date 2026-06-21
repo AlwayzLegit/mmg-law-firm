@@ -213,6 +213,59 @@ export async function createSavedView(
   return { ok: true };
 }
 
+const BulkTagInput = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(200),
+  tag: z.string().trim().min(1).max(30),
+  op: z.enum(["add", "remove"]),
+});
+
+/** Add or remove a single tag across the selected leads. */
+export async function bulkTag(formData: FormData): Promise<BulkResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = BulkTagInput.safeParse({
+    ids: parseIds(formData),
+    tag: formData.get("tag"),
+    op: formData.get("op"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const tag = normalizeTags([parsed.data.tag])[0];
+  if (!tag) return { ok: false, error: "Invalid tag" };
+
+  const supabase = await getServerSupabase();
+  const { data: rows, error } = await supabase
+    .from("leads")
+    .select("id, tags")
+    .in("id", parsed.data.ids);
+  if (error) return { ok: false, error: error.message };
+
+  let updated = 0;
+  for (const row of rows ?? []) {
+    const cur = (row.tags as string[] | null) ?? [];
+    const next =
+      parsed.data.op === "add"
+        ? normalizeTags([...cur, tag])
+        : cur.filter((t) => t !== tag);
+    const { error: upErr } = await supabase
+      .from("leads")
+      .update({ tags: next })
+      .eq("id", row.id);
+    if (!upErr) updated += 1;
+  }
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: null,
+    action: parsed.data.op === "add" ? "bulk_tag_add" : "bulk_tag_remove",
+    diff: { tag, leads: updated },
+  });
+
+  revalidatePath("/admin/leads");
+  return { ok: true, updated };
+}
+
 // -------------------------------------------------------------------
 // Tag management — rename / merge / delete a tag across all leads.
 // -------------------------------------------------------------------
