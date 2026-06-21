@@ -113,6 +113,53 @@ export function buildFaqPage(items: FaqItem[]): GraphNode {
   };
 }
 
+type ReviewItem = {
+  id: string;
+  initials: string;
+  quote: string;
+  rating?: number;
+};
+
+function clampRating(n: number): number {
+  return Math.max(1, Math.min(5, Math.round(n)));
+}
+
+/**
+ * AggregateRating + Review schema for the /reviews page, attached to the
+ * firm's LegalService node (same @id) so Google can associate the stars with
+ * the business. Returns null when there are no approved reviews — we never
+ * emit an empty or invented rating (CRPC §7.1 / spec hard rule #6).
+ */
+export function buildReviewsSchema(reviews: ReviewItem[]): GraphNode | null {
+  if (reviews.length === 0) return null;
+  const ratings = reviews.map((r) => clampRating(r.rating ?? 5));
+  const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+  return {
+    "@context": "https://schema.org",
+    "@type": "LegalService",
+    "@id": FIRM_ID,
+    name: FIRM.legalName,
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: Math.round(avg * 10) / 10,
+      reviewCount: reviews.length,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    review: reviews.map((r) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: r.initials },
+      reviewBody: r.quote,
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: clampRating(r.rating ?? 5),
+        bestRating: 5,
+        worstRating: 1,
+      },
+    })),
+  };
+}
+
 type ArticleOpts = {
   title: string;
   description: string;

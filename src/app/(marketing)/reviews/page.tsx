@@ -7,6 +7,8 @@ import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
 import { getApprovedTestimonials } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
+import { buildReviewsSchema } from "@/lib/seo/schema";
+import { jsonLd } from "@/lib/seo/json-ld";
 
 export const metadata = buildMetadata({
   title: "Client Reviews",
@@ -21,6 +23,7 @@ export default async function ReviewsPage() {
   // No approved testimonials → no page (nav link + sitemap entry are
   // suppressed in tandem). Only reachable via a direct URL.
   if (testimonials.length === 0) notFound();
+  const reviewsSchema = buildReviewsSchema(testimonials);
   return (
     <>
       <BreadcrumbJsonLd
@@ -29,6 +32,13 @@ export default async function ReviewsPage() {
           { name: "Reviews", path: "/reviews" },
         ]}
       />
+      {reviewsSchema ? (
+        <script
+          type="application/ld+json"
+          id="reviews-jsonld"
+          dangerouslySetInnerHTML={{ __html: jsonLd(reviewsSchema) }}
+        />
+      ) : null}
 
       <PageHero
         eyebrow="Client experiences"
