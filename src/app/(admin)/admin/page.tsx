@@ -101,7 +101,7 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "unassigned new lead(s)",
-      href: "/admin/leads?status=new",
+      href: "/admin/leads?status=new&assignee=unassigned",
       count: unassignedNew ?? 0,
     },
     {

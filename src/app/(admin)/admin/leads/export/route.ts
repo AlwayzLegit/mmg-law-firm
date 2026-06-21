@@ -59,6 +59,7 @@ export async function GET(req: Request): Promise<Response> {
   const source = sanitize(url.searchParams.get("source") ?? "");
   const paSlug = sanitize(url.searchParams.get("pa") ?? "");
   const countySlug = sanitize(url.searchParams.get("county") ?? "");
+  const assignee = url.searchParams.get("assignee") ?? "all";
 
   const supabase = await getServerSupabase();
 
@@ -103,6 +104,8 @@ export async function GET(req: Request): Promise<Response> {
   if (source) query = query.eq("utm_source", source);
   if (paId) query = query.eq("practice_area_id", paId);
   if (countyId) query = query.eq("county_id", countyId);
+  if (assignee === "me") query = query.eq("assigned_to", user.id);
+  else if (assignee === "unassigned") query = query.is("assigned_to", null);
 
   if (q) {
     query = query.or(
