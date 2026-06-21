@@ -42,9 +42,7 @@ export const LeadSchema = z
         return parsed.number as string; // E.164
       }),
     preferred_contact: PreferredContact.default("phone"),
-    practice_area: z
-      .enum(PRACTICE_SLUGS as [string, ...string[]])
-      .optional(),
+    practice_area: z.enum(PRACTICE_SLUGS as [string, ...string[]]).optional(),
     county_slug: z.string().trim().max(80).optional(),
     city_slug: z.string().trim().max(80).optional(),
     incident_date: z.preprocess(
@@ -69,6 +67,11 @@ export const LeadSchema = z
     consent_contact: z.literal(true, {
       message: "We need your consent before we can contact you.",
     }),
+    // Honeypot. Real users never see or fill this; bots that auto-fill every
+    // field will. The server routes any non-empty value to status='spam'
+    // without notifying. Kept lax here (optional) so a filled honeypot still
+    // parses — we want to silently accept-and-flag, not 400 the bot.
+    company: z.string().max(200).optional(),
     turnstileToken: z.string().min(1, "Please complete the CAPTCHA"),
     // Tracking — captured client-side and forwarded.
     utm_source: z.string().max(120).optional(),
@@ -120,6 +123,7 @@ export type LeadFormValues = {
   description?: string;
   has_attorney?: boolean;
   consent_contact: boolean;
+  company?: string;
   turnstileToken: string;
   utm_source?: string;
   utm_medium?: string;
@@ -143,5 +147,6 @@ export const leadFormDefaults: LeadFormValues = {
   description: undefined,
   has_attorney: false,
   consent_contact: false,
+  company: "",
   turnstileToken: "",
 };

@@ -3,7 +3,14 @@
 import * as React from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, CheckCircle2, Mail, Phone, ShieldCheck, User } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Mail,
+  Phone,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -47,7 +54,13 @@ type LeadFormProps = {
   headline?: string;
   description?: string;
   className?: string;
+  /** Autofocus the first field. Only use where the form is the primary
+   *  above-the-fold content (e.g. the dedicated /contact page) — never on
+   *  embeds where it would yank the viewport down on load. */
+  autoFocus?: boolean;
 };
+
+const DESCRIPTION_MAX = 500;
 
 export function LeadForm({
   variant = "compact",
@@ -57,6 +70,7 @@ export function LeadForm({
   headline = "Request a free consultation",
   description = "Tell us briefly what happened. We'll call you back within one business hour during office hours.",
   className,
+  autoFocus = false,
 }: LeadFormProps) {
   const isFull = variant === "full";
 
@@ -80,6 +94,15 @@ export function LeadForm({
   });
 
   const [submitted, setSubmitted] = React.useState(false);
+
+  // Funnel: fire once when the visitor first interacts, so we can measure
+  // started → submitted (abandonment). No PII.
+  const startedRef = React.useRef(false);
+  const markStarted = React.useCallback(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    captureEvent("lead_form_started", { variant });
+  }, [variant]);
 
   const handleTurnstileToken = React.useCallback(
     (token: string) => {
@@ -108,11 +131,15 @@ export function LeadForm({
   }, [form]);
 
   async function onSubmit(values: LeadFormValues) {
+    // Abort a hung request rather than leaving the user spinning indefinitely.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(values),
+        signal: controller.signal,
       });
 
       if (res.status === 429) {
@@ -153,26 +180,24 @@ export function LeadForm({
       // PostHog conversion event. No PII — we never send name, phone, email,
       // or the incident description. Just the routing/attribution dimensions
       // marketing actually needs (which page, which practice area, source).
-      if (typeof window !== "undefined") {
-        const posthog = (
-          window as unknown as {
-            posthog?: { capture: (e: string, p?: Record<string, unknown>) => void };
-          }
-        ).posthog;
-        posthog?.capture("lead_submitted", {
-          variant,
-          practice_area: values.practice_area || undefined,
-          county_slug: values.county_slug || undefined,
-          city_slug: values.city_slug || undefined,
-          preferred_contact: values.preferred_contact || undefined,
-          has_attorney: values.has_attorney ?? undefined,
-        });
-      }
+      captureEvent("lead_submitted", {
+        variant,
+        practice_area: values.practice_area || undefined,
+        county_slug: values.county_slug || undefined,
+        city_slug: values.city_slug || undefined,
+        preferred_contact: values.preferred_contact || undefined,
+        has_attorney: values.has_attorney ?? undefined,
+      });
       form.reset(leadFormDefaults);
-    } catch {
+    } catch (err) {
+      const aborted = err instanceof DOMException && err.name === "AbortError";
       toast.error(
-        "Network error. Please try again, or call us directly.",
+        aborted
+          ? `This is taking longer than expected. Please try again, or call us at ${FIRM.phone}.`
+          : "Network error. Please try again, or call us directly.",
       );
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -180,32 +205,32 @@ export function LeadForm({
     return (
       <div
         className={cn(
-          "relative overflow-hidden rounded-3xl border border-success/30 bg-card p-7 shadow-[0_40px_80px_-40px_rgba(34,179,128,0.35)] ring-1 ring-success/10 md:p-9",
+          "border-success/30 bg-card ring-success/10 relative overflow-hidden rounded-3xl border p-7 shadow-[0_40px_80px_-40px_rgba(34,179,128,0.35)] ring-1 md:p-9",
           className,
         )}
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-gradient-to-br from-success/25 via-success/10 to-transparent blur-3xl"
+          className="from-success/25 via-success/10 pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br to-transparent blur-3xl"
         />
         <span
           aria-hidden
-          className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-success to-transparent"
+          className="via-success absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent to-transparent"
         />
         <div className="relative flex items-center gap-2.5">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-success/15 text-success ring-4 ring-success/5">
+          <span className="bg-success/15 text-success ring-success/5 inline-flex h-9 w-9 items-center justify-center rounded-full ring-4">
             <CheckCircle2 className="h-5 w-5" aria-hidden />
           </span>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-success">
+          <p className="text-success text-[11px] font-semibold tracking-[0.22em] uppercase">
             Received
           </p>
         </div>
-        <h3 className="relative mt-5 font-display text-2xl font-medium leading-tight tracking-tight md:text-3xl">
+        <h3 className="font-display relative mt-5 text-2xl leading-tight font-medium tracking-tight md:text-3xl">
           Your request is in.
         </h3>
-        <p className="relative mt-3 leading-relaxed text-muted-foreground">
-          We&apos;ll call you back within one business hour during office
-          hours. If your matter is urgent, please call us directly.
+        <p className="text-muted-foreground relative mt-3 leading-relaxed">
+          We&apos;ll call you back within one business hour during office hours.
+          If your matter is urgent, please call us directly.
         </p>
         <div className="relative mt-7 flex flex-wrap gap-3">
           <a
@@ -236,14 +261,14 @@ export function LeadForm({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-3xl border border-border/80 bg-card p-7 shadow-[0_40px_80px_-40px_rgba(20,30,80,0.28)] ring-1 ring-border/30 md:p-9",
+        "border-border/80 bg-card ring-border/30 relative overflow-hidden rounded-3xl border p-7 shadow-[0_40px_80px_-40px_rgba(20,30,80,0.28)] ring-1 md:p-9",
         className,
       )}
     >
       {/* Decorative gradient corner — subtle premium-feeling */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-gradient-to-br from-[var(--color-gold-500)]/20 via-primary/10 to-transparent blur-3xl"
+        className="via-primary/10 pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br from-[var(--color-gold-500)]/20 to-transparent blur-3xl"
       />
       <span
         aria-hidden
@@ -252,14 +277,16 @@ export function LeadForm({
 
       <div className="relative mb-7 flex items-start justify-between gap-3">
         <div>
-          <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+          <p className="text-primary inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] uppercase">
+            <span className="bg-success inline-flex h-1.5 w-1.5 animate-pulse rounded-full" />
             Free consultation
           </p>
-          <h3 className="mt-3 font-display text-2xl font-medium leading-tight tracking-tight md:text-3xl">
+          <h3 className="font-display mt-3 text-2xl leading-tight font-medium tracking-tight md:text-3xl">
             {headline}
           </h3>
-          <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground mt-2.5 text-sm leading-relaxed">
+            {description}
+          </p>
         </div>
       </div>
 
@@ -269,26 +296,46 @@ export function LeadForm({
           noValidate
           className="relative grid gap-6"
         >
+          {/* Honeypot — hidden from users, catches naive bots. Real visitors
+              never focus or fill this; a non-empty value is flagged as spam
+              server-side. aria-hidden + tabIndex -1 keep it out of the AT and
+              tab order. */}
+          <div
+            aria-hidden
+            className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
+          >
+            <label htmlFor="lead-company">Company (leave blank)</label>
+            <input
+              id="lead-company"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              {...form.register("company")}
+            />
+          </div>
+
           <div className="grid gap-6 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="full_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
                     Full name
                   </FormLabel>
                   <div className="relative mt-1.5">
                     <User
-                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary"
+                      className="text-muted-foreground/60 group-focus-within:text-primary pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transition-colors"
                       aria-hidden
                     />
                     <FormControl
                       as={Input}
                       autoComplete="name"
+                      autoFocus={autoFocus}
                       placeholder="Jane Doe"
                       className="h-12 pl-10 text-base shadow-sm"
                       {...field}
+                      onFocus={markStarted}
                     />
                   </div>
                   <FormMessage />
@@ -300,12 +347,12 @@ export function LeadForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
                     Phone
                   </FormLabel>
                   <div className="relative mt-1.5">
                     <Phone
-                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60"
+                      className="text-muted-foreground/60 pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2"
                       aria-hidden
                     />
                     <FormControl
@@ -328,12 +375,15 @@ export function LeadForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Email <span className="font-normal normal-case text-muted-foreground/70">(optional)</span>
+                <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                  Email{" "}
+                  <span className="text-muted-foreground/70 font-normal normal-case">
+                    (optional)
+                  </span>
                 </FormLabel>
                 <div className="relative mt-1.5">
                   <Mail
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60"
+                    className="text-muted-foreground/60 pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2"
                     aria-hidden
                   />
                   <FormControl
@@ -361,14 +411,18 @@ export function LeadForm({
                   name="practice_area"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
                         Type of matter
                       </FormLabel>
                       <Select
                         value={field.value ?? ""}
                         onValueChange={(v) => field.onChange(v || undefined)}
                       >
-                        <FormControl as={SelectTrigger} className="mt-1.5 h-12 text-base shadow-sm">
+                        <FormControl
+                          as={SelectTrigger}
+                          aria-label="Type of matter"
+                          className="mt-1.5 h-12 text-base shadow-sm"
+                        >
                           <SelectValue placeholder="Select an option" />
                         </FormControl>
                         <SelectContent>
@@ -388,7 +442,7 @@ export function LeadForm({
                   name="city_slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
                         Where did it happen?
                       </FormLabel>
                       <Select
@@ -403,7 +457,11 @@ export function LeadForm({
                           }
                         }}
                       >
-                        <FormControl as={SelectTrigger} className="mt-1.5 h-12 text-base shadow-sm">
+                        <FormControl
+                          as={SelectTrigger}
+                          aria-label="Where did it happen"
+                          className="mt-1.5 h-12 text-base shadow-sm"
+                        >
                           <SelectValue placeholder="Pick a city" />
                         </FormControl>
                         <SelectContent>
@@ -424,9 +482,11 @@ export function LeadForm({
                 name="incident_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
                       Date of incident{" "}
-                      <span className="font-normal normal-case text-muted-foreground/70">(if known)</span>
+                      <span className="text-muted-foreground/70 font-normal normal-case">
+                        (if known)
+                      </span>
                     </FormLabel>
                     <FormControl
                       as={Input}
@@ -449,24 +509,38 @@ export function LeadForm({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
                   What happened?
                 </FormLabel>
                 <FormControl
                   as={Textarea}
                   rows={4}
-                  maxLength={500}
+                  maxLength={DESCRIPTION_MAX}
                   placeholder="In a few sentences — type of incident, where, and how you're doing now."
                   className="mt-1.5 min-h-32 resize-none text-base leading-relaxed shadow-sm"
                   value={field.value ?? ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
+                  onFocus={markStarted}
                   name={field.name}
                 />
-                <FormDescription className="text-xs">
-                  Do not include sensitive medical details — we&apos;ll discuss
-                  those securely after we connect.
-                </FormDescription>
+                <div className="flex items-start justify-between gap-3">
+                  <FormDescription className="text-xs">
+                    Do not include sensitive medical details — we&apos;ll
+                    discuss those securely after we connect.
+                  </FormDescription>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "mt-1 flex-none text-xs tabular-nums",
+                      (field.value ?? "").length >= DESCRIPTION_MAX
+                        ? "text-destructive"
+                        : "text-muted-foreground/70",
+                    )}
+                  >
+                    {(field.value ?? "").length}/{DESCRIPTION_MAX}
+                  </span>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -476,10 +550,10 @@ export function LeadForm({
             control={form.control}
             name="consent_contact"
             render={({ field }) => (
-              <FormItem className="group/consent relative flex flex-row items-start gap-3.5 rounded-2xl border border-border/80 bg-secondary/40 p-4 transition-colors hover:border-primary/30 has-aria-checked-true:border-success/40 has-aria-checked-true:bg-success/5 md:p-5">
+              <FormItem className="group/consent border-border/80 bg-secondary/40 hover:border-primary/30 has-aria-checked-true:border-success/40 has-aria-checked-true:bg-success/5 relative flex flex-row items-start gap-3.5 rounded-2xl border p-4 transition-colors md:p-5">
                 <span
                   aria-hidden
-                  className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full bg-[var(--color-gold-500)]/60 opacity-0 transition-opacity group-has-aria-checked-true/consent:opacity-100"
+                  className="absolute top-4 bottom-4 left-0 w-1 rounded-r-full bg-[var(--color-gold-500)]/60 opacity-0 transition-opacity group-has-aria-checked-true/consent:opacity-100"
                 />
                 <FormControl
                   as={Checkbox}
@@ -490,7 +564,7 @@ export function LeadForm({
                   className="mt-0.5 size-5 shrink-0"
                 />
                 <div className="grid gap-1">
-                  <FormLabel className="text-xs leading-relaxed font-normal text-foreground/85">
+                  <FormLabel className="text-foreground/85 text-xs leading-relaxed font-normal">
                     {TCPA_CONSENT_TEXT}
                   </FormLabel>
                   <FormMessage />
@@ -519,12 +593,12 @@ export function LeadForm({
             type="submit"
             size="marketing"
             disabled={form.formState.isSubmitting}
-            className="group/cta relative w-full justify-between overflow-hidden bg-gradient-to-r from-primary via-primary to-[var(--color-brand-700,#18298c)] py-4 text-base shadow-[0_10px_30px_-10px_rgba(43,70,216,0.55)] transition-all hover:shadow-[0_18px_40px_-12px_rgba(43,70,216,0.65)] hover:translate-y-[-1px]"
+            className="group/cta from-primary via-primary relative w-full justify-between overflow-hidden bg-gradient-to-r to-[var(--color-brand-700,#18298c)] py-4 text-base shadow-[0_10px_30px_-10px_rgba(43,70,216,0.55)] transition-all hover:translate-y-[-1px] hover:shadow-[0_18px_40px_-12px_rgba(43,70,216,0.65)]"
           >
             <span className="relative z-10 flex items-center gap-2 text-base font-medium">
               {form.formState.isSubmitting ? (
                 <>
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                  <span className="border-primary-foreground/30 border-t-primary-foreground inline-block h-4 w-4 animate-spin rounded-full border-2" />
                   Sending…
                 </>
               ) : (
@@ -542,26 +616,32 @@ export function LeadForm({
           </Button>
 
           {/* Trust strip below the CTA — three short, scannable proofs */}
-          <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-5 text-[11px] leading-snug text-muted-foreground sm:gap-3">
+          <div className="border-border/60 text-muted-foreground grid grid-cols-3 gap-2 border-t pt-5 text-[11px] leading-snug sm:gap-3">
             <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
-              <ShieldCheck className="h-4 w-4 flex-none text-primary" aria-hidden />
+              <ShieldCheck
+                className="text-primary h-4 w-4 flex-none"
+                aria-hidden
+              />
               <span>No fee unless we win</span>
             </div>
             <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
-              <CheckCircle2 className="h-4 w-4 flex-none text-primary" aria-hidden />
+              <CheckCircle2
+                className="text-primary h-4 w-4 flex-none"
+                aria-hidden
+              />
               <span>Reply in 1 business hr</span>
             </div>
             <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
-              <Phone className="h-4 w-4 flex-none text-primary" aria-hidden />
+              <Phone className="text-primary h-4 w-4 flex-none" aria-hidden />
               <span>Confidential intake</span>
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             By submitting, you confirm you have read and agreed to our{" "}
             <a
               href="/legal/privacy"
-              className="underline underline-offset-2 hover:text-primary"
+              className="hover:text-primary underline underline-offset-2"
             >
               Privacy Policy
             </a>
@@ -574,6 +654,19 @@ export function LeadForm({
   );
 }
 
-function safeJson(res: Response): Promise<{ error?: string; issues?: unknown }> {
+function safeJson(
+  res: Response,
+): Promise<{ error?: string; issues?: unknown }> {
   return res.json().catch(() => ({}));
+}
+
+/** Fire a PostHog event if the SDK is loaded. Never sends PII. */
+function captureEvent(event: string, props?: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  const posthog = (
+    window as unknown as {
+      posthog?: { capture: (e: string, p?: Record<string, unknown>) => void };
+    }
+  ).posthog;
+  posthog?.capture(event, props);
 }
