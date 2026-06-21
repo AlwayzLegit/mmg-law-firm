@@ -199,6 +199,77 @@ export async function runConflictCheck(
   return { ok: true, hits };
 }
 
+const CONTACT_LOG = {
+  called: "📞 Called the client.",
+  voicemail: "📞 Left a voicemail.",
+  emailed: "✉️ Emailed the client.",
+  texted: "💬 Texted the client.",
+} as const;
+
+const LogContactInput = z.object({
+  leadId: z.string().uuid(),
+  kind: z.enum(["called", "voicemail", "emailed", "texted"]),
+});
+
+/**
+ * One-tap contact logging: appends a standard note and, if the lead is still
+ * "new", advances it to "contacted". The fastest way to record a first touch —
+ * which is what the response-time analytics measure.
+ */
+export async function logContact(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = LogContactInput.safeParse({
+    leadId: formData.get("leadId"),
+    kind: formData.get("kind"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+
+  const { error: noteErr } = await supabase.from("lead_notes").insert({
+    lead_id: parsed.data.leadId,
+    author_id: user.id,
+    body: CONTACT_LOG[parsed.data.kind],
+  });
+  if (noteErr) return { ok: false, error: noteErr.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: "note_added",
+    diff: { contact: parsed.data.kind },
+  });
+
+  // Advance a brand-new lead to "contacted" on first logged touch.
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("status")
+    .eq("id", parsed.data.leadId)
+    .maybeSingle();
+  if (lead?.status === "new") {
+    const { error: upErr } = await supabase
+      .from("leads")
+      .update({ status: "contacted", assigned_to: user.id })
+      .eq("id", parsed.data.leadId);
+    if (!upErr) {
+      logAudit({
+        actor_id: user.id,
+        entity: "leads",
+        entity_id: parsed.data.leadId,
+        action: "status_change",
+        diff: { from: "new", to: "contacted" },
+      });
+    }
+  }
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
 export async function addLeadNote(formData: FormData): Promise<ActionResult> {
   const { user } = await requireAdmin();
 
