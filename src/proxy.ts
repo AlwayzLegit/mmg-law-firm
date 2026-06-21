@@ -17,6 +17,44 @@ export const config = {
   ],
 };
 
+/**
+ * Build the Content-Security-Policy for an HTML response, bound to a
+ * per-request nonce.
+ *
+ * script-src uses the Google-recommended "strict CSP" shape: a nonce plus
+ * 'strict-dynamic' (so any script a trusted/nonced script loads is in turn
+ * trusted — this covers Turnstile, GTM→GA, and PostHog's dynamically
+ * injected scripts). `https:` and 'unsafe-inline' are fallbacks that modern
+ * browsers ignore when a nonce + strict-dynamic are present, but keep older
+ * browsers working. Next.js reads the nonce from the request CSP header and
+ * stamps it onto its own framework + next/script tags automatically.
+ *
+ * JSON-LD (<script type="application/ld+json">) is a data block, not executed,
+ * so it is unaffected by script-src and needs no nonce.
+ */
+function buildCsp(nonce: string): string {
+  return [
+    `default-src 'self'`,
+    `base-uri 'self'`,
+    `object-src 'none'`,
+    `frame-ancestors 'none'`,
+    `form-action 'self'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`,
+    // Tailwind/Next emit inline <style> and style="" attributes; nonce-ing
+    // every one isn't practical and style injection is far lower risk.
+    `style-src 'self' 'unsafe-inline'`,
+    `img-src 'self' data: blob: https:`,
+    `font-src 'self' data:`,
+    // XHR/fetch/websocket targets — strict-dynamic does not cover these.
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com`,
+    // Turnstile widget + Google Maps embed render in iframes.
+    `frame-src 'self' https://challenges.cloudflare.com https://www.google.com`,
+    `worker-src 'self' blob:`,
+    `manifest-src 'self'`,
+    `upgrade-insecure-requests`,
+  ].join("; ");
+}
+
 type RedirectRule = { destination: string; permanent: boolean };
 
 // Per-instance cache of admin-managed redirects so we hit the DB at most
@@ -62,8 +100,27 @@ async function getRedirects(): Promise<Map<string, RedirectRule>> {
 }
 
 export async function proxy(request: NextRequest) {
+  // Per-request CSP nonce. Set it on the *request* headers so Next.js stamps
+  // it onto its own scripts; mirror the CSP onto every HTML response below.
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const csp = buildCsp(nonce);
+  const cspHeader = env.CSP_REPORT_ONLY
+    ? "content-security-policy-report-only"
+    : "content-security-policy";
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("content-security-policy", csp);
+
+  /** Attach the CSP (+ nonce echo) to a response before returning it. */
+  function withCsp(res: NextResponse): NextResponse {
+    res.headers.set(cspHeader, csp);
+    res.headers.set("x-nonce", nonce);
+    return res;
+  }
+
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request: { headers: requestHeaders },
   });
 
   const { pathname } = request.nextUrl;
@@ -94,7 +151,7 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set("next", request.nextUrl.pathname);
       return NextResponse.redirect(url);
     }
-    return response;
+    return withCsp(response);
   }
 
   const supabase = createServerClient(
@@ -110,7 +167,7 @@ export async function proxy(request: NextRequest) {
             request.cookies.set(name, value);
           }
           response = NextResponse.next({
-            request: { headers: request.headers },
+            request: { headers: requestHeaders },
           });
           for (const { name, value, options } of values) {
             response.cookies.set(name, value, options);
@@ -156,5 +213,5 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return response;
+  return withCsp(response);
 }
