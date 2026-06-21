@@ -57,16 +57,14 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
     };
   }
 
-  const { error: upErr } = await supabase
-    .from("admin_profiles")
-    .upsert(
-      {
-        user_id: invite.user.id,
-        role: parsed.data.role,
-        full_name: parsed.data.full_name,
-      },
-      { onConflict: "user_id" },
-    );
+  const { error: upErr } = await supabase.from("admin_profiles").upsert(
+    {
+      user_id: invite.user.id,
+      role: parsed.data.role,
+      full_name: parsed.data.full_name,
+    },
+    { onConflict: "user_id" },
+  );
   if (upErr) {
     return { ok: false, error: upErr.message };
   }
@@ -244,5 +242,47 @@ export async function signOutOtherDevices(): Promise<ActionResult> {
     entity_id: user.id,
     action: "revoke_devices",
   });
+  return { ok: true };
+}
+
+const DisplayNameInput = z
+  .string()
+  .trim()
+  .min(2, "Use at least 2 characters")
+  .max(100);
+
+/**
+ * Update the signed-in admin's own display name. This is the name shown on
+ * assignee chips, the activity feed, and lead notes. Any admin can edit their
+ * own; no role gate (it's only your own row, enforced by user_id match).
+ */
+export async function updateOwnDisplayName(
+  formData: FormData,
+): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = DisplayNameInput.safeParse(formData.get("full_name"));
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid name",
+    };
+  }
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase
+    .from("admin_profiles")
+    .update({ full_name: parsed.data })
+    .eq("user_id", user.id);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "admin_profiles",
+    entity_id: user.id,
+    action: "update_name",
+  });
+
+  revalidatePath("/admin/settings");
   return { ok: true };
 }
