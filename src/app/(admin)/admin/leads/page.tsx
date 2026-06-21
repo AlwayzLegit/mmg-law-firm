@@ -2,9 +2,13 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import LeadsTable, { type LeadRow } from "./leads-table";
+
+const ASSIGNEE_OPTIONS = ["all", "me", "unassigned"] as const;
+type Assignee = (typeof ASSIGNEE_OPTIONS)[number];
 
 const STATUS_OPTIONS = [
   "all",
@@ -26,6 +30,7 @@ type SearchParams = {
   source?: string;
   pa?: string;
   county?: string;
+  assignee?: string;
 };
 
 const PAGE_SIZE = 50;
@@ -66,7 +71,13 @@ export default async function LeadsPage({
   const source = slugish(params.source);
   const paSlug = slugish(params.pa);
   const countySlug = slugish(params.county);
+  const assignee: Assignee = ASSIGNEE_OPTIONS.includes(
+    params.assignee as Assignee,
+  )
+    ? (params.assignee as Assignee)
+    : "all";
 
+  const { user } = await requireAdmin();
   const supabase = await getServerSupabase();
 
   // Resolve drill-down slugs to FK ids (from analytics rankings).
@@ -104,6 +115,8 @@ export default async function LeadsPage({
   if (source) query = query.eq("utm_source", source);
   if (paId) query = query.eq("practice_area_id", paId);
   if (countyId) query = query.eq("county_id", countyId);
+  if (assignee === "me") query = query.eq("assigned_to", user.id);
+  else if (assignee === "unassigned") query = query.is("assigned_to", null);
 
   if (due) {
     query = query
@@ -137,6 +150,21 @@ export default async function LeadsPage({
     if (source) sp.set("source", source);
     if (paSlug) sp.set("pa", paSlug);
     if (countySlug) sp.set("county", countySlug);
+    if (assignee !== "all") sp.set("assignee", assignee);
+  }
+
+  // Build an assignee-filter link that keeps status/due/search but resets page.
+  function assigneeHref(target: Assignee): string {
+    const sp = new URLSearchParams();
+    if (due) sp.set("due", "1");
+    else if (status !== "all") sp.set("status", status);
+    if (rawQ) sp.set("q", rawQ);
+    if (source) sp.set("source", source);
+    if (paSlug) sp.set("pa", paSlug);
+    if (countySlug) sp.set("county", countySlug);
+    if (target !== "all") sp.set("assignee", target);
+    const qs = sp.toString();
+    return `/admin/leads${qs ? `?${qs}` : ""}`;
   }
 
   // Build a querystring for page links that preserves the active filters.
@@ -218,6 +246,9 @@ export default async function LeadsPage({
         {countySlug ? (
           <input type="hidden" name="county" value={countySlug} />
         ) : null}
+        {assignee !== "all" ? (
+          <input type="hidden" name="assignee" value={assignee} />
+        ) : null}
         <div className="relative flex-1">
           <Search
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
@@ -275,6 +306,30 @@ export default async function LeadsPage({
         >
           Follow-ups due
         </Link>
+      </nav>
+
+      <nav
+        className="mt-2 flex flex-wrap items-center gap-2"
+        aria-label="Filter by assignee"
+      >
+        <span className="text-muted-foreground text-xs">Assignee:</span>
+        {ASSIGNEE_OPTIONS.map((opt) => {
+          const label =
+            opt === "all" ? "Anyone" : opt === "me" ? "Mine" : "Unassigned";
+          return (
+            <Link
+              key={opt}
+              href={assigneeHref(opt)}
+              className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                assignee === opt
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border hover:bg-secondary"
+              }`}
+            >
+              {label}
+            </Link>
+          );
+        })}
       </nav>
 
       <Card className="mt-6">
