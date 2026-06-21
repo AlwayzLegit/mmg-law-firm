@@ -22,7 +22,13 @@ type Row = {
   practice_areas: { slug: string; name: string };
 };
 
-export default async function LocationPagesIndex() {
+export default async function LocationPagesIndex({
+  searchParams,
+}: {
+  searchParams: Promise<{ needs?: string }>;
+}) {
+  const { needs } = await searchParams;
+  const needsAngle = needs === "angle";
   const supabase = await getServerSupabase();
   const [pagesResult, citiesResult, practicesResult] = await Promise.all([
     supabase
@@ -52,9 +58,9 @@ export default async function LocationPagesIndex() {
   const rows = (data ?? []) as unknown as Row[];
 
   type CityOption = { id: string; name: string; counties: { name: string } };
-  const cityOptions = ((citiesResult.data ?? []) as unknown as CityOption[]).map(
-    (c) => ({ id: c.id, label: `${c.counties.name} · ${c.name}` }),
-  );
+  const cityOptions = (
+    (citiesResult.data ?? []) as unknown as CityOption[]
+  ).map((c) => ({ id: c.id, label: `${c.counties.name} · ${c.name}` }));
   const practiceOptions = (practicesResult.data ?? []).map((p) => ({
     id: p.id,
     label: p.name,
@@ -70,7 +76,7 @@ export default async function LocationPagesIndex() {
     );
   };
 
-  const tableRows = rows.map((r) => ({
+  const allTableRows = rows.map((r) => ({
     id: r.id,
     href: `/admin/content/location-pages/${r.id}`,
     title: `${r.cities.name} · ${r.practice_areas.name}`,
@@ -81,11 +87,17 @@ export default async function LocationPagesIndex() {
     isStale: stale(r),
   }));
 
+  // ?needs=angle drills in on drafts that still need a local angle written
+  // (linked from the dashboard "Needs attention" panel).
+  const tableRows = needsAngle
+    ? allTableRows.filter((r) => !r.hasAngle)
+    : allTableRows;
+
   return (
     <div>
       <Link
         href="/admin/content/pages"
-        className="text-sm text-muted-foreground hover:text-primary"
+        className="text-muted-foreground hover:text-primary text-sm"
       >
         ← Content
       </Link>
@@ -95,25 +107,46 @@ export default async function LocationPagesIndex() {
           <h1 className="font-display text-2xl font-medium tracking-tight">
             City × practice pages
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Per spec §17 #1, each row needs a unique <code className="rounded bg-secondary px-1 py-0.5 text-xs">local_angle_md</code> to publish, and per §10.4 must be reviewed every 12 months.
+          <p className="text-muted-foreground mt-1 text-sm">
+            Per spec §17 #1, each row needs a unique{" "}
+            <code className="bg-secondary rounded px-1 py-0.5 text-xs">
+              local_angle_md
+            </code>{" "}
+            to publish, and per §10.4 must be reviewed every 12 months.
           </p>
         </div>
         <CreateRow cities={cityOptions} practiceAreas={practiceOptions} />
       </div>
 
+      {needsAngle ? (
+        <div className="mt-4 flex items-center gap-2">
+          <span className="border-primary/30 bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium">
+            Drafts needing a local angle
+            <Link
+              href="/admin/content/location-pages"
+              aria-label="Clear filter"
+              className="hover:text-primary/70"
+            >
+              ✕
+            </Link>
+          </span>
+        </div>
+      ) : null}
+
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-base">
-            {rows.length} {rows.length === 1 ? "row" : "rows"} ·{" "}
-            {rows.filter((r) => r.is_published).length} published
+            {tableRows.length} {tableRows.length === 1 ? "row" : "rows"}
+            {needsAngle
+              ? " need a local angle"
+              : ` · ${rows.filter((r) => r.is_published).length} published`}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {error ? (
-            <p className="text-sm text-destructive">{error.message}</p>
+            <p className="text-destructive text-sm">{error.message}</p>
           ) : rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               No city × practice page rows yet. Click{" "}
               <strong className="text-foreground">New page</strong> above to
               create your first draft.
