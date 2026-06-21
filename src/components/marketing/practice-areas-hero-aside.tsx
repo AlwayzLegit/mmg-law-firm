@@ -29,6 +29,7 @@ export function PracticeAreasHeroAside() {
           fill
           className="object-cover"
           sizes="(min-width: 1024px) 480px, 100vw"
+          quality={65}
           priority
         />
       </div>

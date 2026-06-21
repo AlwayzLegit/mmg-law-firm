@@ -21,8 +21,8 @@ export function mediaUrl(objectName: string): string {
  * scene shots are reserved for lazy, below-the-fold editorial sections.
  */
 export const ATTORNEY_IMAGES = {
-  /** Tight portrait — hero card + attorney headshot (priority). ~6 MB. */
-  portrait: "Male_attorney_from_reference_p_Nano_Banana_Pro_39202.png",
+  /** Tight portrait — hero card (priority/LCP). Smallest source (~4.8 MB). */
+  portrait: "Male_attorney_from_reference_p_Nano_Banana_Pro_69288.png",
   /** Second portrait — bio card, for variety. ~5.8 MB. */
   portraitAlt: "Male_attorney_from_reference_p_Nano_Banana_Pro_30573.png",
   /** Portrait for the practice-areas aside (priority). ~5 MB. */

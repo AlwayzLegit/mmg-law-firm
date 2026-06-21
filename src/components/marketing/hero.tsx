@@ -163,6 +163,7 @@ function CredentialsCard() {
             alt={`${FIRM.attorneyName}, founder and managing attorney of ${FIRM.legalName}`}
             fill
             priority
+            quality={65}
             sizes="(min-width: 1024px) 480px, (min-width: 768px) 60vw, 100vw"
             className="object-cover object-top"
           />
