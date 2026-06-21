@@ -3,17 +3,10 @@ import { Search } from "lucide-react";
 
 import { CaseResultsEmptyGuide } from "@/components/admin/case-results-empty-guide";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewCaseResultForm from "./new-case-result-form";
-
-/** Strip PostgREST `.or()` / `ilike` metacharacters from a search term. */
-function sanitize(q: string): string {
-  return q
-    .replace(/[%_,()]/g, " ")
-    .trim()
-    .slice(0, 80);
-}
 
 export default async function CaseResultsAdmin({
   searchParams,
