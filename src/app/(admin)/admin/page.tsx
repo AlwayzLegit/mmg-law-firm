@@ -1,13 +1,16 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, History } from "lucide-react";
 
 import LeadsChart from "@/components/admin/leads-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/auth/require-admin";
+import { describeAuditAction } from "@/lib/admin/audit-label";
 import { getLeadAnalytics } from "@/lib/data/lead-analytics";
 import { getWebAnalytics } from "@/lib/data/web-analytics";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 export default async function AdminDashboardPage() {
+  const { profile } = await requireAdmin();
   const supabase = await getServerSupabase();
 
   // Kick off the PostHog traffic query up front so it runs concurrently with
@@ -99,6 +102,41 @@ export default async function AdminDashboardPage() {
       : null;
 
   const web = await webPromise;
+
+  // Recent firm-wide activity (owner-only, like the full audit log).
+  type Activity = { id: string; label: string; actor: string; ts: string };
+  let activity: Activity[] = [];
+  if (profile.role === "owner") {
+    const { data: auditRows } = await supabase
+      .from("audit_log")
+      .select("id, actor_id, action, diff, ts")
+      .order("ts", { ascending: false })
+      .limit(12);
+    const ids = [
+      ...new Set((auditRows ?? []).map((r) => r.actor_id).filter(Boolean)),
+    ] as string[];
+    let names: Record<string, string> = {};
+    if (ids.length > 0) {
+      const { data: admins } = await supabase
+        .from("admin_profiles")
+        .select("user_id, full_name")
+        .in("user_id", ids);
+      names = Object.fromEntries(
+        (admins ?? []).map((a) => [a.user_id, a.full_name ?? "Admin"]),
+      );
+    }
+    activity = (auditRows ?? []).map((r) => ({
+      id: r.id as string,
+      label: describeAuditAction(
+        r.action as string,
+        (r.diff as Record<string, unknown> | null) ?? null,
+      ),
+      actor: r.actor_id
+        ? (names[r.actor_id as string] ?? "Admin")
+        : "System / API",
+      ts: r.ts as string,
+    }));
+  }
 
   const attention: Array<{ label: string; href: string; count: number }> = [
     {
@@ -315,6 +353,55 @@ export default async function AdminDashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {profile.role === "owner" ? (
+        <Card className="mt-6">
+          <CardHeader className="flex flex-row items-baseline justify-between gap-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="h-4 w-4" aria-hidden />
+              Recent activity
+            </CardTitle>
+            <Link
+              href="/admin/audit"
+              className="text-muted-foreground hover:text-primary text-xs"
+            >
+              Full audit log →
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {activity.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No activity yet.</p>
+            ) : (
+              <ul className="divide-border divide-y">
+                {activity.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex items-center justify-between gap-3 py-2.5 text-sm"
+                  >
+                    <span className="min-w-0">
+                      <span className="text-foreground">{a.label}</span>{" "}
+                      <span className="text-muted-foreground text-xs">
+                        · {a.actor}
+                      </span>
+                    </span>
+                    <time
+                      dateTime={a.ts}
+                      className="text-muted-foreground flex-none text-xs"
+                    >
+                      {new Date(a.ts).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
