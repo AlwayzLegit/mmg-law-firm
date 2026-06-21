@@ -9,6 +9,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { sanitizeSearchTerm as sanitize, slugish } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import LeadsTable, { type LeadRow } from "./leads-table";
@@ -40,22 +41,6 @@ type SearchParams = {
 };
 
 const PAGE_SIZE = 50;
-
-/** Keep slug/source params to a safe charset. */
-function slugish(v: string | undefined): string {
-  return (v ?? "")
-    .replace(/[^a-zA-Z0-9 _.\-]/g, "")
-    .trim()
-    .slice(0, 80);
-}
-
-/** Strip PostgREST `.or()` / `ilike` metacharacters from a search term. */
-function sanitize(q: string): string {
-  return q
-    .replace(/[%_,()]/g, " ")
-    .trim()
-    .slice(0, 80);
-}
 
 export default async function LeadsPage({
   searchParams,

@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/** Strip PostgREST `.or()` / `ilike` metacharacters from a search term. */
-function sanitize(q: string): string {
-  return q
-    .replace(/[%_,()]/g, " ")
-    .trim()
-    .slice(0, 80);
-}
 
 /**
  * GET /api/admin/lead-search?q= — typeahead for the command palette.

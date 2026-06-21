@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewPostForm from "./new-post-form";
@@ -9,14 +10,6 @@ import NewPostForm from "./new-post-form";
 const PAGE_SIZE = 50;
 const STATUS_OPTIONS = ["all", "published", "draft"] as const;
 type Status = (typeof STATUS_OPTIONS)[number];
-
-/** Strip PostgREST `.or()` / `ilike` metacharacters from a search term. */
-function sanitize(q: string): string {
-  return q
-    .replace(/[%_,()]/g, " ")
-    .trim()
-    .slice(0, 80);
-}
 
 export default async function ContentBlogAdmin({
   searchParams,
