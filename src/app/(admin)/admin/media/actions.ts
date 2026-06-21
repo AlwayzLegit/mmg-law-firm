@@ -64,6 +64,49 @@ export async function uploadMedia(formData: FormData): Promise<UploadResult> {
   return { ok: true, url, name: key };
 }
 
+/**
+ * Remove duplicate uploads from the bucket — files with an identical content
+ * signature (eTag + size), keeping the earliest of each set. Returns how many
+ * were removed. Uses the Storage API (service role), which is the only
+ * supported way to delete objects (direct SQL deletes are blocked).
+ */
+export async function removeDuplicateMedia(): Promise<
+  { ok: true; removed: number } | { ok: false; error: string }
+> {
+  const { user } = await requireAdmin();
+  const supabase = getServiceSupabase();
+
+  const { data: items, error } = await supabase.storage
+    .from(BUCKET)
+    .list("", { limit: 1000, sortBy: { column: "created_at", order: "asc" } });
+  if (error) return { ok: false, error: error.message };
+
+  const seen = new Set<string>();
+  const dupes: string[] = [];
+  for (const it of items ?? []) {
+    const meta = (it.metadata ?? {}) as { eTag?: string; size?: number };
+    if (!meta.eTag && meta.size == null) continue; // skip folders/odd rows
+    const sig = `${meta.eTag ?? ""}:${meta.size ?? ""}`;
+    if (seen.has(sig)) dupes.push(it.name);
+    else seen.add(sig);
+  }
+
+  if (dupes.length === 0) return { ok: true, removed: 0 };
+
+  const { error: rmErr } = await supabase.storage.from(BUCKET).remove(dupes);
+  if (rmErr) return { ok: false, error: rmErr.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "media",
+    entity_id: null,
+    action: "dedupe",
+    diff: { removed: dupes.length },
+  });
+  revalidatePath("/admin/media");
+  return { ok: true, removed: dupes.length };
+}
+
 export async function deleteMedia(
   formData: FormData,
 ): Promise<{ ok: true } | { ok: false; error: string }> {

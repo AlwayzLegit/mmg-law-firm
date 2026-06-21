@@ -1,10 +1,10 @@
 import Image from "next/image";
 
-import { publicAssetExists } from "@/lib/brand-assets";
+import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";
 
 import { SectionEyebrow } from "./section-eyebrow";
 
-const IMG_PATH = "/brand/consultation.webp";
+const IMG_PATH = mediaUrl(ATTORNEY_IMAGES.meeting);
 
 /**
  * Editorial "How we work" band — a paired image + copy block that sits
@@ -17,11 +17,11 @@ const IMG_PATH = "/brand/consultation.webp";
  * broken image.
  */
 export function HowWeWork({ className }: { className?: string }) {
-  const hasImg = publicAssetExists(IMG_PATH);
+  const hasImg = true;
   return (
     <section
       className={
-        "relative border-y border-border/50 bg-secondary/30 py-20 md:py-28 " +
+        "border-border/50 bg-secondary/30 relative border-y py-20 md:py-28 " +
         (className ?? "")
       }
     >
@@ -33,7 +33,7 @@ export function HowWeWork({ className }: { className?: string }) {
                 aria-hidden
                 className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/25"
               />
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border">
+              <div className="border-border relative aspect-[4/3] w-full overflow-hidden rounded-2xl border">
                 <Image
                   src={IMG_PATH}
                   alt="Mihran Ghazaryan in a one-on-one client consultation"
@@ -47,15 +47,15 @@ export function HowWeWork({ className }: { className?: string }) {
 
           <div className={hasImg ? "" : "max-w-2xl"}>
             <SectionEyebrow>How we work</SectionEyebrow>
-            <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
+            <h2 className="font-display mt-4 text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
               You talk to the attorney directly. Every time.
             </h2>
-            <p className="mt-5 text-muted-foreground">
-              No paralegal triage, no rotating case manager, no junior
-              associate hand-off. The first call, the strategy decisions,
-              the negotiations, and any courtroom appearance — Mihran
-              handles your case end-to-end. That&apos;s the whole point of a
-              solo plaintiff&apos;s firm.
+            <p className="text-muted-foreground mt-5">
+              No paralegal triage, no rotating case manager, no junior associate
+              hand-off. The first call, the strategy decisions, the
+              negotiations, and any courtroom appearance — Mihran handles your
+              case end-to-end. That&apos;s the whole point of a solo
+              plaintiff&apos;s firm.
             </p>
             <ul className="mt-7 grid gap-3 text-sm">
               <Bullet>Initial consultation is always with the attorney.</Bullet>

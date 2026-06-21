@@ -14,6 +14,7 @@ import {
 import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM } from "@/lib/constants";
+import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 type HeroProps = {
@@ -24,16 +25,16 @@ export function Hero({ className }: HeroProps) {
   return (
     <section
       className={cn(
-        "relative isolate overflow-hidden border-b border-border",
+        "border-border relative isolate overflow-hidden border-b",
         className,
       )}
     >
       {/* Layered background: warm wash + ambient gradient orbs + grid */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/70 via-background to-background" />
+      <div className="from-secondary/70 via-background to-background absolute inset-0 -z-10 bg-gradient-to-b" />
       {/* Primary gradient orb — top right */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-32 -top-32 -z-10 h-[640px] w-[640px] rounded-full opacity-60 blur-3xl"
+        className="pointer-events-none absolute -top-32 -right-32 -z-10 h-[640px] w-[640px] rounded-full opacity-60 blur-3xl"
         style={{
           background:
             "radial-gradient(circle, color-mix(in oklab, var(--color-primary) 22%, transparent) 0%, transparent 70%)",
@@ -42,7 +43,7 @@ export function Hero({ className }: HeroProps) {
       {/* Gold accent orb — left mid */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-40 top-1/3 -z-10 h-[480px] w-[480px] rounded-full opacity-40 blur-3xl"
+        className="pointer-events-none absolute top-1/3 -left-40 -z-10 h-[480px] w-[480px] rounded-full opacity-40 blur-3xl"
         style={{
           background:
             "radial-gradient(circle, color-mix(in oklab, var(--color-gold-500) 28%, transparent) 0%, transparent 70%)",
@@ -65,14 +66,14 @@ export function Hero({ className }: HeroProps) {
           <div>
             <SectionEyebrow>Attorney Advertising</SectionEyebrow>
 
-            <h1 className="mt-5 max-w-[18ch] font-display text-[2.6rem] font-medium leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]">
+            <h1 className="font-display text-foreground mt-5 max-w-[18ch] text-[2.6rem] leading-[1.04] font-medium tracking-tight sm:text-5xl md:text-6xl lg:text-[4.25rem]">
               Focus on your recovery
-              <span className="block text-primary">
+              <span className="text-primary block">
                 while we fight for you.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            <p className="text-muted-foreground mt-7 max-w-xl text-lg leading-relaxed">
               Have you been injured in an accident because someone else was
               negligent or careless? You may be entitled to compensation.{" "}
               {FIRM.attorneyName} at {FIRM.legalName} represents personal-injury
@@ -100,12 +101,12 @@ export function Hero({ className }: HeroProps) {
                   buttonVariants({ variant: "outline", size: "marketing" }),
                 )}
               >
-                <Phone className="h-4 w-4 text-primary" aria-hidden />
+                <Phone className="text-primary h-4 w-4" aria-hidden />
                 <span>Call {FIRM.phone}</span>
               </a>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground">
+            <div className="text-muted-foreground mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm">
               <InlineSignal icon={ShieldCheck}>
                 No fee unless we win
               </InlineSignal>
@@ -134,7 +135,7 @@ function InlineSignal({
 }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-md bg-primary/10 text-primary">
+      <span className="bg-primary/10 text-primary inline-flex h-6 w-6 flex-none items-center justify-center rounded-md">
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
       <span className="text-foreground">{children}</span>
@@ -155,10 +156,10 @@ function CredentialsCard() {
         aria-hidden
         className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/25"
       />
-      <article className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur">
-        <div className="relative aspect-[5/4] w-full overflow-hidden bg-secondary">
+      <article className="border-border bg-card relative overflow-hidden rounded-2xl border shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur">
+        <div className="bg-secondary relative aspect-[5/4] w-full overflow-hidden">
           <Image
-            src="/attorney-headshot.webp"
+            src={mediaUrl(ATTORNEY_IMAGES.portrait)}
             alt={`${FIRM.attorneyName}, founder and managing attorney of ${FIRM.legalName}`}
             fill
             priority
@@ -167,73 +168,70 @@ function CredentialsCard() {
           />
           <div
             aria-hidden
-            className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card via-card/70 to-transparent"
+            className="from-card via-card/70 absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t to-transparent"
           />
         </div>
 
-        <div className="px-7 pb-7 pt-2 md:px-8 md:pb-8">
-        <div className="flex items-center justify-between">
-          <span className="rounded-full bg-success/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-success">
-            Free consultation
-          </span>
-          <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            CA Bar #{FIRM.barNumber}
-          </span>
-        </div>
-
-        <p className="mt-6 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          Speak directly with
-        </p>
-        <p className="mt-1 font-display text-2xl font-medium tracking-tight text-foreground">
-          {FIRM.attorneyName}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Founder · Personal-injury counsel · California
-        </p>
-
-        <a
-          href={`tel:${FIRM.phoneTel}`}
-          className="mt-6 flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3.5 transition-colors hover:border-primary/40 hover:bg-secondary/40"
-        >
-          <span className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Phone className="h-4 w-4" aria-hidden />
+        <div className="px-7 pt-2 pb-7 md:px-8 md:pb-8">
+          <div className="flex items-center justify-between">
+            <span className="bg-success/10 text-success rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider uppercase">
+              Free consultation
             </span>
-            <span>
-              <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                Call directly
-              </span>
-              <span className="block font-display text-lg font-semibold tracking-tight">
-                {FIRM.phone}
-              </span>
+            <span className="text-muted-foreground text-[11px] font-medium tracking-wider uppercase">
+              CA Bar #{FIRM.barNumber}
             </span>
-          </span>
-          <ArrowRight
-            className="h-4 w-4 text-muted-foreground"
-            aria-hidden
-          />
-        </a>
-
-        <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
-          <Pill icon={Clock}>{FIRM.hours}</Pill>
-          <Pill icon={Scale}>Statewide CA</Pill>
-        </div>
-
-        <div className="mt-5 border-t border-dashed border-border pt-4">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Languages
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {FIRM.languages.map((lang) => (
-              <span
-                key={lang}
-                className="rounded-md border border-border bg-secondary/40 px-2 py-0.5 text-xs font-medium text-foreground"
-              >
-                {lang}
-              </span>
-            ))}
           </div>
-        </div>
+
+          <p className="text-muted-foreground mt-6 text-xs font-medium tracking-[0.18em] uppercase">
+            Speak directly with
+          </p>
+          <p className="font-display text-foreground mt-1 text-2xl font-medium tracking-tight">
+            {FIRM.attorneyName}
+          </p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Founder · Personal-injury counsel · California
+          </p>
+
+          <a
+            href={`tel:${FIRM.phoneTel}`}
+            className="border-border bg-background hover:border-primary/40 hover:bg-secondary/40 mt-6 flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors"
+          >
+            <span className="flex items-center gap-3">
+              <span className="bg-primary text-primary-foreground inline-flex h-9 w-9 items-center justify-center rounded-lg">
+                <Phone className="h-4 w-4" aria-hidden />
+              </span>
+              <span>
+                <span className="text-muted-foreground block text-[11px] font-medium tracking-[0.18em] uppercase">
+                  Call directly
+                </span>
+                <span className="font-display block text-lg font-semibold tracking-tight">
+                  {FIRM.phone}
+                </span>
+              </span>
+            </span>
+            <ArrowRight className="text-muted-foreground h-4 w-4" aria-hidden />
+          </a>
+
+          <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
+            <Pill icon={Clock}>{FIRM.hours}</Pill>
+            <Pill icon={Scale}>Statewide CA</Pill>
+          </div>
+
+          <div className="border-border mt-5 border-t border-dashed pt-4">
+            <p className="text-muted-foreground text-[11px] font-medium tracking-[0.18em] uppercase">
+              Languages
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {FIRM.languages.map((lang) => (
+                <span
+                  key={lang}
+                  className="border-border bg-secondary/40 text-foreground rounded-md border px-2 py-0.5 text-xs font-medium"
+                >
+                  {lang}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </article>
     </div>
@@ -248,8 +246,8 @@ function Pill({
   children: React.ReactNode;
 }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-md border border-border bg-secondary/40 px-2.5 py-1.5 text-foreground">
-      <Icon className="h-3.5 w-3.5 flex-none text-primary" aria-hidden />
+    <span className="border-border bg-secondary/40 text-foreground inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5">
+      <Icon className="text-primary h-3.5 w-3.5 flex-none" aria-hidden />
       <span className="truncate">{children}</span>
     </span>
   );

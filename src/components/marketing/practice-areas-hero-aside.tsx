@@ -1,11 +1,12 @@
 import Image from "next/image";
 
-import { publicAssetExists } from "@/lib/brand-assets";
+import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";
 
-export const PRACTICE_AREAS_HERO_IMG = "/brand/working-the-file.webp";
+export const PRACTICE_AREAS_HERO_IMG = mediaUrl(ATTORNEY_IMAGES.portraitAside);
 
 export function practiceAreasHeroImageExists(): boolean {
-  return publicAssetExists(PRACTICE_AREAS_HERO_IMG);
+  // The aside image now lives in the media bucket and always exists.
+  return true;
 }
 
 /**
@@ -21,7 +22,7 @@ export function PracticeAreasHeroAside() {
         aria-hidden
         className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/25"
       />
-      <div className="relative aspect-[5/4] w-full overflow-hidden rounded-2xl border border-border">
+      <div className="border-border relative aspect-[5/4] w-full overflow-hidden rounded-2xl border">
         <Image
           src={PRACTICE_AREAS_HERO_IMG}
           alt="Reviewing the file at MMG Law Firm"
