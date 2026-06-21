@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { FIRM, FIRM_FULL_ADDRESS, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/resend";
 import { env } from "@/lib/env";
+import { detectSpam, escapeHtml, parseClientIp } from "@/lib/leads/intake";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sendSms } from "@/lib/sms/twilio";
 import { siteUrl } from "@/lib/seo/canonical";
@@ -14,31 +15,11 @@ import { LeadSchema } from "@/lib/validation/lead";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const IP_RE = /^[0-9a-fA-F:.]{3,45}$/;
-
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const raw = forwarded
-    ? forwarded.split(",")[0]?.trim()
-    : (request.headers.get("x-real-ip") ?? null);
-  if (!raw) return "unknown";
-  // Cap length and accept only plausible IPv4/IPv6 shapes so a forged
-  // header can't poison the rate-limit key or audit_log payload.
-  const candidate = raw.slice(0, 45);
-  return IP_RE.test(candidate) ? candidate : "unknown";
-}
-
-function escape(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 export async function POST(request: NextRequest) {
-  const ip = clientIp(request);
+  const ip = parseClientIp(
+    request.headers.get("x-forwarded-for"),
+    request.headers.get("x-real-ip"),
+  );
   const userAgent = request.headers.get("user-agent") ?? undefined;
 
   const limit = await checkRateLimit(`leads:${ip}`, 5);
@@ -86,13 +67,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const desc = parsed.data.description ?? "";
-  const urlsInDesc = desc.match(/(https?:\/\/|www\.)/gi)?.length ?? 0;
-  const honeypotTripped = (parsed.data.company ?? "").trim() !== "";
-  const isSpam =
-    honeypotTripped ||
-    urlsInDesc >= 3 ||
-    /(https?:\/\/|www\.)/i.test(parsed.data.full_name);
+  const isSpam = detectSpam({
+    fullName: parsed.data.full_name,
+    description: parsed.data.description,
+    company: parsed.data.company,
+  });
 
   const consentAt = new Date().toISOString();
 
@@ -192,13 +171,13 @@ export async function POST(request: NextRequest) {
       const html = `
         <h2 style="font-family: ui-sans-serif, sans-serif; margin: 0 0 12px;">New consultation request</h2>
         <table style="font-family: ui-sans-serif, sans-serif; font-size: 14px; border-collapse: collapse;">
-          <tr><td style="padding:4px 12px 4px 0; color:#666;">Name</td><td>${escape(parsed.data.full_name)}</td></tr>
-          <tr><td style="padding:4px 12px 4px 0; color:#666;">Phone</td><td><a href="tel:${escape(parsed.data.phone)}">${escape(parsed.data.phone)}</a></td></tr>
-          ${parsed.data.email ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Email</td><td><a href="mailto:${escape(parsed.data.email)}">${escape(parsed.data.email)}</a></td></tr>` : ""}
-          ${parsed.data.practice_area ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Matter</td><td>${escape(parsed.data.practice_area)}</td></tr>` : ""}
-          ${parsed.data.city_slug ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">City</td><td>${escape(parsed.data.city_slug)}</td></tr>` : ""}
-          ${parsed.data.incident_date ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Incident</td><td>${escape(parsed.data.incident_date)}</td></tr>` : ""}
-          ${parsed.data.description ? `<tr><td style="padding:4px 12px 4px 0; color:#666; vertical-align: top;">Notes</td><td>${escape(parsed.data.description).replace(/\n/g, "<br>")}</td></tr>` : ""}
+          <tr><td style="padding:4px 12px 4px 0; color:#666;">Name</td><td>${escapeHtml(parsed.data.full_name)}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#666;">Phone</td><td><a href="tel:${escapeHtml(parsed.data.phone)}">${escapeHtml(parsed.data.phone)}</a></td></tr>
+          ${parsed.data.email ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Email</td><td><a href="mailto:${escapeHtml(parsed.data.email)}">${escapeHtml(parsed.data.email)}</a></td></tr>` : ""}
+          ${parsed.data.practice_area ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Matter</td><td>${escapeHtml(parsed.data.practice_area)}</td></tr>` : ""}
+          ${parsed.data.city_slug ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">City</td><td>${escapeHtml(parsed.data.city_slug)}</td></tr>` : ""}
+          ${parsed.data.incident_date ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Incident</td><td>${escapeHtml(parsed.data.incident_date)}</td></tr>` : ""}
+          ${parsed.data.description ? `<tr><td style="padding:4px 12px 4px 0; color:#666; vertical-align: top;">Notes</td><td>${escapeHtml(parsed.data.description).replace(/\n/g, "<br>")}</td></tr>` : ""}
         </table>
         ${adminUrl ? `<p style="font-family: ui-sans-serif, sans-serif; font-size: 14px; margin-top: 16px;"><a href="${adminUrl}">Open in admin →</a></p>` : ""}
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
