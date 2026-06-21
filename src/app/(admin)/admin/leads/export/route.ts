@@ -27,6 +27,7 @@ const COLUMNS = [
   "injured",
   "has_attorney",
   "follow_up_at",
+  "tags",
   "utm_source",
   "utm_medium",
   "utm_campaign",
@@ -53,6 +54,10 @@ export async function GET(req: Request): Promise<Response> {
   const paSlug = sanitize(url.searchParams.get("pa") ?? "");
   const countySlug = sanitize(url.searchParams.get("county") ?? "");
   const assignee = url.searchParams.get("assignee") ?? "all";
+  const tag = (url.searchParams.get("tag") ?? "")
+    .trim()
+    .toLowerCase()
+    .slice(0, 30);
 
   const supabase = await getServerSupabase();
 
@@ -97,6 +102,7 @@ export async function GET(req: Request): Promise<Response> {
   if (source) query = query.eq("utm_source", source);
   if (paId) query = query.eq("practice_area_id", paId);
   if (countyId) query = query.eq("county_id", countyId);
+  if (tag) query = query.contains("tags", [tag]);
   if (assignee === "me") query = query.eq("assigned_to", user.id);
   else if (assignee === "unassigned") query = query.is("assigned_to", null);
 
