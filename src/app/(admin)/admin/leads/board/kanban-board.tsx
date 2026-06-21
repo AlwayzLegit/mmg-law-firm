@@ -14,7 +14,18 @@ export type KanbanCard = {
   status: string;
   created_at: string;
   follow_up_at: string | null;
+  assigned_to: string | null;
 };
+
+/** Initials for an assignee chip, e.g. "Mihran Ghazaryan" → "MG". */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 const COLUMNS = [
   { key: "new", label: "New" },
@@ -40,7 +51,13 @@ function groupByStatus(cards: KanbanCard[]): Record<ColKey, KanbanCard[]> {
   return out;
 }
 
-export default function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
+export default function KanbanBoard({
+  cards,
+  assigneeNames,
+}: {
+  cards: KanbanCard[];
+  assigneeNames: Record<string, string>;
+}) {
   const router = useRouter();
   const [cols, setCols] = React.useState(() => groupByStatus(cards));
   const [dragId, setDragId] = React.useState<string | null>(null);
@@ -151,12 +168,23 @@ export default function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
                         dragId === c.id ? "opacity-50" : ""
                       }`}
                     >
-                      <Link
-                        href={`/admin/leads/${c.id}`}
-                        className="hover:text-primary text-sm font-medium"
-                      >
-                        {c.full_name}
-                      </Link>
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={`/admin/leads/${c.id}`}
+                          className="hover:text-primary text-sm font-medium"
+                        >
+                          {c.full_name}
+                        </Link>
+                        {c.assigned_to && assigneeNames[c.assigned_to] ? (
+                          <span
+                            className="bg-primary/10 text-primary inline-flex h-5 w-5 flex-none items-center justify-center rounded-full text-[10px] font-semibold"
+                            title={`Assigned to ${assigneeNames[c.assigned_to]}`}
+                            aria-label={`Assigned to ${assigneeNames[c.assigned_to]}`}
+                          >
+                            {initials(assigneeNames[c.assigned_to])}
+                          </span>
+                        ) : null}
+                      </div>
                       {c.phone ? (
                         <p className="text-muted-foreground mt-0.5 text-xs">
                           {c.phone}
