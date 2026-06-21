@@ -20,12 +20,24 @@ export default async function LeadsBoardPage() {
   await requireAdmin();
   const supabase = await getServerSupabase();
 
-  const { data, error } = await supabase
-    .from("leads")
-    .select("id, full_name, phone, status, created_at, follow_up_at")
-    .in("status", ["new", "contacted", "qualified", "signed", "rejected"])
-    .order("created_at", { ascending: false })
-    .limit(BOARD_LIMIT);
+  const [{ data, error }, { data: adminRows }] = await Promise.all([
+    supabase
+      .from("leads")
+      .select(
+        "id, full_name, phone, status, created_at, follow_up_at, assigned_to",
+      )
+      .in("status", ["new", "contacted", "qualified", "signed", "rejected"])
+      .order("created_at", { ascending: false })
+      .limit(BOARD_LIMIT),
+    supabase.from("admin_profiles").select("user_id, full_name, role"),
+  ]);
+
+  // Map assignee ids to short labels for the card chips.
+  const assigneeNames: Record<string, string> = {};
+  for (const a of adminRows ?? []) {
+    assigneeNames[a.user_id as string] =
+      (a.full_name as string | null) ?? (a.role as string);
+  }
 
   const cards = (data ?? []) as KanbanCard[];
 
@@ -54,7 +66,7 @@ export default async function LeadsBoardPage() {
         <p className="text-destructive mt-6 text-sm">{error.message}</p>
       ) : (
         <div className="mt-6">
-          <KanbanBoard cards={cards} />
+          <KanbanBoard cards={cards} assigneeNames={assigneeNames} />
         </div>
       )}
     </div>
