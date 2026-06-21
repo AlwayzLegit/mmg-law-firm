@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import LeadsChart from "@/components/admin/leads-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getWebAnalytics } from "@/lib/data/web-analytics";
 import {
   formatMinutes,
   getLeadAnalytics,
@@ -12,12 +13,27 @@ import {
   type Ranked,
 } from "@/lib/data/lead-analytics";
 
-export default async function AdminAnalyticsPage() {
+const RANGES = [7, 30, 90, 365] as const;
+type Range = (typeof RANGES)[number];
+
+export default async function AdminAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
+  const { range: rangeParam } = await searchParams;
+  const parsedRange = Number.parseInt(rangeParam ?? "", 10);
+  const range: Range = (RANGES as readonly number[]).includes(parsedRange)
+    ? (parsedRange as Range)
+    : 90;
+
   const supabase = await getServerSupabase();
+  const webPromise = getWebAnalytics();
   const [a, response] = await Promise.all([
-    getLeadAnalytics(supabase, 90),
-    getResponseTimeStats(supabase, 30),
+    getLeadAnalytics(supabase, range),
+    getResponseTimeStats(supabase, range),
   ]);
+  const web = await webPromise;
 
   return (
     <div>
@@ -25,14 +41,34 @@ export default async function AdminAnalyticsPage() {
         Analytics
       </h1>
       <p className="text-muted-foreground mt-1 text-sm">
-        Lead activity from Postgres over the last 90 days. Conversion excludes
-        spam. Click any county or status on the leads page to drill in.
+        Lead activity from Postgres over the last {range} days. Conversion
+        excludes spam. Click any county or status on the leads page to drill in.
       </p>
+
+      <nav
+        className="mt-4 flex flex-wrap items-center gap-2"
+        aria-label="Date range"
+      >
+        <span className="text-muted-foreground text-xs">Range:</span>
+        {RANGES.map((r) => (
+          <Link
+            key={r}
+            href={r === 90 ? "/admin/analytics" : `/admin/analytics?range=${r}`}
+            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+              range === r
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border hover:bg-secondary"
+            }`}
+          >
+            {r === 365 ? "1 year" : `${r} days`}
+          </Link>
+        ))}
+      </nav>
 
       {/* Headline KPIs */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi
-          label="Leads (90d)"
+          label={`Leads (${range}d)`}
           value={a.qualifiedTotal}
           hint="excludes spam"
         />
@@ -46,7 +82,11 @@ export default async function AdminAnalyticsPage() {
               : `vs ${a.prev7} prior week`
           }
         />
-        <Kpi label="Signed (90d)" value={a.signed} hint="retained clients" />
+        <Kpi
+          label={`Signed (${range}d)`}
+          value={a.signed}
+          hint="retained clients"
+        />
         <Kpi
           label="Conversion"
           value={`${a.conversionPct}%`}
@@ -54,17 +94,19 @@ export default async function AdminAnalyticsPage() {
         />
       </div>
 
-      {/* First-response speed (30d) — the #1 lever on intake conversion. */}
+      {/* First-response speed — the #1 lever on intake conversion. */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">First response time (30d)</CardTitle>
+          <CardTitle className="text-base">
+            First response time ({range}d)
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {response.sample === 0 ? (
             <p className="text-muted-foreground text-sm">
               {response.pending > 0
                 ? `${response.pending} lead(s) awaiting a first response, and none answered yet in this window.`
-                : "No responded leads in the last 30 days yet."}
+                : `No responded leads in the last ${range} days yet.`}
             </p>
           ) : (
             <>
@@ -102,7 +144,7 @@ export default async function AdminAnalyticsPage() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-base">
-            Daily leads (last 90 days)
+            Daily leads (last {range} days)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -113,11 +155,11 @@ export default async function AdminAnalyticsPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Funnel (90d)</CardTitle>
+            <CardTitle className="text-base">Funnel ({range}d)</CardTitle>
           </CardHeader>
           <CardContent>
             {a.total === 0 ? (
-              <Empty>No leads in the last 90 days.</Empty>
+              <Empty>No leads in the last {range} days.</Empty>
             ) : (
               <ul className="grid gap-3">
                 {STATUS_ORDER.map((status) => {
@@ -149,11 +191,66 @@ export default async function AdminAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <RankCard title="Lead source (90d)" rows={a.bySource} />
-        <RankCard title="Practice area (90d)" rows={a.byPracticeArea} />
-        <RankCard title="Top counties (90d)" rows={a.byCounty} />
-        <RankCard title="Top landing pages (90d)" rows={a.topLandingPages} />
+        <RankCard title={`Lead source (${range}d)`} rows={a.bySource} />
+        <RankCard title={`Practice area (${range}d)`} rows={a.byPracticeArea} />
+        <RankCard title={`Top counties (${range}d)`} rows={a.byCounty} />
+        <RankCard
+          title={`Top landing pages (${range}d)`}
+          rows={a.topLandingPages}
+        />
       </div>
+
+      {/* Website traffic — from PostHog pageviews (independent 7/30d windows). */}
+      <h2 className="font-display mt-10 text-xl font-medium tracking-tight">
+        Website traffic
+      </h2>
+      {!web.configured ? (
+        <Card className="mt-4">
+          <CardContent className="text-muted-foreground pt-6 text-sm">
+            Connect PostHog to see traffic here — set{" "}
+            <code className="bg-secondary rounded px-1 py-0.5 text-xs">
+              POSTHOG_PERSONAL_API_KEY
+            </code>{" "}
+            and{" "}
+            <code className="bg-secondary rounded px-1 py-0.5 text-xs">
+              POSTHOG_PROJECT_ID
+            </code>
+            .
+          </CardContent>
+        </Card>
+      ) : !web.hasData ? (
+        <Card className="mt-4">
+          <CardContent className="text-muted-foreground pt-6 text-sm">
+            No pageviews recorded yet. Once the site is live and receiving
+            visitors, traffic appears here.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi label="Visitors (7d)" value={web.visitors7} hint="unique" />
+            <Kpi label="Pageviews (7d)" value={web.pageviews7} />
+            <Kpi label="Visitors (30d)" value={web.visitors30} hint="unique" />
+            <Kpi label="Pageviews (30d)" value={web.pageviews30} />
+          </div>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-base">
+                Pageviews (last 14 days)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeadsChart data={web.daily} />
+            </CardContent>
+          </Card>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <RankCard title="Top pages (30d)" rows={web.topPages} />
+            <RankCard title="Top referrers (30d)" rows={web.topReferrers} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
