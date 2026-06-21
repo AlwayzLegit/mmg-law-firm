@@ -8,6 +8,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
 import FollowUpControl from "./follow-up-control";
+import LeadActivity, { type ActivityEvent } from "./lead-activity";
 import NoteCompose from "./note-compose";
 import StatusControl from "./status-control";
 
@@ -56,6 +57,25 @@ export default async function LeadDetailPage({ params }: Props) {
   }));
   const assignedLabel =
     admins.find((a) => a.userId === lead.assigned_to)?.label ?? null;
+
+  // Activity timeline from the audit log for this lead.
+  const { data: auditRows } = await supabase
+    .from("audit_log")
+    .select("id, actor_id, action, diff, ts")
+    .eq("entity", "leads")
+    .eq("entity_id", id)
+    .order("ts", { ascending: false })
+    .limit(50);
+  const actorName = new Map(admins.map((a) => [a.userId, a.label]));
+  const activity: ActivityEvent[] = (auditRows ?? []).map((r) => ({
+    id: r.id as string,
+    action: r.action as string,
+    diff: (r.diff as Record<string, unknown> | null) ?? null,
+    ts: r.ts as string,
+    actorLabel: r.actor_id
+      ? (actorName.get(r.actor_id as string) ?? "An admin")
+      : "System / public form",
+  }));
 
   return (
     <div>
@@ -264,6 +284,15 @@ export default async function LeadDetailPage({ params }: Props) {
                   No notes yet — write the first one above.
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeadActivity events={activity} />
             </CardContent>
           </Card>
         </div>
