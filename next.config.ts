@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
     // and Supabase-hosted media weight substantially for supporting browsers.
     formats: ["image/avif", "image/webp"],
+    // Cache optimized derivatives on the Vercel image CDN for 30 days — the
+    // attorney photos and hero art are effectively static, so re-optimizing
+    // them per request is wasted work.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {
         protocol: "https",

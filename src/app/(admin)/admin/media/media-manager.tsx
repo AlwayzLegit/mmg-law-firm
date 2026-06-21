@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Copy, Trash2, Upload } from "lucide-react";
+import { Copy, CopyMinus, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { deleteMedia, uploadMedia } from "./actions";
+import { deleteMedia, removeDuplicateMedia, uploadMedia } from "./actions";
 
 export type MediaItem = { name: string; url: string };
 
@@ -49,6 +49,28 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
     });
   }
 
+  function onDedupe() {
+    if (
+      !window.confirm(
+        "Remove duplicate uploads (identical files), keeping one of each?",
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await removeDuplicateMedia();
+      if (result.ok) {
+        toast.success(
+          result.removed === 0
+            ? "No duplicates found."
+            : `Removed ${result.removed} duplicate${result.removed === 1 ? "" : "s"}.`,
+        );
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
+
   return (
     <div className="grid gap-6">
       <div>
@@ -59,18 +81,29 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
           onChange={onFile}
           className="hidden"
         />
-        <Button onClick={onPick} disabled={pending} className="gap-1.5">
-          <Upload className="h-4 w-4" aria-hidden />
-          {pending ? "Working…" : "Upload image"}
-        </Button>
-        <p className="mt-2 text-xs text-muted-foreground">
-          PNG, JPG, WebP, GIF, AVIF, or SVG · up to 10 MB. Copy a URL and
-          paste it into a hero-image field.
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={onPick} disabled={pending} className="gap-1.5">
+            <Upload className="h-4 w-4" aria-hidden />
+            {pending ? "Working…" : "Upload image"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onDedupe}
+            disabled={pending}
+            className="gap-1.5"
+          >
+            <CopyMinus className="h-4 w-4" aria-hidden />
+            Remove duplicates
+          </Button>
+        </div>
+        <p className="text-muted-foreground mt-2 text-xs">
+          PNG, JPG, WebP, GIF, AVIF, or SVG · up to 10 MB. Copy a URL and paste
+          it into a hero-image field.
         </p>
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           No images yet. Upload one above.
         </p>
       ) : (
@@ -78,9 +111,9 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
           {items.map((m) => (
             <li
               key={m.name}
-              className="overflow-hidden rounded-lg border border-border bg-card"
+              className="border-border bg-card overflow-hidden rounded-lg border"
             >
-              <div className="aspect-[4/3] w-full bg-secondary">
+              <div className="bg-secondary aspect-[4/3] w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={m.url}
@@ -92,7 +125,7 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
                 <button
                   type="button"
                   onClick={() => onCopy(m.url)}
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                  className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-xs"
                 >
                   <Copy className="h-3.5 w-3.5" aria-hidden />
                   Copy URL
