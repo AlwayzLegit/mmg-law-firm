@@ -18,34 +18,36 @@ export const config = {
 };
 
 /**
- * Build the Content-Security-Policy for an HTML response, bound to a
- * per-request nonce.
+ * Build the Content-Security-Policy for HTML responses.
  *
- * script-src uses the Google-recommended "strict CSP" shape: a nonce plus
- * 'strict-dynamic' (so any script a trusted/nonced script loads is in turn
- * trusted — this covers Turnstile, GTM→GA, and PostHog's dynamically
- * injected scripts). `https:` and 'unsafe-inline' are fallbacks that modern
- * browsers ignore when a nonce + strict-dynamic are present, but keep older
- * browsers working. Next.js reads the nonce from the request CSP header and
- * stamps it onto its own framework + next/script tags automatically.
+ * IMPORTANT: this is an allowlist policy with `'unsafe-inline'` for scripts —
+ * NOT a nonce/strict-dynamic policy. A nonce-based strict CSP is fundamentally
+ * incompatible with this site's statically-generated / ISR pages: Next can
+ * only stamp a per-request nonce onto *dynamically* rendered HTML, so the
+ * prerendered marketing pages (homepage, practice areas, locations …) would
+ * serve inline hydration scripts with no nonce and the browser would block
+ * them — rendering the page non-interactive. Allowing inline scripts keeps
+ * those static pages working while still constraining *where* scripts, frames,
+ * and connections may come from. (Verified in prod: nonces only landed on the
+ * dynamic /login route, never on the static homepage.)
  *
- * JSON-LD (<script type="application/ld+json">) is a data block, not executed,
- * so it is unaffected by script-src and needs no nonce.
+ * Trade-off: `'unsafe-inline'` weakens XSS protection vs. a nonce policy, but
+ * everything else (object-src, base-uri, frame-ancestors, connect/frame
+ * allowlists) still applies, and it's a real improvement over no script CSP.
  */
-function buildCsp(nonce: string): string {
+function buildCsp(): string {
   return [
     `default-src 'self'`,
     `base-uri 'self'`,
     `object-src 'none'`,
     `frame-ancestors 'none'`,
     `form-action 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`,
-    // Tailwind/Next emit inline <style> and style="" attributes; nonce-ing
-    // every one isn't practical and style injection is far lower risk.
+    // 'self' + inline (required for Next's static-page bootstrap) + the
+    // third-party script origins we actually load.
+    `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://*.google-analytics.com https://us.i.posthog.com https://us-assets.i.posthog.com https://va.vercel-scripts.com`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self' data:`,
-    // XHR/fetch/websocket targets — strict-dynamic does not cover these.
     `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com`,
     // Turnstile widget + Google Maps embed render in iframes.
     `frame-src 'self' https://challenges.cloudflare.com https://www.google.com`,
@@ -100,27 +102,19 @@ async function getRedirects(): Promise<Map<string, RedirectRule>> {
 }
 
 export async function proxy(request: NextRequest) {
-  // Per-request CSP nonce. Set it on the *request* headers so Next.js stamps
-  // it onto its own scripts; mirror the CSP onto every HTML response below.
-  const nonce = crypto.randomUUID().replace(/-/g, "");
-  const csp = buildCsp(nonce);
+  const csp = buildCsp();
   const cspHeader = env.CSP_REPORT_ONLY
     ? "content-security-policy-report-only"
     : "content-security-policy";
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("content-security-policy", csp);
-
-  /** Attach the CSP (+ nonce echo) to a response before returning it. */
+  /** Attach the CSP to a response before returning it. */
   function withCsp(res: NextResponse): NextResponse {
     res.headers.set(cspHeader, csp);
-    res.headers.set("x-nonce", nonce);
     return res;
   }
 
   let response = NextResponse.next({
-    request: { headers: requestHeaders },
+    request: { headers: request.headers },
   });
 
   const { pathname } = request.nextUrl;
@@ -167,7 +161,7 @@ export async function proxy(request: NextRequest) {
             request.cookies.set(name, value);
           }
           response = NextResponse.next({
-            request: { headers: requestHeaders },
+            request: { headers: request.headers },
           });
           for (const { name, value, options } of values) {
             response.cookies.set(name, value, options);
