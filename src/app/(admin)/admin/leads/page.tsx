@@ -10,6 +10,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { getTagVocabulary } from "@/lib/data/lead-tags";
 import { sanitizeSearchTerm as sanitize, slugish } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -147,6 +148,9 @@ export default async function LeadsPage({
     .select("id, name, query")
     .order("created_at", { ascending: true });
   const savedViews = (viewRows ?? []) as SavedView[];
+
+  // Existing tag vocabulary for the bulk-tag autocomplete.
+  const tagSuggestions = await getTagVocabulary(supabase);
 
   // Common filter params shared by page links + export.
   function applyFilters(sp: URLSearchParams) {
@@ -405,7 +409,11 @@ export default async function LeadsPage({
           {error ? (
             <p className="text-destructive text-sm">{error.message}</p>
           ) : (
-            <LeadsTable rows={rows} status={status} />
+            <LeadsTable
+              rows={rows}
+              status={status}
+              tagSuggestions={tagSuggestions}
+            />
           )}
 
           {totalPages > 1 ? (
