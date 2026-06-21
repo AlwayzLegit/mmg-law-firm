@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
+import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { CaseResultCard } from "@/components/marketing/case-result-card";
 import { CtaBand } from "@/components/marketing/cta-band";
@@ -13,6 +14,7 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { RelatedPracticeAreas } from "@/components/marketing/related-practice-areas";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
+import { ATTORNEY_IMAGES } from "@/lib/media";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
@@ -138,6 +140,13 @@ export default async function PracticeAreaPage({ params }: Props) {
               Call {FIRM.phone}
             </a>
           </div>
+        }
+        aside={
+          <AttorneyHeroAside
+            image={ATTORNEY_IMAGES.practiceDetail}
+            alt={`${FIRM.attorneyName}, California ${area.name} attorney`}
+            priority
+          />
         }
       />
 
