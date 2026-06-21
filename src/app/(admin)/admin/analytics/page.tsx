@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
 import LeadsChart from "@/components/admin/leads-chart";
@@ -177,7 +178,17 @@ function RankCard({ title, rows }: { title: string; rows: Ranked[] }) {
                 key={r.label}
                 className="flex items-center justify-between gap-3 py-2 text-sm"
               >
-                <span className="min-w-0 truncate">{r.label}</span>
+                {r.href ? (
+                  <Link
+                    href={r.href}
+                    className="hover:text-primary min-w-0 truncate underline-offset-4 hover:underline"
+                    title={`View ${r.label} leads`}
+                  >
+                    {r.label}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 truncate">{r.label}</span>
+                )}
                 <span className="flex-none font-medium">{r.count}</span>
               </li>
             ))}
