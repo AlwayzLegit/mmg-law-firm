@@ -3,7 +3,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type DailyPoint = { date: string; count: number };
-export type Ranked = { label: string; count: number };
+/** A ranked row. `href` (optional) drills into the matching filtered leads. */
+export type Ranked = { label: string; count: number; href?: string };
 
 export type LeadStatus =
   | "new"
@@ -58,14 +59,15 @@ type LeadRow = {
   created_at: string;
   utm_source: string | null;
   source_url: string | null;
-  practice_areas: { name: string } | null;
-  counties: { name: string } | null;
+  practice_areas: { name: string; slug: string } | null;
+  counties: { name: string; slug: string } | null;
 };
 
 function rank(
   rows: LeadRow[],
   pick: (r: LeadRow) => string | null | undefined,
   limit: number,
+  hrefFor?: (label: string) => string | undefined,
 ): Ranked[] {
   const tally = new Map<string, number>();
   for (const row of rows) {
@@ -74,7 +76,32 @@ function rank(
     tally.set(key, (tally.get(key) ?? 0) + 1);
   }
   return [...tally.entries()]
-    .map(([label, count]) => ({ label, count }))
+    .map(([label, count]) => ({ label, count, href: hrefFor?.(label) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+/** Rank by a {name, slug} dimension, linking each row to its filtered leads. */
+function rankBySlug(
+  rows: LeadRow[],
+  pick: (r: LeadRow) => { name: string; slug: string } | null | undefined,
+  hrefBase: string,
+  limit: number,
+): Ranked[] {
+  const tally = new Map<string, { count: number; slug: string }>();
+  for (const row of rows) {
+    const v = pick(row);
+    if (!v?.name) continue;
+    const cur = tally.get(v.name) ?? { count: 0, slug: v.slug };
+    cur.count += 1;
+    tally.set(v.name, cur);
+  }
+  return [...tally.entries()]
+    .map(([label, { count, slug }]) => ({
+      label,
+      count,
+      href: slug ? `${hrefBase}${encodeURIComponent(slug)}` : undefined,
+    }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
 }
@@ -111,7 +138,7 @@ export async function getLeadAnalytics(
   const { data } = await supabase
     .from("leads")
     .select(
-      "status, created_at, utm_source, source_url, practice_areas(name), counties(name)",
+      "status, created_at, utm_source, source_url, practice_areas(name, slug), counties(name, slug)",
     )
     .gte("created_at", since)
     .order("created_at", { ascending: true });
@@ -177,9 +204,22 @@ export async function getLeadAnalytics(
     prev7,
     weekOverWeekPct,
     daily,
-    bySource: rank(rows, (r) => r.utm_source ?? "(direct / none)", 8),
-    byPracticeArea: rank(rows, (r) => r.practice_areas?.name, 8),
-    byCounty: rank(rows, (r) => r.counties?.name, 10),
+    bySource: rank(
+      rows,
+      (r) => r.utm_source ?? "(direct / none)",
+      8,
+      (label) =>
+        label === "(direct / none)"
+          ? undefined
+          : `/admin/leads?source=${encodeURIComponent(label)}`,
+    ),
+    byPracticeArea: rankBySlug(
+      rows,
+      (r) => r.practice_areas,
+      "/admin/leads?pa=",
+      8,
+    ),
+    byCounty: rankBySlug(rows, (r) => r.counties, "/admin/leads?county=", 10),
     topLandingPages: rank(rows, (r) => toPath(r.source_url), 8),
   };
 }

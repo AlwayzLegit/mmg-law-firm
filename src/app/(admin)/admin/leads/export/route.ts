@@ -36,7 +36,10 @@ const COLUMNS = [
 
 /** Strip PostgREST `.or()` / `ilike` metacharacters from a search term. */
 function sanitize(q: string): string {
-  return q.replace(/[%_,()]/g, " ").trim().slice(0, 80);
+  return q
+    .replace(/[%_,()]/g, " ")
+    .trim()
+    .slice(0, 80);
 }
 
 function csvCell(value: unknown): string {
@@ -53,8 +56,33 @@ export async function GET(req: Request): Promise<Response> {
   const status = url.searchParams.get("status") ?? "all";
   const q = sanitize(url.searchParams.get("q") ?? "");
   const due = url.searchParams.get("due") === "1";
+  const source = sanitize(url.searchParams.get("source") ?? "");
+  const paSlug = sanitize(url.searchParams.get("pa") ?? "");
+  const countySlug = sanitize(url.searchParams.get("county") ?? "");
 
   const supabase = await getServerSupabase();
+
+  // Resolve drill-down slugs to FK ids so the export matches the on-screen
+  // filtered view.
+  let paId: string | null = null;
+  if (paSlug) {
+    const { data } = await supabase
+      .from("practice_areas")
+      .select("id")
+      .eq("slug", paSlug)
+      .maybeSingle();
+    paId = data?.id ?? null;
+  }
+  let countyId: string | null = null;
+  if (countySlug) {
+    const { data } = await supabase
+      .from("counties")
+      .select("id")
+      .eq("slug", countySlug)
+      .maybeSingle();
+    countyId = data?.id ?? null;
+  }
+
   let query = supabase
     .from("leads")
     .select(COLUMNS.join(","))
@@ -71,6 +99,10 @@ export async function GET(req: Request): Promise<Response> {
   } else if (status === "all") {
     query = query.neq("status", "spam");
   }
+
+  if (source) query = query.eq("utm_source", source);
+  if (paId) query = query.eq("practice_area_id", paId);
+  if (countyId) query = query.eq("county_id", countyId);
 
   if (q) {
     query = query.or(

@@ -23,9 +23,20 @@ type SearchParams = {
   q?: string;
   due?: string;
   page?: string;
+  source?: string;
+  pa?: string;
+  county?: string;
 };
 
 const PAGE_SIZE = 50;
+
+/** Keep slug/source params to a safe charset. */
+function slugish(v: string | undefined): string {
+  return (v ?? "")
+    .replace(/[^a-zA-Z0-9 _.\-]/g, "")
+    .trim()
+    .slice(0, 80);
+}
 
 /** Strip PostgREST `.or()` / `ilike` metacharacters from a search term. */
 function sanitize(q: string): string {
@@ -52,8 +63,35 @@ export default async function LeadsPage({
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
+  const source = slugish(params.source);
+  const paSlug = slugish(params.pa);
+  const countySlug = slugish(params.county);
 
   const supabase = await getServerSupabase();
+
+  // Resolve drill-down slugs to FK ids (from analytics rankings).
+  let paId: string | null = null;
+  let paName: string | null = null;
+  if (paSlug) {
+    const { data } = await supabase
+      .from("practice_areas")
+      .select("id, name")
+      .eq("slug", paSlug)
+      .maybeSingle();
+    paId = data?.id ?? null;
+    paName = (data?.name as string | undefined) ?? null;
+  }
+  let countyId: string | null = null;
+  let countyName: string | null = null;
+  if (countySlug) {
+    const { data } = await supabase
+      .from("counties")
+      .select("id, name")
+      .eq("slug", countySlug)
+      .maybeSingle();
+    countyId = data?.id ?? null;
+    countyName = (data?.name as string | undefined) ?? null;
+  }
 
   let query = supabase
     .from("leads")
@@ -62,6 +100,10 @@ export default async function LeadsPage({
     })
     .order("created_at", { ascending: false })
     .range(from, to);
+
+  if (source) query = query.eq("utm_source", source);
+  if (paId) query = query.eq("practice_area_id", paId);
+  if (countyId) query = query.eq("county_id", countyId);
 
   if (due) {
     query = query
@@ -87,12 +129,20 @@ export default async function LeadsPage({
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // Build a querystring for page links that preserves the active filters.
-  function pageHref(targetPage: number): string {
-    const sp = new URLSearchParams();
+  // Common filter params shared by page links + export.
+  function applyFilters(sp: URLSearchParams) {
     if (due) sp.set("due", "1");
     else if (status !== "all") sp.set("status", status);
     if (rawQ) sp.set("q", rawQ);
+    if (source) sp.set("source", source);
+    if (paSlug) sp.set("pa", paSlug);
+    if (countySlug) sp.set("county", countySlug);
+  }
+
+  // Build a querystring for page links that preserves the active filters.
+  function pageHref(targetPage: number): string {
+    const sp = new URLSearchParams();
+    applyFilters(sp);
     if (targetPage > 1) sp.set("page", String(targetPage));
     const qs = sp.toString();
     return `/admin/leads${qs ? `?${qs}` : ""}`;
@@ -100,10 +150,17 @@ export default async function LeadsPage({
 
   // Preserve the active filters in the export link.
   const exportParams = new URLSearchParams();
-  if (due) exportParams.set("due", "1");
-  else if (status !== "all") exportParams.set("status", status);
-  if (rawQ) exportParams.set("q", rawQ);
+  applyFilters(exportParams);
   const exportHref = `/admin/leads/export${exportParams.toString() ? `?${exportParams}` : ""}`;
+
+  // Active drill-down filter, for a removable chip.
+  const drillLabel = source
+    ? `Source: ${source}`
+    : paId
+      ? `Practice area: ${paName ?? paSlug}`
+      : countyId
+        ? `County: ${countyName ?? countySlug}`
+        : null;
 
   return (
     <div>
@@ -130,10 +187,36 @@ export default async function LeadsPage({
         </a>
       </div>
 
+      {drillLabel ? (
+        <div className="mt-4 flex items-center gap-2">
+          <span className="border-primary/30 bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium">
+            {drillLabel}
+            <Link
+              href={
+                due
+                  ? "/admin/leads?due=1"
+                  : status !== "all"
+                    ? `/admin/leads?status=${status}`
+                    : "/admin/leads"
+              }
+              aria-label="Clear this filter"
+              className="hover:text-primary/70"
+            >
+              ✕
+            </Link>
+          </span>
+        </div>
+      ) : null}
+
       <form method="get" className="mt-6 flex max-w-md items-center gap-2">
         {due ? <input type="hidden" name="due" value="1" /> : null}
         {!due && status !== "all" ? (
           <input type="hidden" name="status" value={status} />
+        ) : null}
+        {source ? <input type="hidden" name="source" value={source} /> : null}
+        {paSlug ? <input type="hidden" name="pa" value={paSlug} /> : null}
+        {countySlug ? (
+          <input type="hidden" name="county" value={countySlug} />
         ) : null}
         <div className="relative flex-1">
           <Search
