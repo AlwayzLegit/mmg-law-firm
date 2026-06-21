@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { normalizeTags } from "@/lib/leads/tags";
 
 import { LEAD_STATUSES, type LeadStatus } from "./statuses";
 
@@ -329,6 +330,47 @@ export async function setLeadFollowUp(
   revalidatePath(`/admin/leads/${parsed.data.leadId}`);
   revalidatePath("/admin/leads");
   revalidatePath("/admin");
+  return { ok: true };
+}
+
+const TagsInput = z.object({
+  leadId: z.string().uuid(),
+  tags: z.array(z.string()).max(50),
+});
+
+/** Replace a lead's tag set. Tags are normalized + de-duplicated server-side. */
+export async function setLeadTags(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  let tags: string[];
+  try {
+    tags = JSON.parse(String(formData.get("tags") ?? "[]"));
+  } catch {
+    return { ok: false, error: "Invalid tags" };
+  }
+
+  const parsed = TagsInput.safeParse({ leadId: formData.get("leadId"), tags });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const normalized = normalizeTags(parsed.data.tags);
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase
+    .from("leads")
+    .update({ tags: normalized })
+    .eq("id", parsed.data.leadId);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: "tags_updated",
+    diff: { tags: normalized },
+  });
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  revalidatePath("/admin/leads");
   return { ok: true };
 }
 

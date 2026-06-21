@@ -13,6 +13,7 @@ import FollowUpControl from "./follow-up-control";
 import LeadActivity, { type ActivityEvent } from "./lead-activity";
 import NoteCompose from "./note-compose";
 import StatusControl from "./status-control";
+import TagsControl from "./tags-control";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -334,6 +335,20 @@ export default async function LeadDetailPage({ params }: Props) {
               <FollowUpControl
                 leadId={lead.id}
                 current={lead.follow_up_at ?? null}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tags</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TagsControl
+                leadId={lead.id}
+                initial={
+                  Array.isArray(lead.tags) ? (lead.tags as string[]) : []
+                }
               />
             </CardContent>
           </Card>

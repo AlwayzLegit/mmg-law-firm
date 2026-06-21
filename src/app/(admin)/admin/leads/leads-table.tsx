@@ -18,6 +18,7 @@ export type LeadRow = {
   status: string;
   created_at: string;
   follow_up_at?: string | null;
+  tags?: string[] | null;
 };
 
 type Props = {
@@ -48,10 +49,7 @@ export default function LeadsTable({ rows, status }: Props) {
     else setSelected(new Set());
   }
 
-  function runBulk(
-    action: "status" | "assign",
-    statusValue?: string,
-  ) {
+  function runBulk(action: "status" | "assign", statusValue?: string) {
     if (selected.size === 0) return;
     const fd = new FormData();
     for (const id of selected) fd.append("ids", id);
@@ -63,7 +61,9 @@ export default function LeadsTable({ rows, status }: Props) {
           ? await bulkUpdateStatus(fd)
           : await bulkAssignToMe(fd);
       if (result.ok) {
-        toast.success(`Updated ${result.updated} lead${result.updated === 1 ? "" : "s"}.`);
+        toast.success(
+          `Updated ${result.updated} lead${result.updated === 1 ? "" : "s"}.`,
+        );
         setSelected(new Set());
       } else {
         toast.error(result.error);
@@ -72,16 +72,14 @@ export default function LeadsTable({ rows, status }: Props) {
   }
 
   if (rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">No leads found.</p>;
+    return <p className="text-muted-foreground text-sm">No leads found.</p>;
   }
 
   return (
     <div className="grid gap-3">
       {selected.size > 0 ? (
-        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 backdrop-blur">
-          <span className="text-sm font-medium">
-            {selected.size} selected
-          </span>
+        <div className="border-primary/30 bg-primary/5 sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-lg border p-3 backdrop-blur">
+          <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             {status === "spam" ? (
               <Button
@@ -145,7 +143,7 @@ export default function LeadsTable({ rows, status }: Props) {
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="border-border text-muted-foreground border-b text-xs tracking-wide uppercase">
             <tr>
               <th className="px-2 py-3 text-left">
                 <Checkbox
@@ -175,7 +173,7 @@ export default function LeadsTable({ rows, status }: Props) {
             {rows.map((l) => (
               <tr
                 key={l.id}
-                className={`border-b border-border/60 ${
+                className={`border-border/60 border-b ${
                   selected.has(l.id) ? "bg-primary/5" : ""
                 }`}
               >
@@ -186,7 +184,7 @@ export default function LeadsTable({ rows, status }: Props) {
                     aria-label={`Select ${l.full_name}`}
                   />
                 </td>
-                <td className="px-2 py-3 align-top text-xs text-muted-foreground">
+                <td className="text-muted-foreground px-2 py-3 align-top text-xs">
                   <time dateTime={l.created_at}>
                     {new Date(l.created_at).toLocaleString("en-US", {
                       month: "short",
@@ -199,15 +197,28 @@ export default function LeadsTable({ rows, status }: Props) {
                 <td className="px-2 py-3 align-top">
                   <Link
                     href={`/admin/leads/${l.id}`}
-                    className="font-medium hover:text-primary"
+                    className="hover:text-primary font-medium"
                   >
                     {l.full_name}
                   </Link>
+                  {l.tags && l.tags.length > 0 ? (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {l.tags.map((t) => (
+                        <Link
+                          key={t}
+                          href={`/admin/leads?tag=${encodeURIComponent(t)}`}
+                          className="border-border bg-secondary text-muted-foreground hover:text-primary rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                        >
+                          {t}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
                 </td>
-                <td className="px-2 py-3 align-top text-xs text-muted-foreground">
+                <td className="text-muted-foreground px-2 py-3 align-top text-xs">
                   {l.phone}
                 </td>
-                <td className="px-2 py-3 align-top text-xs text-muted-foreground">
+                <td className="text-muted-foreground px-2 py-3 align-top text-xs">
                   {l.email ?? "—"}
                 </td>
                 <td className="px-2 py-3 align-top">
@@ -229,7 +240,7 @@ export default function LeadsTable({ rows, status }: Props) {
                       dateTime={l.follow_up_at}
                       className={
                         new Date(l.follow_up_at).getTime() < now
-                          ? "font-medium text-destructive"
+                          ? "text-destructive font-medium"
                           : "text-muted-foreground"
                       }
                     >

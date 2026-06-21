@@ -38,6 +38,7 @@ type SearchParams = {
   pa?: string;
   county?: string;
   assignee?: string;
+  tag?: string;
 };
 
 const PAGE_SIZE = 50;
@@ -67,6 +68,7 @@ export default async function LeadsPage({
   )
     ? (params.assignee as Assignee)
     : "all";
+  const tag = (params.tag ?? "").trim().toLowerCase().slice(0, 30);
 
   const { user } = await requireAdmin();
   const supabase = await getServerSupabase();
@@ -97,15 +99,19 @@ export default async function LeadsPage({
 
   let query = supabase
     .from("leads")
-    .select("id, full_name, phone, email, status, created_at, follow_up_at", {
-      count: "exact",
-    })
+    .select(
+      "id, full_name, phone, email, status, created_at, follow_up_at, tags",
+      {
+        count: "exact",
+      },
+    )
     .order("created_at", { ascending: false })
     .range(from, to);
 
   if (source) query = query.eq("utm_source", source);
   if (paId) query = query.eq("practice_area_id", paId);
   if (countyId) query = query.eq("county_id", countyId);
+  if (tag) query = query.contains("tags", [tag]);
   if (assignee === "me") query = query.eq("assigned_to", user.id);
   else if (assignee === "unassigned") query = query.is("assigned_to", null);
 
@@ -142,6 +148,7 @@ export default async function LeadsPage({
     if (paSlug) sp.set("pa", paSlug);
     if (countySlug) sp.set("county", countySlug);
     if (assignee !== "all") sp.set("assignee", assignee);
+    if (tag) sp.set("tag", tag);
   }
 
   // Build an assignee-filter link that keeps status/due/search but resets page.
@@ -153,6 +160,7 @@ export default async function LeadsPage({
     if (source) sp.set("source", source);
     if (paSlug) sp.set("pa", paSlug);
     if (countySlug) sp.set("county", countySlug);
+    if (tag) sp.set("tag", tag);
     if (target !== "all") sp.set("assignee", target);
     const qs = sp.toString();
     return `/admin/leads${qs ? `?${qs}` : ""}`;
@@ -171,6 +179,12 @@ export default async function LeadsPage({
   const exportParams = new URLSearchParams();
   applyFilters(exportParams);
   const exportHref = `/admin/leads/export${exportParams.toString() ? `?${exportParams}` : ""}`;
+
+  // Link that drops just the tag filter, keeping everything else.
+  const tagClearParams = new URLSearchParams();
+  applyFilters(tagClearParams);
+  tagClearParams.delete("tag");
+  const clearTagHref = `/admin/leads${tagClearParams.toString() ? `?${tagClearParams}` : ""}`;
 
   // Active drill-down filter, for a removable chip.
   const drillLabel = source
@@ -236,7 +250,23 @@ export default async function LeadsPage({
         </div>
       ) : null}
 
+      {tag ? (
+        <div className="mt-4 flex items-center gap-2">
+          <span className="border-primary/30 bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium">
+            Tag: {tag}
+            <Link
+              href={clearTagHref}
+              aria-label="Clear tag filter"
+              className="hover:text-primary/70"
+            >
+              ✕
+            </Link>
+          </span>
+        </div>
+      ) : null}
+
       <form method="get" className="mt-6 flex max-w-md items-center gap-2">
+        {tag ? <input type="hidden" name="tag" value={tag} /> : null}
         {due ? <input type="hidden" name="due" value="1" /> : null}
         {!due && status !== "all" ? (
           <input type="hidden" name="status" value={status} />
