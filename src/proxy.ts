@@ -54,6 +54,11 @@ function buildCsp(): string {
     `worker-src 'self' blob:`,
     `manifest-src 'self'`,
     `upgrade-insecure-requests`,
+    // Violation reporting → /api/csp-report (Sentry). report-to is the modern
+    // channel (paired with the Reporting-Endpoints header set in withCsp);
+    // report-uri is the legacy fallback for browsers that lack it.
+    `report-uri /api/csp-report`,
+    `report-to csp-endpoint`,
   ].join("; ");
 }
 
@@ -107,9 +112,11 @@ export async function proxy(request: NextRequest) {
     ? "content-security-policy-report-only"
     : "content-security-policy";
 
-  /** Attach the CSP to a response before returning it. */
+  /** Attach the CSP (+ reporting endpoint) to a response before returning it. */
   function withCsp(res: NextResponse): NextResponse {
     res.headers.set(cspHeader, csp);
+    // Modern reporting channel for the `report-to csp-endpoint` directive.
+    res.headers.set("reporting-endpoints", 'csp-endpoint="/api/csp-report"');
     return res;
   }
 
