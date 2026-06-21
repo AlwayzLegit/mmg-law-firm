@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  KanbanSquare,
+  Search,
+} from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -206,13 +212,22 @@ export default async function LeadsPage({
               : null}
           </p>
         </div>
-        <a
-          href={exportHref}
-          className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
-        >
-          <Download className="h-3.5 w-3.5" aria-hidden />
-          Export CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/leads/board"
+            className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+          >
+            <KanbanSquare className="h-3.5 w-3.5" aria-hidden />
+            Board view
+          </Link>
+          <a
+            href={exportHref}
+            className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden />
+            Export CSV
+          </a>
+        </div>
       </div>
 
       {drillLabel ? (

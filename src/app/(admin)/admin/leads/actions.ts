@@ -25,6 +25,11 @@ const BulkAssignInput = z.object({
   ids: z.array(z.string().uuid()).min(1).max(200),
 });
 
+const MoveInput = z.object({
+  id: z.string().uuid(),
+  status: z.enum(STATUS_VALUES),
+});
+
 export type BulkResult =
   | { ok: true; updated: number }
   | { ok: false; error: string };
@@ -82,9 +87,51 @@ export async function bulkUpdateStatus(
   return { ok: true, updated: data?.length ?? 0 };
 }
 
-export async function bulkAssignToMe(
-  formData: FormData,
-): Promise<BulkResult> {
+/** Move one lead to a new status — the kanban board's drag/drop mutation. */
+export async function moveLeadStatus(formData: FormData): Promise<BulkResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = MoveInput.safeParse({
+    id: formData.get("id"),
+    status: formData.get("status"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  const supabase = await getServerSupabase();
+
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ status: parsed.data.status })
+    .eq("id", parsed.data.id)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+
+  if (data && data.length > 0) {
+    logAuditMany([
+      {
+        actor_id: user.id,
+        entity: "leads",
+        entity_id: parsed.data.id,
+        action: "status_change",
+        diff: { to: parsed.data.status },
+      },
+    ]);
+  }
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin/leads/board");
+  revalidatePath("/admin");
+  revalidatePath(`/admin/leads/${parsed.data.id}`);
+
+  return { ok: true, updated: data?.length ?? 0 };
+}
+
+export async function bulkAssignToMe(formData: FormData): Promise<BulkResult> {
   const { user } = await requireAdmin();
 
   const parsed = BulkAssignInput.safeParse({ ids: parseIds(formData) });

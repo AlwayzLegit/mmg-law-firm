@@ -47,6 +47,13 @@ const COMMANDS: Command[] = [
   },
   { label: "Leads", href: "/admin/leads", group: "Go to", icon: Users },
   {
+    label: "Leads board",
+    href: "/admin/leads/board",
+    group: "Leads",
+    keywords: "kanban pipeline drag",
+    icon: Users,
+  },
+  {
     label: "New leads",
     href: "/admin/leads?status=new",
     group: "Leads",
