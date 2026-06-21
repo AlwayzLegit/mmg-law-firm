@@ -38,20 +38,9 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-          // Intentionally a SAFE CSP subset: it locks down plugin/object
-          // embedding, <base> injection, and framing WITHOUT constraining
-          // script/style/connect sources — so it can't break Next.js inline
-          // hydration scripts, Turnstile, PostHog, GTM, Supabase, or the
-          // Google Maps embed. A full script-src/connect-src allowlist needs
-          // per-request nonces (proxy.ts) and staging verification; tracked
-          // as a follow-up rather than risking a white-screen on the live
-          // site. frame-ancestors 'none' is the modern equivalent of the
-          // X-Frame-Options above.
-          {
-            key: "Content-Security-Policy",
-            value:
-              "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests",
-          },
+          // NOTE: Content-Security-Policy is emitted per-request from
+          // src/proxy.ts so it can carry a fresh nonce + strict-dynamic.
+          // Keeping it here too would send a second, conflicting CSP header.
         ],
       },
     ];

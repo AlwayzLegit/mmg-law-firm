@@ -51,6 +51,12 @@ const ServerEnvSchema = z.object({
   // sends it as "Authorization: Bearer <CRON_SECRET>". When unset, the cron
   // endpoints return 401 so they can't be hit anonymously.
   CRON_SECRET: z.string().default(""),
+
+  // Safety valve for the strict Content-Security-Policy emitted by proxy.ts.
+  // Set to "1" to send it as Content-Security-Policy-Report-Only (browsers
+  // report violations but never block) — an instant, code-free rollback if a
+  // legitimate script ever gets blocked in production.
+  CSP_REPORT_ONLY: z.string().default(""),
 });
 
 const REQUIRED_IN_PROD: ReadonlyArray<keyof z.infer<typeof ServerEnvSchema>> = [
