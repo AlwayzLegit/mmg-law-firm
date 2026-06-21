@@ -5,6 +5,7 @@ import { Mail, Phone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
 import FollowUpControl from "./follow-up-control";
 import NoteCompose from "./note-compose";
@@ -43,11 +44,24 @@ export default async function LeadDetailPage({ params }: Props) {
     .eq("lead_id", id)
     .order("created_at", { ascending: false });
 
+  // Admins available as lead assignees.
+  const { data: adminRows } = await supabase
+    .from("admin_profiles")
+    .select("user_id, full_name, role")
+    .order("full_name", { ascending: true });
+  const admins: AdminOption[] = (adminRows ?? []).map((a) => ({
+    userId: a.user_id as string,
+    label:
+      (a.full_name as string | null) ?? `${a.role} (${a.user_id.slice(0, 8)})`,
+  }));
+  const assignedLabel =
+    admins.find((a) => a.userId === lead.assigned_to)?.label ?? null;
+
   return (
     <div>
       <Link
         href="/admin/leads"
-        className="text-sm text-muted-foreground hover:text-primary"
+        className="text-muted-foreground hover:text-primary text-sm"
       >
         ← Back to leads
       </Link>
@@ -77,18 +91,21 @@ export default async function LeadDetailPage({ params }: Props) {
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
               <ContactRow
-                icon={<Phone className="h-4 w-4 text-primary" aria-hidden />}
+                icon={<Phone className="text-primary h-4 w-4" aria-hidden />}
                 value={lead.phone}
                 href={`tel:${lead.phone}`}
               />
               {lead.email ? (
                 <ContactRow
-                  icon={<Mail className="h-4 w-4 text-primary" aria-hidden />}
+                  icon={<Mail className="text-primary h-4 w-4" aria-hidden />}
                   value={lead.email}
                   href={`mailto:${lead.email}`}
                 />
               ) : null}
-              <Pair label="Preferred contact" value={lead.preferred_contact ?? "—"} />
+              <Pair
+                label="Preferred contact"
+                value={lead.preferred_contact ?? "—"}
+              />
               <Pair
                 label="Submitted"
                 value={new Date(lead.created_at).toLocaleString("en-US")}
@@ -110,7 +127,7 @@ export default async function LeadDetailPage({ params }: Props) {
                 value={lead.has_attorney ? "Yes" : "No"}
               />
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
                   Description
                 </p>
                 <p className="mt-2 whitespace-pre-line">
@@ -139,10 +156,10 @@ export default async function LeadDetailPage({ params }: Props) {
               />
               <Pair label="From IP" value={lead.consent_ip ?? "—"} />
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
                   Text shown
                 </p>
-                <p className="mt-2 whitespace-pre-line text-xs leading-relaxed">
+                <p className="mt-2 text-xs leading-relaxed whitespace-pre-line">
                   {lead.consent_text ?? "—"}
                 </p>
               </div>
@@ -175,6 +192,24 @@ export default async function LeadDetailPage({ params }: Props) {
                 leadId={lead.id}
                 currentStatus={lead.status}
                 currentReason={lead.rejection_reason}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Assigned to</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <p className="text-muted-foreground text-xs">
+                {assignedLabel
+                  ? `Currently ${assignedLabel}.`
+                  : "Unassigned. Pick an admin to take ownership."}
+              </p>
+              <AssignControl
+                leadId={lead.id}
+                current={lead.assigned_to ?? null}
+                admins={admins}
               />
             </CardContent>
           </Card>
@@ -215,17 +250,17 @@ export default async function LeadDetailPage({ params }: Props) {
                   {notes.map((n) => (
                     <li
                       key={n.id}
-                      className="rounded-md border border-border bg-secondary/30 p-3 text-sm"
+                      className="border-border bg-secondary/30 rounded-md border p-3 text-sm"
                     >
                       <p className="whitespace-pre-line">{n.body}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">
+                      <p className="text-muted-foreground mt-2 text-xs">
                         {new Date(n.created_at).toLocaleString("en-US")}
                       </p>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   No notes yet — write the first one above.
                 </p>
               )}
@@ -249,7 +284,7 @@ function ContactRow({
   return (
     <a
       href={href}
-      className="flex items-center gap-2 text-foreground hover:text-primary"
+      className="text-foreground hover:text-primary flex items-center gap-2"
     >
       <span>{icon}</span>
       <span>{value}</span>
@@ -260,7 +295,7 @@ function ContactRow({
 function Pair({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="grid grid-cols-[140px_1fr] items-baseline gap-2">
-      <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+      <span className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
         {label}
       </span>
       <span className="text-foreground">{value}</span>

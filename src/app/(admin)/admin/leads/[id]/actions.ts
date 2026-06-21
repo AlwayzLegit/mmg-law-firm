@@ -233,6 +233,57 @@ export async function addLeadNote(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+const AssignInput = z.object({
+  leadId: z.string().uuid(),
+  // A trusted admin's user_id, or empty string to unassign.
+  assignee: z.string().uuid().or(z.literal("")),
+});
+
+/**
+ * Assign a lead to a specific admin (or unassign with an empty value). The
+ * assignee must be a current admin_profiles member — we never assign to an
+ * arbitrary auth user id.
+ */
+export async function assignLead(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = AssignInput.safeParse({
+    leadId: formData.get("leadId"),
+    assignee: formData.get("assignee") ?? "",
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+  const assignee = parsed.data.assignee || null;
+
+  if (assignee) {
+    const { data: admin } = await supabase
+      .from("admin_profiles")
+      .select("user_id")
+      .eq("user_id", assignee)
+      .maybeSingle();
+    if (!admin) return { ok: false, error: "That admin no longer exists." };
+  }
+
+  const { error } = await supabase
+    .from("leads")
+    .update({ assigned_to: assignee })
+    .eq("id", parsed.data.leadId);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: assignee ? "assigned" : "unassigned",
+    ...(assignee ? { diff: { assigned_to: assignee } } : {}),
+  });
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  revalidatePath("/admin/leads");
+  return { ok: true };
+}
+
 const FollowUpInput = z.object({
   leadId: z.string().uuid(),
   // datetime-local value ("YYYY-MM-DDTHH:MM") or empty to clear.
@@ -280,4 +331,3 @@ export async function setLeadFollowUp(
   revalidatePath("/admin");
   return { ok: true };
 }
-
