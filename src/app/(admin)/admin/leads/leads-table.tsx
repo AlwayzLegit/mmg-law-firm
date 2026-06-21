@@ -32,13 +32,18 @@ type Props = {
   rows: LeadRow[];
   status: string;
   tagSuggestions?: string[];
+  /** Current list filters as a querystring, threaded to detail for prev/next. */
+  fromQuery?: string;
 };
 
 export default function LeadsTable({
   rows,
   status,
   tagSuggestions = [],
+  fromQuery = "",
 }: Props) {
+  const detailHref = (id: string) =>
+    `/admin/leads/${id}${fromQuery ? `?from=${encodeURIComponent(fromQuery)}` : ""}`;
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [pending, startTransition] = React.useTransition();
   const [tagInput, setTagInput] = React.useState("");
@@ -276,7 +281,7 @@ export default function LeadsTable({
                 </td>
                 <td className="px-2 py-3 align-top">
                   <Link
-                    href={`/admin/leads/${l.id}`}
+                    href={detailHref(l.id)}
                     className="hover:text-primary font-medium"
                   >
                     {l.full_name}

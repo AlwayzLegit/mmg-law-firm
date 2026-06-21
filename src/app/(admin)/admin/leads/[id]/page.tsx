@@ -1,10 +1,15 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Copy, Mail, Phone } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Mail, Phone } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getTagVocabulary } from "@/lib/data/lead-tags";
+import {
+  getLeadQueueIds,
+  neighborsOf,
+  parseLeadFilters,
+} from "@/lib/data/lead-queue";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import AssignControl, { type AdminOption } from "./assign-control";
@@ -16,10 +21,14 @@ import NoteItem from "./note-item";
 import StatusControl from "./status-control";
 import TagsControl from "./tags-control";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
+};
 
-export default async function LeadDetailPage({ params }: Props) {
+export default async function LeadDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { from } = await searchParams;
   const { user, profile } = await requireAdmin();
   const supabase = await getServerSupabase();
 
@@ -82,6 +91,23 @@ export default async function LeadDetailPage({ params }: Props) {
 
   const tagVocabulary = await getTagVocabulary(supabase);
 
+  // Prev/next navigation through the filtered queue the admin came from.
+  const fromQs = (from ?? "").slice(0, 400);
+  let neighbors = {
+    prevId: null as string | null,
+    nextId: null as string | null,
+    index: -1,
+    total: 0,
+  };
+  if (fromQs) {
+    const filters = parseLeadFilters(new URLSearchParams(fromQs));
+    const ids = await getLeadQueueIds(supabase, filters, user.id);
+    neighbors = neighborsOf(ids, id);
+  }
+  const neighborHref = (nid: string) =>
+    `/admin/leads/${nid}${fromQs ? `?from=${encodeURIComponent(fromQs)}` : ""}`;
+  const backHref = `/admin/leads${fromQs ? `?${fromQs}` : ""}`;
+
   const { data: notes } = await supabase
     .from("lead_notes")
     .select("id, body, author_id, created_at, updated_at, is_pinned")
@@ -123,12 +149,52 @@ export default async function LeadDetailPage({ params }: Props) {
 
   return (
     <div>
-      <Link
-        href="/admin/leads"
-        className="text-muted-foreground hover:text-primary text-sm"
-      >
-        ← Back to leads
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={backHref}
+          className="text-muted-foreground hover:text-primary text-sm"
+        >
+          ← Back to leads
+        </Link>
+
+        {neighbors.index >= 0 && neighbors.total > 1 ? (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">
+              {neighbors.index + 1} of {neighbors.total}
+            </span>
+            {neighbors.prevId ? (
+              <Link
+                href={neighborHref(neighbors.prevId)}
+                rel="prev"
+                className="border-border hover:bg-secondary inline-flex items-center gap-1 rounded-md border px-2 py-1 font-medium"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                Prev
+              </Link>
+            ) : (
+              <span className="border-border text-muted-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 opacity-50">
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                Prev
+              </span>
+            )}
+            {neighbors.nextId ? (
+              <Link
+                href={neighborHref(neighbors.nextId)}
+                rel="next"
+                className="border-border hover:bg-secondary inline-flex items-center gap-1 rounded-md border px-2 py-1 font-medium"
+              >
+                Next
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            ) : (
+              <span className="border-border text-muted-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 opacity-50">
+                Next
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            )}
+          </div>
+        ) : null}
+      </div>
 
       <div className="mt-3 flex items-baseline justify-between gap-4">
         <h1 className="font-display text-2xl font-medium tracking-tight">
