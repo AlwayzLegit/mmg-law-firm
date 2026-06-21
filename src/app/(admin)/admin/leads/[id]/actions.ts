@@ -331,3 +331,53 @@ export async function setLeadFollowUp(
   revalidatePath("/admin");
   return { ok: true };
 }
+
+const DeleteNoteInput = z.object({
+  leadId: z.string().uuid(),
+  noteId: z.string().uuid(),
+});
+
+/**
+ * Delete a lead note. Allowed for the note's author or a firm owner only —
+ * staff can't remove each other's notes. Audit-logged.
+ */
+export async function deleteLeadNote(
+  formData: FormData,
+): Promise<ActionResult> {
+  const { user, profile } = await requireAdmin();
+
+  const parsed = DeleteNoteInput.safeParse({
+    leadId: formData.get("leadId"),
+    noteId: formData.get("noteId"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+  const { data: note } = await supabase
+    .from("lead_notes")
+    .select("id, author_id, lead_id")
+    .eq("id", parsed.data.noteId)
+    .maybeSingle();
+  if (!note || note.lead_id !== parsed.data.leadId) {
+    return { ok: false, error: "Note not found." };
+  }
+  if (note.author_id !== user.id && profile.role !== "owner") {
+    return { ok: false, error: "You can only delete your own notes." };
+  }
+
+  const { error } = await supabase
+    .from("lead_notes")
+    .delete()
+    .eq("id", parsed.data.noteId);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: "note_deleted",
+  });
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  return { ok: true };
+}
