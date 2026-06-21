@@ -1,0 +1,56 @@
+name: Lighthouse
+
+# Runs Lighthouse against the production build for BOTH mobile and desktop.
+# Triggered on PRs to main and on demand. Results are uploaded to temporary
+# public storage (a link appears in the job log) and as build artifacts.
+#
+# For representative scores, set these repository secrets so the public pages
+# build with real data + image host (without them the run still works, but
+# Supabase-hosted images won't load and data falls back to in-code seeds):
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+#
+# Budgets are "warn" (informational) so a flaky run never blocks a PR; tighten
+# to "error" in the .lighthouserc.*.json files once scores are stable.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        formfactor: [mobile, desktop]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Lighthouse (${{ matrix.formfactor }})
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./.lighthouserc.${{ matrix.formfactor }}.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
