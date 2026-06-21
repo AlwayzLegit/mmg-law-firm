@@ -41,11 +41,11 @@ export function PageHero({
   return (
     <section
       className={cn(
-        "relative isolate overflow-hidden border-b border-border",
+        "border-border relative isolate overflow-hidden border-b",
         className,
       )}
     >
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/60 via-background to-background" />
+      <div className="from-secondary/60 via-background to-background absolute inset-0 -z-10 bg-gradient-to-b" />
       <div
         aria-hidden
         className="absolute inset-0 -z-10 opacity-[0.35]"
@@ -58,8 +58,7 @@ export function PageHero({
         aria-hidden
         className="absolute inset-x-0 top-0 -z-10 h-56 bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:32px_32px]"
         style={{
-          maskImage:
-            "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
           WebkitMaskImage:
             "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
         }}
@@ -74,37 +73,50 @@ export function PageHero({
         >
           <div>
             {breadcrumbs && breadcrumbs.length > 0 ? (
-              <nav
-                aria-label="Breadcrumb"
-                className="mb-5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground"
-              >
-                {breadcrumbs.map((c, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5">
-                    {c.href ? (
-                      <Link href={c.href} className="hover:text-primary">
-                        {c.label}
-                      </Link>
-                    ) : (
-                      <span className="text-foreground">{c.label}</span>
-                    )}
-                    {i < breadcrumbs.length - 1 ? (
-                      <span aria-hidden className="text-muted-foreground/50">
-                        /
-                      </span>
-                    ) : null}
-                  </span>
-                ))}
+              <nav aria-label="Breadcrumb" className="mb-5">
+                <ol className="text-muted-foreground flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+                  {breadcrumbs.map((c, i) => {
+                    const isLast = i === breadcrumbs.length - 1;
+                    return (
+                      <li key={i} className="inline-flex items-center gap-1.5">
+                        {c.href ? (
+                          <Link
+                            href={c.href}
+                            className="hover:text-primary focus-visible:ring-ring rounded focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none"
+                          >
+                            {c.label}
+                          </Link>
+                        ) : (
+                          <span
+                            className="text-foreground"
+                            aria-current={isLast ? "page" : undefined}
+                          >
+                            {c.label}
+                          </span>
+                        )}
+                        {!isLast ? (
+                          <span
+                            aria-hidden
+                            className="text-muted-foreground/50"
+                          >
+                            /
+                          </span>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ol>
               </nav>
             ) : null}
 
             <SectionEyebrow>{eyebrow}</SectionEyebrow>
 
-            <h1 className="mt-5 max-w-[22ch] font-display text-[2.4rem] font-medium leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[3.75rem]">
+            <h1 className="font-display text-foreground mt-5 max-w-[22ch] text-[2.4rem] leading-[1.05] font-medium tracking-tight sm:text-5xl md:text-6xl lg:text-[3.75rem]">
               {title}
             </h1>
 
             {description ? (
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+              <p className="text-muted-foreground mt-6 max-w-2xl text-lg leading-relaxed">
                 {description}
               </p>
             ) : null}

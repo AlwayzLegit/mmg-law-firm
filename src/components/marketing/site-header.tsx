@@ -62,7 +62,7 @@ export async function SiteHeader() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="hover:bg-secondary hover:text-primary rounded-md px-3 py-2 text-sm font-medium transition-colors"
+                  className="hover:bg-secondary hover:text-primary focus-visible:ring-ring rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
                 >
                   {item.label}
                 </Link>
