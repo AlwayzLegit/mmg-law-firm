@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -18,11 +18,21 @@ const STATUS_OPTIONS = [
 
 const CLOSED = ["signed", "rejected", "spam"];
 
-type SearchParams = { status?: string; q?: string; due?: string };
+type SearchParams = {
+  status?: string;
+  q?: string;
+  due?: string;
+  page?: string;
+};
+
+const PAGE_SIZE = 50;
 
 /** Strip PostgREST `.or()` / `ilike` metacharacters from a search term. */
 function sanitize(q: string): string {
-  return q.replace(/[%_,()]/g, " ").trim().slice(0, 80);
+  return q
+    .replace(/[%_,()]/g, " ")
+    .trim()
+    .slice(0, 80);
 }
 
 export default async function LeadsPage({
@@ -39,14 +49,19 @@ export default async function LeadsPage({
   const due = params.due === "1";
   const rawQ = (params.q ?? "").trim();
   const q = sanitize(rawQ);
+  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
 
   const supabase = await getServerSupabase();
 
   let query = supabase
     .from("leads")
-    .select("id, full_name, phone, email, status, created_at, follow_up_at")
+    .select("id, full_name, phone, email, status, created_at, follow_up_at", {
+      count: "exact",
+    })
     .order("created_at", { ascending: false })
-    .limit(200);
+    .range(from, to);
 
   if (due) {
     query = query
@@ -67,8 +82,21 @@ export default async function LeadsPage({
     );
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   const rows = (data ?? []) as LeadRow[];
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Build a querystring for page links that preserves the active filters.
+  function pageHref(targetPage: number): string {
+    const sp = new URLSearchParams();
+    if (due) sp.set("due", "1");
+    else if (status !== "all") sp.set("status", status);
+    if (rawQ) sp.set("q", rawQ);
+    if (targetPage > 1) sp.set("page", String(targetPage));
+    const qs = sp.toString();
+    return `/admin/leads${qs ? `?${qs}` : ""}`;
+  }
 
   // Preserve the active filters in the export link.
   const exportParams = new URLSearchParams();
@@ -84,7 +112,7 @@ export default async function LeadsPage({
           <h1 className="font-display text-2xl font-medium tracking-tight">
             Leads
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-1 text-sm">
             {due
               ? "Follow-ups that are due or overdue, soonest first."
               : "Most recent first. Click any name for details. Tick rows for bulk actions."}
@@ -95,7 +123,7 @@ export default async function LeadsPage({
         </div>
         <a
           href={exportHref}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+          className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
         >
           <Download className="h-3.5 w-3.5" aria-hidden />
           Export CSV
@@ -109,7 +137,7 @@ export default async function LeadsPage({
         ) : null}
         <div className="relative flex-1">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
             aria-hidden
           />
           <input
@@ -118,19 +146,19 @@ export default async function LeadsPage({
             defaultValue={rawQ}
             placeholder="Search name, email, or phone"
             aria-label="Search leads"
-            className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="border-border bg-background focus:ring-ring h-9 w-full rounded-md border pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
           />
         </div>
         <button
           type="submit"
-          className="h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 rounded-md px-4 text-sm font-medium"
         >
           Search
         </button>
         {rawQ ? (
           <Link
             href={due ? "/admin/leads?due=1" : `/admin/leads?status=${status}`}
-            className="text-xs text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary text-xs"
           >
             Clear
           </Link>
@@ -144,7 +172,7 @@ export default async function LeadsPage({
             <Link
               key={s}
               href={`/admin/leads${s === "all" ? "" : `?status=${s}`}`}
-              className={`rounded-md border border-border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+              className={`border-border rounded-md border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
                 active
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "hover:bg-secondary"
@@ -169,15 +197,55 @@ export default async function LeadsPage({
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-base">
-            {rows.length} matching {rows.length === 1 ? "lead" : "leads"}
+            {total} matching {total === 1 ? "lead" : "leads"}
+            {totalPages > 1 ? (
+              <span className="text-muted-foreground ml-2 text-xs font-normal">
+                · page {page} of {totalPages}
+              </span>
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {error ? (
-            <p className="text-sm text-destructive">{error.message}</p>
+            <p className="text-destructive text-sm">{error.message}</p>
           ) : (
             <LeadsTable rows={rows} status={status} />
           )}
+
+          {totalPages > 1 ? (
+            <nav
+              className="border-border mt-6 flex items-center justify-between gap-3 border-t pt-4 text-sm"
+              aria-label="Pagination"
+            >
+              {page > 1 ? (
+                <Link
+                  href={pageHref(page - 1)}
+                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+                  rel="prev"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                  Previous
+                </Link>
+              ) : (
+                <span aria-hidden />
+              )}
+              <span className="text-muted-foreground text-xs">
+                Showing {from + 1}–{Math.min(to + 1, total)} of {total}
+              </span>
+              {page < totalPages ? (
+                <Link
+                  href={pageHref(page + 1)}
+                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+                  rel="next"
+                >
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+              ) : (
+                <span aria-hidden />
+              )}
+            </nav>
+          ) : null}
         </CardContent>
       </Card>
     </div>
