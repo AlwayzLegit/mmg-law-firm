@@ -78,7 +78,7 @@ export default async function CityPracticePage({ params }: Props) {
 
   const legalService = {
     "@context": "https://schema.org",
-    "@type": "LegalService",
+    "@type": ["LegalService", "Attorney"],
     name: `${FIRM.legalName} — ${row.practice_area_name} in ${row.city_name}`,
     url: canonicalUrl(path),
     image: defaultOgImageUrl(),
