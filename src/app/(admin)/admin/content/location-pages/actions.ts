@@ -173,9 +173,7 @@ export async function updateLocationPage(
  *  is empty — the DB RLS policy already hides such rows publicly, but we
  *  surface the error instead of letting the admin "publish" something that
  *  won't render. */
-export async function togglePublish(
-  formData: FormData,
-): Promise<ActionResult> {
+export async function togglePublish(formData: FormData): Promise<ActionResult> {
   const { user } = await requireAdmin();
 
   const parsed = PublishInput.safeParse({
@@ -347,4 +345,46 @@ export async function touchReviewed(formData: FormData): Promise<ActionResult> {
   revalidatePath("/admin/content/pages");
 
   return { ok: true };
+}
+
+const BulkReviewInput = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(500),
+});
+
+/** Stamp last_reviewed_at = now() on many pages at once — clears the whole
+ *  stale-review backlog from the content overview in one click. */
+export async function bulkTouchReviewed(
+  formData: FormData,
+): Promise<BulkResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = BulkReviewInput.safeParse({
+    ids: formData.getAll("ids").map(String).filter(Boolean),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+  const { data, error } = await supabase
+    .from("location_pages")
+    .update({ last_reviewed_at: new Date().toISOString() })
+    .in("id", parsed.data.ids)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+
+  const updated = data ?? [];
+  if (updated.length > 0) {
+    logAuditMany(
+      updated.map((r) => ({
+        actor_id: user.id,
+        entity: "location_pages",
+        entity_id: r.id as string,
+        action: "touch_reviewed",
+      })),
+    );
+  }
+
+  revalidatePath("/admin/content/location-pages");
+  revalidatePath("/admin/content/pages");
+
+  return { ok: true, updated: updated.length, skipped: 0 };
 }

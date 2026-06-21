@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import BulkReviewButton from "./bulk-review-button";
 import ReviewRowButton from "./review-row-button";
 
 const STALE_AFTER_DAYS = 365;
@@ -168,11 +169,14 @@ export default async function ContentPagesAdmin() {
 
             {stalePages.length > 0 ? (
               <div>
-                <p className="font-medium">
-                  {stalePages.length} published page
-                  {stalePages.length === 1 ? "" : "s"} not reviewed in 12+
-                  months
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-medium">
+                    {stalePages.length} published page
+                    {stalePages.length === 1 ? "" : "s"} not reviewed in 12+
+                    months
+                  </p>
+                  <BulkReviewButton ids={stalePages.map((p) => p.id)} />
+                </div>
                 <p className="text-muted-foreground mt-1 text-xs">
                   Spec §10.4: pages must be reviewed within 12 months to remain
                   published. Open each row, confirm the content is current, and
