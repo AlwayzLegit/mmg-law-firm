@@ -13,6 +13,7 @@ import { sanitizeSearchTerm as sanitize, slugish } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import LeadsTable, { type LeadRow } from "./leads-table";
+import SavedViews, { type SavedView } from "./saved-views";
 
 const ASSIGNEE_OPTIONS = ["all", "me", "unassigned"] as const;
 type Assignee = (typeof ASSIGNEE_OPTIONS)[number];
@@ -139,6 +140,13 @@ export default async function LeadsPage({
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // This admin's saved filter presets (RLS scopes to the owner).
+  const { data: viewRows } = await supabase
+    .from("lead_saved_views")
+    .select("id, name, query")
+    .order("created_at", { ascending: true });
+  const savedViews = (viewRows ?? []) as SavedView[];
+
   // Common filter params shared by page links + export.
   function applyFilters(sp: URLSearchParams) {
     if (due) sp.set("due", "1");
@@ -186,6 +194,12 @@ export default async function LeadsPage({
   tagClearParams.delete("tag");
   const clearTagHref = `/admin/leads${tagClearParams.toString() ? `?${tagClearParams}` : ""}`;
 
+  // Current filters as a querystring, for the saved-views "save current" +
+  // active-view highlighting (page is never part of a view).
+  const viewParams = new URLSearchParams();
+  applyFilters(viewParams);
+  const currentQuery = viewParams.toString();
+
   // Active drill-down filter, for a removable chip.
   const drillLabel = source
     ? `Source: ${source}`
@@ -228,6 +242,12 @@ export default async function LeadsPage({
           </a>
         </div>
       </div>
+
+      <SavedViews
+        views={savedViews}
+        currentQuery={currentQuery}
+        activeQuery={currentQuery}
+      />
 
       {drillLabel ? (
         <div className="mt-4 flex items-center gap-2">

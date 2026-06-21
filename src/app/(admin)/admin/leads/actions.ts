@@ -167,3 +167,70 @@ export async function bulkAssignToMe(formData: FormData): Promise<BulkResult> {
 
   return { ok: true, updated: data?.length ?? 0 };
 }
+
+// -------------------------------------------------------------------
+// Saved views — per-admin filter presets for the leads list.
+// -------------------------------------------------------------------
+
+export type SimpleResult = { ok: true } | { ok: false; error: string };
+
+const CreateViewInput = z.object({
+  name: z.string().trim().min(1, "Name the view").max(60),
+  query: z.string().trim().max(500),
+});
+
+/** Save the current leads-list filter querystring as a named preset. */
+export async function createSavedView(
+  formData: FormData,
+): Promise<SimpleResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = CreateViewInput.safeParse({
+    name: formData.get("name"),
+    query: formData.get("query") ?? "",
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  // Strip a leading "?" and any page param — a view shouldn't pin a page.
+  const sp = new URLSearchParams(parsed.data.query.replace(/^\?/, ""));
+  sp.delete("page");
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase.from("lead_saved_views").insert({
+    owner_id: user.id,
+    name: parsed.data.name,
+    query: sp.toString(),
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/leads");
+  return { ok: true };
+}
+
+const DeleteViewInput = z.object({ id: z.string().uuid() });
+
+/** Delete one of the caller's saved views. RLS scopes this to the owner. */
+export async function deleteSavedView(
+  formData: FormData,
+): Promise<SimpleResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = DeleteViewInput.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase
+    .from("lead_saved_views")
+    .delete()
+    .eq("id", parsed.data.id)
+    .eq("owner_id", user.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/leads");
+  return { ok: true };
+}
