@@ -3,9 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { moveLeadStatus } from "../actions";
+import { normalizeTags } from "@/lib/leads/tags";
+
+import { bulkTag, moveLeadStatus } from "../actions";
 
 export type KanbanCard = {
   id: string;
@@ -55,14 +58,18 @@ function groupByStatus(cards: KanbanCard[]): Record<ColKey, KanbanCard[]> {
 export default function KanbanBoard({
   cards,
   assigneeNames,
+  tagSuggestions = [],
 }: {
   cards: KanbanCard[];
   assigneeNames: Record<string, string>;
+  tagSuggestions?: string[];
 }) {
   const router = useRouter();
   const [cols, setCols] = React.useState(() => groupByStatus(cards));
   const [dragId, setDragId] = React.useState<string | null>(null);
   const [overCol, setOverCol] = React.useState<ColKey | null>(null);
+  const [tagOpen, setTagOpen] = React.useState<string | null>(null);
+  const [tagDraft, setTagDraft] = React.useState("");
   const [, startTransition] = React.useTransition();
   const [now] = React.useState(() => Date.now());
 
@@ -113,8 +120,50 @@ export default function KanbanBoard({
     });
   }
 
+  /** Update one card's tags within the grouped columns, immutably. */
+  function patchCardTags(id: string, tags: string[]) {
+    setCols((c) => {
+      const next = {} as Record<ColKey, KanbanCard[]>;
+      for (const col of COLUMNS) {
+        next[col.key] = c[col.key].map((x) =>
+          x.id === id ? { ...x, tags } : x,
+        );
+      }
+      return next;
+    });
+  }
+
+  function addTag(id: string, current: string[]) {
+    const tag = normalizeTags([tagDraft])[0];
+    setTagDraft("");
+    setTagOpen(null);
+    if (!tag || current.includes(tag)) return;
+
+    const prev = current;
+    patchCardTags(id, normalizeTags([...current, tag]));
+
+    const fd = new FormData();
+    fd.append("ids", id);
+    fd.set("tag", tag);
+    fd.set("op", "add");
+    startTransition(async () => {
+      const res = await bulkTag(fd);
+      if (res.ok) {
+        toast.success(`Tagged “${tag}”.`);
+      } else {
+        patchCardTags(id, prev); // revert
+        toast.error(res.error);
+      }
+    });
+  }
+
   return (
     <div className="overflow-x-auto pb-4">
+      <datalist id="board-tag-suggest">
+        {tagSuggestions.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
       <div className="flex min-w-max gap-4">
         {COLUMNS.map((col) => {
           const items = cols[col.key];
@@ -191,19 +240,56 @@ export default function KanbanBoard({
                           {c.phone}
                         </p>
                       ) : null}
-                      {c.tags && c.tags.length > 0 ? (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {c.tags.map((t) => (
-                            <Link
-                              key={t}
-                              href={`/admin/leads/board?tag=${encodeURIComponent(t)}`}
-                              className="border-border bg-secondary text-muted-foreground hover:text-primary rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
-                            >
-                              {t}
-                            </Link>
-                          ))}
-                        </div>
-                      ) : null}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                        {(c.tags ?? []).map((t) => (
+                          <Link
+                            key={t}
+                            href={`/admin/leads/board?tag=${encodeURIComponent(t)}`}
+                            className="border-border bg-secondary text-muted-foreground hover:text-primary rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                          >
+                            {t}
+                          </Link>
+                        ))}
+                        {tagOpen === c.id ? (
+                          <input
+                            type="text"
+                            value={tagDraft}
+                            onChange={(e) => setTagDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addTag(c.id, c.tags ?? []);
+                              } else if (e.key === "Escape") {
+                                setTagOpen(null);
+                                setTagDraft("");
+                              }
+                            }}
+                            onBlur={() => {
+                              setTagOpen(null);
+                              setTagDraft("");
+                            }}
+                            placeholder="tag…"
+                            aria-label={`Add a tag to ${c.full_name}`}
+                            maxLength={30}
+                            list="board-tag-suggest"
+                            autoFocus
+                            className="border-border bg-background focus:ring-ring h-5 w-20 rounded-full border px-2 text-[10px] focus:ring-2 focus:outline-none"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTagOpen(c.id);
+                              setTagDraft("");
+                            }}
+                            aria-label={`Add a tag to ${c.full_name}`}
+                            title="Add tag"
+                            className="border-border text-muted-foreground hover:text-primary inline-flex items-center rounded-full border border-dashed px-1.5 py-0.5"
+                          >
+                            <Plus className="h-3 w-3" aria-hidden />
+                          </button>
+                        )}
+                      </div>
                       <div className="text-muted-foreground mt-2 flex items-center justify-between text-[11px]">
                         <time dateTime={c.created_at}>
                           {new Date(c.created_at).toLocaleDateString("en-US", {
