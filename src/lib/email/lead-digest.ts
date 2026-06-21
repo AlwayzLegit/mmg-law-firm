@@ -2,7 +2,12 @@ import "server-only";
 
 import { FIRM } from "@/lib/constants";
 import { env } from "@/lib/env";
-import type { LeadAnalytics, Ranked } from "@/lib/data/lead-analytics";
+import {
+  formatMinutes,
+  type LeadAnalytics,
+  type Ranked,
+  type ResponseStats,
+} from "@/lib/data/lead-analytics";
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -34,12 +39,24 @@ function deltaText(a: LeadAnalytics): string {
 }
 
 /** Render the weekly lead digest as a self-contained HTML email. */
-export function renderLeadDigestEmail(a: LeadAnalytics): {
+export function renderLeadDigestEmail(
+  a: LeadAnalytics,
+  response: ResponseStats,
+): {
   subject: string;
   html: string;
 } {
   const adminUrl = `${env.NEXT_PUBLIC_SITE_URL}/admin/analytics`;
   const subject = `${FIRM.legalName} — weekly leads: ${a.last7} new, ${a.signed} signed (30d)`;
+
+  const responseValue =
+    response.medianMinutes === null
+      ? "—"
+      : formatMinutes(response.medianMinutes);
+  const responseHint =
+    response.medianMinutes === null
+      ? "no responses yet"
+      : `median · ${response.within1hPct}% within 1h`;
 
   const kpi = (label: string, value: string | number, hint: string) =>
     `<td style="padding:12px 16px;background:#f8fafc;border-radius:10px;width:50%;vertical-align:top">
@@ -63,6 +80,10 @@ export function renderLeadDigestEmail(a: LeadAnalytics): {
         <tr>
           ${kpi("Leads (30d)", a.qualifiedTotal, "spam excluded")}
           ${kpi("Signed (30d)", a.signed, "retained clients")}
+        </tr>
+        <tr>
+          ${kpi("First response", responseValue, responseHint)}
+          ${kpi("Awaiting response", response.pending, "open, never touched")}
         </tr>
       </table>
 
