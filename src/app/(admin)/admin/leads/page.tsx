@@ -413,6 +413,7 @@ export default async function LeadsPage({
               rows={rows}
               status={status}
               tagSuggestions={tagSuggestions}
+              fromQuery={currentQuery}
             />
           )}
 
