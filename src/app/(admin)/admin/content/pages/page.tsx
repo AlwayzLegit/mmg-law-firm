@@ -4,6 +4,8 @@ import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import ReviewRowButton from "./review-row-button";
+
 const STALE_AFTER_DAYS = 365;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -178,7 +180,7 @@ export default async function ContentPagesAdmin() {
                 </p>
                 <ul className="mt-2 grid gap-1">
                   {stalePages.slice(0, 10).map((p) => (
-                    <PageRow key={p.id} row={p} />
+                    <PageRow key={p.id} row={p} showReview />
                   ))}
                 </ul>
               </div>
@@ -215,6 +217,7 @@ export default async function ContentPagesAdmin() {
 
 function PageRow({
   row,
+  showReview = false,
 }: {
   row: {
     id: string;
@@ -226,6 +229,7 @@ function PageRow({
     practice_areas: { slug: string; name: string };
     last_reviewed_at: string | null;
   };
+  showReview?: boolean;
 }) {
   return (
     <li className="border-border bg-card flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-xs">
@@ -235,10 +239,13 @@ function PageRow({
       >
         {row.cities.name} · {row.practice_areas.name}
       </Link>
-      <span className="text-muted-foreground">
-        {row.last_reviewed_at
-          ? `Reviewed ${new Date(row.last_reviewed_at).toLocaleDateString("en-US")}`
-          : "Never reviewed"}
+      <span className="flex flex-none items-center gap-3">
+        <span className="text-muted-foreground">
+          {row.last_reviewed_at
+            ? `Reviewed ${new Date(row.last_reviewed_at).toLocaleDateString("en-US")}`
+            : "Never reviewed"}
+        </span>
+        {showReview ? <ReviewRowButton id={row.id} /> : null}
       </span>
     </li>
   );
