@@ -2,10 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 
+import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { FIRM } from "@/lib/constants";
 import { getPublishedPosts } from "@/lib/data/blog";
+import { ATTORNEY_IMAGES } from "@/lib/media";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -42,6 +45,13 @@ export default async function BlogIndexPage() {
           </>
         }
         description="Practical articles on what to do after an accident, how the claim process actually works, and California-specific legal context."
+        aside={
+          <AttorneyHeroAside
+            image={ATTORNEY_IMAGES.blog}
+            alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
+            priority
+          />
+        }
       />
 
       <section className="container-page py-20 md:py-28">

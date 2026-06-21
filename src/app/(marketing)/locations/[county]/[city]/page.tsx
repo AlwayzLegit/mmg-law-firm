@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
+import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
+import { ATTORNEY_IMAGES } from "@/lib/media";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
   getAllPublishedCities,
@@ -133,6 +135,13 @@ export default async function CityPage({ params }: Props) {
               Call {FIRM.phone}
             </a>
           </div>
+        }
+        aside={
+          <AttorneyHeroAside
+            image={ATTORNEY_IMAGES.city}
+            alt={`${FIRM.attorneyName}, ${c.name} personal-injury attorney`}
+            priority
+          />
         }
       />
 

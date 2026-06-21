@@ -1,9 +1,12 @@
 import Link from "next/link";
 
+import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { FIRM } from "@/lib/constants";
 import { getPublishedCounties } from "@/lib/data/queries";
+import { ATTORNEY_IMAGES } from "@/lib/media";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -37,6 +40,13 @@ export default async function LocationsHubPage() {
           </>
         }
         description="We work statewide from our Glendale office. Below are the counties and cities where we're most active. If you don't see yours, call us — we likely cover it too."
+        aside={
+          <AttorneyHeroAside
+            image={ATTORNEY_IMAGES.locationsIndex}
+            alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
+            priority
+          />
+        }
       />
 
       <section className="container-page py-16 md:py-20">
