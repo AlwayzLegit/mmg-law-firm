@@ -3,10 +3,12 @@ import Link from "next/link";
 import { Mail, Phone } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
+import DeleteNoteButton from "./delete-note-button";
 import FollowUpControl from "./follow-up-control";
 import LeadActivity, { type ActivityEvent } from "./lead-activity";
 import NoteCompose from "./note-compose";
@@ -16,6 +18,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function LeadDetailPage({ params }: Props) {
   const { id } = await params;
+  const { user, profile } = await requireAdmin();
   const supabase = await getServerSupabase();
 
   const { data: lead, error } = await supabase
@@ -267,17 +270,26 @@ export default async function LeadDetailPage({ params }: Props) {
               <NoteCompose leadId={lead.id} />
               {notes && notes.length > 0 ? (
                 <ul className="space-y-3">
-                  {notes.map((n) => (
-                    <li
-                      key={n.id}
-                      className="border-border bg-secondary/30 rounded-md border p-3 text-sm"
-                    >
-                      <p className="whitespace-pre-line">{n.body}</p>
-                      <p className="text-muted-foreground mt-2 text-xs">
-                        {new Date(n.created_at).toLocaleString("en-US")}
-                      </p>
-                    </li>
-                  ))}
+                  {notes.map((n) => {
+                    const canDelete =
+                      n.author_id === user.id || profile.role === "owner";
+                    return (
+                      <li
+                        key={n.id}
+                        className="border-border bg-secondary/30 rounded-md border p-3 text-sm"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="whitespace-pre-line">{n.body}</p>
+                          {canDelete ? (
+                            <DeleteNoteButton leadId={lead.id} noteId={n.id} />
+                          ) : null}
+                        </div>
+                        <p className="text-muted-foreground mt-2 text-xs">
+                          {new Date(n.created_at).toLocaleString("en-US")}
+                        </p>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="text-muted-foreground text-sm">
