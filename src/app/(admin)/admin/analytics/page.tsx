@@ -5,14 +5,19 @@ import LeadsChart from "@/components/admin/leads-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 import {
+  formatMinutes,
   getLeadAnalytics,
+  getResponseTimeStats,
   STATUS_ORDER,
   type Ranked,
 } from "@/lib/data/lead-analytics";
 
 export default async function AdminAnalyticsPage() {
   const supabase = await getServerSupabase();
-  const a = await getLeadAnalytics(supabase, 90);
+  const [a, response] = await Promise.all([
+    getLeadAnalytics(supabase, 90),
+    getResponseTimeStats(supabase, 30),
+  ]);
 
   return (
     <div>
@@ -48,6 +53,51 @@ export default async function AdminAnalyticsPage() {
           hint="signed ÷ real leads"
         />
       </div>
+
+      {/* First-response speed (30d) — the #1 lever on intake conversion. */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">First response time (30d)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {response.sample === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {response.pending > 0
+                ? `${response.pending} lead(s) awaiting a first response, and none answered yet in this window.`
+                : "No responded leads in the last 30 days yet."}
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Kpi
+                  label="Median response"
+                  value={formatMinutes(response.medianMinutes ?? 0)}
+                  hint={`${response.sample} responded`}
+                />
+                <Kpi
+                  label="Within 1 hour"
+                  value={`${response.within1hPct ?? 0}%`}
+                  hint="of responded leads"
+                />
+                <Kpi
+                  label="Within 24 hours"
+                  value={`${response.within24hPct ?? 0}%`}
+                  hint="of responded leads"
+                />
+                <Kpi
+                  label="Awaiting response"
+                  value={response.pending}
+                  hint="open, never touched"
+                />
+              </div>
+              <p className="text-muted-foreground mt-3 text-xs">
+                Measured from submission to the first staff action (status
+                change, note, assignment, or conflict check).
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>
