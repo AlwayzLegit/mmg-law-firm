@@ -18,6 +18,7 @@ import FollowUpControl from "./follow-up-control";
 import LeadActivity, { type ActivityEvent } from "./lead-activity";
 import NoteCompose from "./note-compose";
 import NoteItem from "./note-item";
+import QuickLog from "./quick-log";
 import StatusControl from "./status-control";
 import TagsControl from "./tags-control";
 
@@ -442,6 +443,7 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
               <CardTitle className="text-base">Notes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <QuickLog leadId={lead.id} />
               <NoteCompose leadId={lead.id} />
               {notes && notes.length > 0 ? (
                 <ul className="space-y-3">
