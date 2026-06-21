@@ -5,6 +5,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      // `server-only` throws when imported outside an RSC graph; stub it so
+      // server-side modules can be unit-tested under plain Node.
+      "server-only": path.resolve(__dirname, "src/test/server-only-stub.ts"),
     },
   },
   test: {
