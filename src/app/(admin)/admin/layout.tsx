@@ -12,6 +12,7 @@ import {
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { FIRM } from "@/lib/constants";
+import CommandPalette from "@/components/admin/command-palette";
 import SignOutButton from "./sign-out-button";
 
 export const metadata = {
@@ -77,7 +78,8 @@ export default async function AdminLayout({
             </span>
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-muted-foreground">
+            <CommandPalette isOwner={profile.role === "owner"} />
+            <span className="text-muted-foreground hidden sm:inline">
               {profile.full_name ?? "Admin"} · {profile.role}
             </span>
             <SignOutButton />
