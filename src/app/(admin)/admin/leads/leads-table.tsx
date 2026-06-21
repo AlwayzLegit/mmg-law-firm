@@ -2,13 +2,20 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CheckCheck, MailCheck, ShieldOff, UserCheck, X } from "lucide-react";
+import {
+  CheckCheck,
+  MailCheck,
+  ShieldOff,
+  Tag,
+  UserCheck,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { bulkAssignToMe, bulkUpdateStatus } from "./actions";
+import { bulkAssignToMe, bulkTag, bulkUpdateStatus } from "./actions";
 
 export type LeadRow = {
   id: string;
@@ -29,6 +36,7 @@ type Props = {
 export default function LeadsTable({ rows, status }: Props) {
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [pending, startTransition] = React.useTransition();
+  const [tagInput, setTagInput] = React.useState("");
   // Captured once so render stays pure (no Date.now() during render).
   const [now] = React.useState(() => Date.now());
 
@@ -64,6 +72,30 @@ export default function LeadsTable({ rows, status }: Props) {
         toast.success(
           `Updated ${result.updated} lead${result.updated === 1 ? "" : "s"}.`,
         );
+        setSelected(new Set());
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
+
+  function runBulkTag(op: "add" | "remove") {
+    const tag = tagInput.trim().toLowerCase();
+    if (selected.size === 0 || tag === "") return;
+    const fd = new FormData();
+    for (const id of selected) fd.append("ids", id);
+    fd.set("tag", tag);
+    fd.set("op", op);
+
+    startTransition(async () => {
+      const result = await bulkTag(fd);
+      if (result.ok) {
+        toast.success(
+          `${op === "add" ? "Tagged" : "Untagged"} ${result.updated} lead${
+            result.updated === 1 ? "" : "s"
+          } “${tag}”.`,
+        );
+        setTagInput("");
         setSelected(new Set());
       } else {
         toast.error(result.error);
@@ -124,6 +156,43 @@ export default function LeadsTable({ rows, status }: Props) {
                   <ShieldOff className="h-3.5 w-3.5" aria-hidden />
                   Mark spam
                 </Button>
+                <span className="border-border/70 inline-flex items-center gap-1 border-l pl-2">
+                  <Tag
+                    className="text-muted-foreground h-3.5 w-3.5"
+                    aria-hidden
+                  />
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        runBulkTag("add");
+                      }
+                    }}
+                    placeholder="tag…"
+                    aria-label="Tag to add or remove"
+                    maxLength={30}
+                    className="border-border bg-background focus:ring-ring h-8 w-24 rounded-md border px-2 text-xs focus:ring-2 focus:outline-none"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => runBulkTag("add")}
+                    disabled={pending || tagInput.trim() === ""}
+                  >
+                    Tag
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => runBulkTag("remove")}
+                    disabled={pending || tagInput.trim() === ""}
+                  >
+                    Untag
+                  </Button>
+                </span>
               </>
             )}
             <Button
