@@ -189,22 +189,24 @@ export default async function ContentPagesAdmin() {
 
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle className="text-base">Editor coming soon</CardTitle>
+          <CardTitle className="text-base">Editing pages</CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground text-sm">
-          {/* TODO(group-e): full inline editor with markdown preview, publish
-              toggle, last-reviewed-at warning when older than 12 months. For
-              now, edits go through the Supabase SQL editor or table editor. */}
-          The inline page editor is on the roadmap. Until it lands, edit rows
-          directly via the Supabase Studio table editor and toggle{" "}
-          <code className="bg-secondary rounded px-1 py-0.5 text-xs">
-            is_published
-          </code>{" "}
-          there. City x practice pages additionally require non-empty{" "}
+          Click any city × practice row above (or open{" "}
+          <Link
+            href="/admin/content/location-pages"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            all city × practice pages
+          </Link>
+          ) to edit its local angle, intro, and meta — with live Markdown
+          preview — and to publish it. A page needs a non-empty{" "}
           <code className="bg-secondary rounded px-1 py-0.5 text-xs">
             local_angle_md
           </code>{" "}
-          to render publicly (RLS enforces this).
+          before it can be published (RLS enforces this on the public site too).
+          Counties, cities, practice areas, attorneys, and legal pages each have
+          their own editors linked above.
         </CardContent>
       </Card>
     </div>
