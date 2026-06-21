@@ -28,6 +28,28 @@ export type LeadRow = {
   tags?: string[] | null;
 };
 
+/**
+ * Response-SLA badge for a row. A still-"new" lead hasn't had a first staff
+ * touch (the workflow moves it off "new" on first contact), so its age since
+ * submission is the response clock. Older = more urgent.
+ */
+function slaBadge(
+  status: string,
+  createdAt: string,
+  now: number,
+): { label: string; cls: string } | null {
+  if (status !== "new") return null;
+  const ageHours = (now - new Date(createdAt).getTime()) / 3_600_000;
+  if (ageHours >= 24)
+    return {
+      label: "24h+ no reply",
+      cls: "bg-destructive/10 text-destructive",
+    };
+  if (ageHours >= 1)
+    return { label: "1h+ no reply", cls: "bg-warning/10 text-warning" };
+  return null;
+}
+
 type Props = {
   rows: LeadRow[];
   status: string;
@@ -318,6 +340,17 @@ export default function LeadsTable({
                   >
                     {l.status}
                   </span>
+                  {(() => {
+                    const sla = slaBadge(l.status, l.created_at, now);
+                    return sla ? (
+                      <span
+                        className={`mt-1 block w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold ${sla.cls}`}
+                        title="Awaiting first response"
+                      >
+                        {sla.label}
+                      </span>
+                    ) : null;
+                  })()}
                 </td>
                 <td className="px-2 py-3 align-top text-xs">
                   {l.follow_up_at ? (
