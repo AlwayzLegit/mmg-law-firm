@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { Phone, RotateCcw } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,6 +16,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Report to Sentry. Without this, page-level errors caught here never
+    // reach Sentry (only the root global-error boundary did) — so most real
+    // route errors were going unreported.
+    Sentry.captureException(error);
     if (process.env.NODE_ENV !== "production") {
       console.error("App error:", error);
     }
@@ -22,7 +27,7 @@ export default function GlobalError({
 
   return (
     <section className="relative isolate flex min-h-[60vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/60 via-background to-background" />
+      <div className="from-secondary/60 via-background to-background absolute inset-0 -z-10 bg-gradient-to-b" />
       <div
         aria-hidden
         className="absolute inset-0 -z-10 opacity-[0.35]"
@@ -32,21 +37,21 @@ export default function GlobalError({
         }}
       />
 
-      <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+      <p className="text-primary inline-flex items-center gap-2 text-xs font-semibold tracking-[0.22em] uppercase">
         <span className="block h-px w-8 bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-[var(--color-gold-500)]" />
         Something went wrong
       </p>
-      <h1 className="mt-5 max-w-2xl font-display text-3xl font-medium leading-tight tracking-tight md:text-4xl">
+      <h1 className="font-display mt-5 max-w-2xl text-3xl leading-tight font-medium tracking-tight md:text-4xl">
         We hit a problem loading this page.
       </h1>
-      <p className="mt-4 max-w-md text-muted-foreground">
+      <p className="text-muted-foreground mt-4 max-w-md">
         Please try again. If the issue persists, call our office directly and
         we&apos;ll help you right away.
       </p>
       {error.digest ? (
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="text-muted-foreground mt-3 text-xs">
           Reference:{" "}
-          <code className="font-mono text-foreground">{error.digest}</code>
+          <code className="text-foreground font-mono">{error.digest}</code>
         </p>
       ) : null}
       <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -63,9 +68,11 @@ export default function GlobalError({
         </Button>
         <a
           href={`tel:${FIRM.phoneTel}`}
-          className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "marketing" }),
+          )}
         >
-          <Phone className="h-4 w-4 text-primary" aria-hidden />
+          <Phone className="text-primary h-4 w-4" aria-hidden />
           <span>Call {FIRM.phone}</span>
         </a>
       </div>
