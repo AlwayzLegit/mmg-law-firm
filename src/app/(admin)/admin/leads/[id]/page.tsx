@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Copy, Mail, Phone } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -41,6 +41,42 @@ export default async function LeadDetailPage({ params }: Props) {
     (lead.practice_areas as { name: string } | null)?.name ?? null;
   const countyName = (lead.counties as { name: string } | null)?.name ?? null;
   const cityName = (lead.cities as { name: string } | null)?.name ?? null;
+
+  // Other submissions from the same person — same phone or email. Two
+  // parameterized .eq() queries (deduped) avoid any .or() filter injection
+  // from stored values.
+  type Related = {
+    id: string;
+    full_name: string;
+    status: string;
+    created_at: string;
+    phone: string | null;
+    email: string | null;
+  };
+  const relatedMap = new Map<string, Related>();
+  if (lead.phone) {
+    const { data } = await supabase
+      .from("leads")
+      .select("id, full_name, status, created_at, phone, email")
+      .eq("phone", lead.phone)
+      .neq("id", id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    for (const r of (data ?? []) as Related[]) relatedMap.set(r.id, r);
+  }
+  if (lead.email) {
+    const { data } = await supabase
+      .from("leads")
+      .select("id, full_name, status, created_at, phone, email")
+      .eq("email", lead.email)
+      .neq("id", id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    for (const r of (data ?? []) as Related[]) relatedMap.set(r.id, r);
+  }
+  const related = [...relatedMap.values()]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 8);
 
   const { data: notes } = await supabase
     .from("lead_notes")
@@ -108,6 +144,59 @@ export default async function LeadDetailPage({ params }: Props) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
+          {related.length > 0 ? (
+            <Card className="border-warning/40 bg-warning/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Copy className="text-warning h-4 w-4" aria-hidden />
+                  Possible duplicate
+                  {related.length > 1 ? "s" : ""} ({related.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-3 text-xs">
+                  {related.length === 1
+                    ? "Another lead shares"
+                    : "Other leads share"}{" "}
+                  this person&apos;s phone or email — likely a repeat
+                  submission.
+                </p>
+                <ul className="divide-border divide-y">
+                  {related.map((r) => {
+                    const matches: string[] = [];
+                    if (lead.phone && r.phone === lead.phone)
+                      matches.push("phone");
+                    if (lead.email && r.email === lead.email)
+                      matches.push("email");
+                    return (
+                      <li key={r.id} className="py-2 first:pt-0 last:pb-0">
+                        <Link
+                          href={`/admin/leads/${r.id}`}
+                          className="flex items-center justify-between gap-3 text-sm"
+                        >
+                          <span className="min-w-0">
+                            <span className="hover:text-primary font-medium">
+                              {r.full_name}
+                            </span>
+                            <span className="text-muted-foreground block text-xs">
+                              {new Date(r.created_at).toLocaleDateString(
+                                "en-US",
+                              )}{" "}
+                              · matches {matches.join(" + ")}
+                            </span>
+                          </span>
+                          <span className="bg-secondary flex-none rounded-md px-2 py-0.5 text-xs font-medium capitalize">
+                            {r.status}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CardContent>
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Contact</CardTitle>
