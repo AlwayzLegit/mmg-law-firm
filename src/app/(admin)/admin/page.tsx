@@ -4,10 +4,15 @@ import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 import LeadsChart from "@/components/admin/leads-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLeadAnalytics } from "@/lib/data/lead-analytics";
+import { getWebAnalytics } from "@/lib/data/web-analytics";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 export default async function AdminDashboardPage() {
   const supabase = await getServerSupabase();
+
+  // Kick off the PostHog traffic query up front so it runs concurrently with
+  // the Supabase lead queries below.
+  const webPromise = getWebAnalytics();
 
   // 14-day trend for the at-a-glance sparkline (reuses the analytics
   // aggregator so the dashboard and Analytics page stay consistent).
@@ -93,6 +98,8 @@ export default async function AdminDashboardPage() {
       ? Math.round(((signed30.count ?? 0) / total30.count) * 100)
       : null;
 
+  const web = await webPromise;
+
   const attention: Array<{ label: string; href: string; count: number }> = [
     {
       label: "follow-up(s) due",
@@ -142,6 +149,59 @@ export default async function AdminDashboardPage() {
           value={conversion === null ? "—" : `${conversion}%`}
         />
       </div>
+
+      <Card className="mt-6">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3">
+          <CardTitle className="text-base">Website traffic</CardTitle>
+          {web.configured && web.hasData ? (
+            <span className="text-muted-foreground text-xs">last 30 days</span>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          {!web.configured ? (
+            <div className="text-muted-foreground text-sm">
+              <p>
+                Traffic stats aren&apos;t connected yet. Set{" "}
+                <code className="bg-secondary rounded px-1 py-0.5 text-xs">
+                  POSTHOG_PERSONAL_API_KEY
+                </code>{" "}
+                and{" "}
+                <code className="bg-secondary rounded px-1 py-0.5 text-xs">
+                  POSTHOG_PROJECT_ID
+                </code>{" "}
+                in the environment to read pageviews and visitors from PostHog.
+              </p>
+            </div>
+          ) : !web.hasData ? (
+            <p className="text-muted-foreground text-sm">
+              No pageviews recorded yet. Capture is already wired into the site
+              — once it&apos;s live and receiving visitors, traffic shows up
+              here.
+            </p>
+          ) : (
+            <div className="grid gap-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MiniStat label="Visitors (7d)" value={web.visitors7} />
+                <MiniStat label="Pageviews (7d)" value={web.pageviews7} />
+                <MiniStat label="Visitors (30d)" value={web.visitors30} />
+                <MiniStat label="Pageviews (30d)" value={web.pageviews30} />
+              </div>
+
+              <div>
+                <p className="text-muted-foreground mb-2 text-xs font-medium tracking-[0.18em] uppercase">
+                  Pageviews — last 14 days
+                </p>
+                <LeadsChart data={web.daily} />
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <RankList title="Top pages" rows={web.topPages} />
+                <RankList title="Top referrers" rows={web.topReferrers} />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>
@@ -255,6 +315,54 @@ export default async function AdminDashboardPage() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border-border rounded-lg border p-4">
+      <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+        {label}
+      </p>
+      <p className="font-display mt-1 text-2xl font-medium tracking-tight">
+        {value.toLocaleString("en-US")}
+      </p>
+    </div>
+  );
+}
+
+function RankList({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<{ label: string; count: number }>;
+}) {
+  return (
+    <div>
+      <p className="text-muted-foreground mb-2 text-xs font-medium tracking-[0.18em] uppercase">
+        {title}
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No data.</p>
+      ) : (
+        <ul className="divide-border divide-y">
+          {rows.map((r) => (
+            <li
+              key={r.label}
+              className="flex items-center justify-between gap-3 py-2 text-sm"
+            >
+              <span className="text-foreground truncate" title={r.label}>
+                {r.label}
+              </span>
+              <span className="text-muted-foreground flex-none font-medium">
+                {r.count.toLocaleString("en-US")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

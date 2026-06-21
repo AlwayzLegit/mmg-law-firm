@@ -41,6 +41,13 @@ const ServerEnvSchema = z.object({
     .or(z.literal(""))
     .default("https://us.i.posthog.com"),
 
+  // Server-side PostHog query access for the admin dashboard's website
+  // traffic panel. The personal API key is secret (scoped to "query:read");
+  // the numeric project id identifies which project to read. When either is
+  // unset the dashboard shows a "connect analytics" empty state.
+  POSTHOG_PERSONAL_API_KEY: z.string().default(""),
+  POSTHOG_PROJECT_ID: z.string().default(""),
+
   REVALIDATE_SECRET: z.string().default(""),
 
   // Admin API bearer token for programmatic access (e.g. posting blogs from
