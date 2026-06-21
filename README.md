@@ -115,3 +115,15 @@ Legal pages (privacy / disclaimer / CCPA / accessibility) require attorney sign-
 ## Schema markup
 
 JSON-LD builders live in `src/lib/seo/schema.ts`. Sitewide LegalService + Person + WebSite graph emits via `<SchemaGraph />` in `src/app/layout.tsx`. Per-page schemas (Article, FAQPage, BreadcrumbList) emit from individual page components. Validate emitted markup using [Google Rich Results Test](https://search.google.com/test/rich-results) before each release.
+
+## Internationalization (foundation)
+
+`src/lib/i18n/` holds the i18n **foundation only** — nothing is wired into routing yet; the site serves English at the existing paths.
+
+- `config.ts` — supported locales (`en` default, `es`, `hy`), display names, hreflang tags.
+- `dictionaries/en.ts` — English baseline of shared UI microcopy (nav, CTAs, lead-form labels, footer). Its shape is the `Dictionary` type.
+- `dictionaries/{es,hy}.ts` — empty deep-partial overrides; missing keys fall back to English.
+- `index.ts` — `getDictionary(locale)` returns a complete dictionary, merging the locale over English.
+- `src/components/i18n/language-switcher.tsx` — routing-ready switcher, **not mounted**.
+
+**To go live with a locale**, the remaining (deliberately deferred) phases are: (1) add a `/[locale]` route segment wrapping `(marketing)`, (2) add `alternates.languages` hreflang in `buildMetadata` + locale-aware `<html lang>`, (3) mount `<LanguageSwitcher />`, and (4) **attorney-reviewed translations** of the dictionaries and any localized legal copy — machine translation of legal-services advertising is not CRPC §7.1 safe.
