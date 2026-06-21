@@ -2,6 +2,7 @@ import Link from "next/link";
 import { List } from "lucide-react";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { getTagVocabulary } from "@/lib/data/lead-tags";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import KanbanBoard, { type KanbanCard } from "./kanban-board";
@@ -39,10 +40,12 @@ export default async function LeadsBoardPage({
   if (mine) leadsQuery = leadsQuery.eq("assigned_to", user.id);
   if (tag) leadsQuery = leadsQuery.contains("tags", [tag]);
 
-  const [{ data, error }, { data: adminRows }] = await Promise.all([
-    leadsQuery.order("created_at", { ascending: false }).limit(BOARD_LIMIT),
-    supabase.from("admin_profiles").select("user_id, full_name, role"),
-  ]);
+  const [{ data, error }, { data: adminRows }, tagSuggestions] =
+    await Promise.all([
+      leadsQuery.order("created_at", { ascending: false }).limit(BOARD_LIMIT),
+      supabase.from("admin_profiles").select("user_id, full_name, role"),
+      getTagVocabulary(supabase),
+    ]);
 
   // Map assignee ids to short labels for the card chips.
   const assigneeNames: Record<string, string> = {};
@@ -122,7 +125,11 @@ export default async function LeadsBoardPage({
         <p className="text-destructive mt-6 text-sm">{error.message}</p>
       ) : (
         <div className="mt-6">
-          <KanbanBoard cards={cards} assigneeNames={assigneeNames} />
+          <KanbanBoard
+            cards={cards}
+            assigneeNames={assigneeNames}
+            tagSuggestions={tagSuggestions}
+          />
         </div>
       )}
     </div>
