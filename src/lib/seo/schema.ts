@@ -14,7 +14,10 @@ const WEBSITE_ID = `${siteUrl()}#website`;
 
 function legalServiceNode(sameAs: string[]): GraphNode {
   return {
-    "@type": "LegalService",
+    // `Attorney` is the most specific schema.org subtype of LegalService —
+    // pairing both gives search engines an explicit legal-vertical signal
+    // while preserving the LegalService @id other nodes reference.
+    "@type": ["LegalService", "Attorney"],
     "@id": FIRM_ID,
     name: FIRM.legalName,
     url: siteUrl(),
@@ -136,7 +139,8 @@ export function buildReviewsSchema(reviews: ReviewItem[]): GraphNode | null {
   const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
   return {
     "@context": "https://schema.org",
-    "@type": "LegalService",
+    // Mirror the firm node's type so the shared @id merges cleanly.
+    "@type": ["LegalService", "Attorney"],
     "@id": FIRM_ID,
     name: FIRM.legalName,
     aggregateRating: {
