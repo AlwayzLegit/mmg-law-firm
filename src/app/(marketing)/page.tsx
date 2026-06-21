@@ -26,6 +26,8 @@ import {
   getPublishedCaseResults,
 } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
+import { buildFaqPage } from "@/lib/seo/schema";
+import { jsonLd } from "@/lib/seo/json-ld";
 
 export const metadata = buildMetadata({
   title: "California Personal-Injury Attorney",
@@ -42,8 +44,16 @@ export default async function HomePage() {
     getApprovedTestimonials(3),
     getHomepageFaqs(),
   ]);
+  const faqGraph = faqs.length > 0 ? buildFaqPage(faqs) : null;
   return (
     <>
+      {faqGraph ? (
+        <script
+          type="application/ld+json"
+          id="homepage-faq-jsonld"
+          dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }}
+        />
+      ) : null}
       <Hero />
       <HomepageStats />
       <RecognitionStrip />
@@ -58,27 +68,27 @@ export default async function HomePage() {
       <section className="container-page py-20 md:py-28">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
+            <p className="text-primary text-xs font-medium tracking-[0.18em] uppercase">
               Tell us what happened
             </p>
-            <h2 className="mt-3 font-display text-3xl font-medium tracking-tight md:text-4xl">
+            <h2 className="font-display mt-3 text-3xl font-medium tracking-tight md:text-4xl">
               Free consultation. We&apos;ll call you back.
             </h2>
-            <p className="mt-4 text-muted-foreground">
+            <p className="text-muted-foreground mt-4">
               You&apos;re not committing to anything by reaching out — and there
               is no fee unless we win your case. Tell us briefly what happened
               and we&apos;ll be in touch within one business hour during office
               hours.
             </p>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-4 text-sm">
               Prefer to call?{" "}
               <a
                 href={`tel:${FIRM.phoneTel}`}
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                className="text-primary font-medium underline-offset-4 hover:underline"
               >
                 {FIRM.phone}
-              </a>
-              {" "}— {FIRM.hours}.
+              </a>{" "}
+              — {FIRM.hours}.
             </p>
           </div>
           <LeadForm variant="compact" />
