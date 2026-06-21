@@ -11,13 +11,19 @@ import { setLeadTags } from "./actions";
 export default function TagsControl({
   leadId,
   initial,
+  suggestions = [],
 }: {
   leadId: string;
   initial: string[];
+  suggestions?: string[];
 }) {
   const [tags, setTags] = React.useState<string[]>(initial);
   const [draft, setDraft] = React.useState("");
   const [pending, startTransition] = React.useTransition();
+
+  // Don't suggest tags this lead already has.
+  const available = suggestions.filter((s) => !tags.includes(s));
+  const listId = `tag-suggest-${leadId}`;
 
   function persist(next: string[]) {
     const prev = tags;
@@ -87,8 +93,14 @@ export default function TagsControl({
           placeholder="Add a tag…"
           aria-label="Add a tag"
           maxLength={30}
+          list={listId}
           className="border-border bg-background focus:ring-ring h-9 flex-1 rounded-md border px-3 text-sm focus:ring-2 focus:outline-none"
         />
+        <datalist id={listId}>
+          {available.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
         <button
           type="button"
           onClick={addFromDraft}

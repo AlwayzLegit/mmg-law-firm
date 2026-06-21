@@ -31,9 +31,14 @@ export type LeadRow = {
 type Props = {
   rows: LeadRow[];
   status: string;
+  tagSuggestions?: string[];
 };
 
-export default function LeadsTable({ rows, status }: Props) {
+export default function LeadsTable({
+  rows,
+  status,
+  tagSuggestions = [],
+}: Props) {
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [pending, startTransition] = React.useTransition();
   const [tagInput, setTagInput] = React.useState("");
@@ -174,8 +179,14 @@ export default function LeadsTable({ rows, status }: Props) {
                     placeholder="tag…"
                     aria-label="Tag to add or remove"
                     maxLength={30}
+                    list="bulk-tag-suggest"
                     className="border-border bg-background focus:ring-ring h-8 w-24 rounded-md border px-2 text-xs focus:ring-2 focus:outline-none"
                   />
+                  <datalist id="bulk-tag-suggest">
+                    {tagSuggestions.map((s) => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
                   <Button
                     size="sm"
                     variant="outline"

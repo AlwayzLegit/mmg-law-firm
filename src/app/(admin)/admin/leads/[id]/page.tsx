@@ -4,6 +4,7 @@ import { Copy, Mail, Phone } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { getTagVocabulary } from "@/lib/data/lead-tags";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import AssignControl, { type AdminOption } from "./assign-control";
@@ -78,6 +79,8 @@ export default async function LeadDetailPage({ params }: Props) {
   const related = [...relatedMap.values()]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 8);
+
+  const tagVocabulary = await getTagVocabulary(supabase);
 
   const { data: notes } = await supabase
     .from("lead_notes")
@@ -349,6 +352,7 @@ export default async function LeadDetailPage({ params }: Props) {
                 initial={
                   Array.isArray(lead.tags) ? (lead.tags as string[]) : []
                 }
+                suggestions={tagVocabulary}
               />
             </CardContent>
           </Card>
