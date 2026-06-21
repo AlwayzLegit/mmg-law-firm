@@ -46,6 +46,7 @@ export async function generateMetadata({ params }: Props) {
       c.meta_description ??
       `${FIRM.legalName} represents ${c.name} clients in personal-injury matters across ${c.county_name}. Free consultation. Bilingual counsel.`,
     path: `/locations/${c.county_slug}/${c.slug}`,
+    image: null, // per-page opengraph-image.tsx
   });
 }
 
@@ -125,7 +126,9 @@ export default async function CityPage({ params }: Props) {
             </Link>
             <a
               href={`tel:${FIRM.phoneTel}`}
-              className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "marketing" }),
+              )}
             >
               Call {FIRM.phone}
             </a>
@@ -140,7 +143,7 @@ export default async function CityPage({ params }: Props) {
               <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                 Practice areas we handle in {c.name}
               </h2>
-              <p className="mt-3 text-muted-foreground">
+              <p className="text-muted-foreground mt-3">
                 Click any matter type for a detailed look — or call us directly
                 if you&apos;re not sure where your situation fits.
               </p>
@@ -159,11 +162,11 @@ export default async function CityPage({ params }: Props) {
                     <li key={area.slug}>
                       <Link
                         href={href}
-                        className="group flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/30"
+                        className="group border-border bg-card hover:border-primary/30 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors"
                       >
                         <span className="font-medium">{area.name}</span>
                         <ArrowUpRight
-                          className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary"
+                          className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors"
                           aria-hidden
                         />
                       </Link>
@@ -174,14 +177,14 @@ export default async function CityPage({ params }: Props) {
             </section>
 
             {c.local_stats_md ? (
-              <section className="mt-12 rounded-2xl border border-border bg-secondary/40 p-8">
+              <section className="border-border bg-secondary/40 mt-12 rounded-2xl border p-8">
                 <h2 className="font-display text-2xl font-medium tracking-tight">
                   About injuries in {c.name}
                 </h2>
-                <div className="mt-4 whitespace-pre-line text-muted-foreground">
+                <div className="text-muted-foreground mt-4 whitespace-pre-line">
                   {c.local_stats_md}
                 </div>
-                <p className="mt-6 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-6 text-xs">
                   {DISCLAIMERS.general}
                 </p>
               </section>

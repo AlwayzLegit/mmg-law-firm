@@ -49,6 +49,7 @@ export async function generateMetadata({ params }: Props) {
       resolved?.meta_description ??
       `${resolved?.intro ?? area.intro} Free consultation with ${FIRM.attorneyName}.`,
     path: `/practice-areas/${area.slug}`,
+    image: null, // per-page opengraph-image.tsx
   });
 }
 
@@ -120,10 +121,7 @@ export default async function PracticeAreaPage({ params }: Props) {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/contact"
-              className={cn(
-                buttonVariants({ size: "marketing" }),
-                "group/cta",
-              )}
+              className={cn(buttonVariants({ size: "marketing" }), "group/cta")}
             >
               <span>Free consultation</span>
               <ArrowRight
@@ -133,7 +131,9 @@ export default async function PracticeAreaPage({ params }: Props) {
             </Link>
             <a
               href={`tel:${FIRM.phoneTel}`}
-              className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "marketing" }),
+              )}
             >
               Call {FIRM.phone}
             </a>
@@ -145,13 +145,13 @@ export default async function PracticeAreaPage({ params }: Props) {
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
           <div className="prose-area">
             {content.body_from_db ? (
-              <div className="prose prose-neutral max-w-none text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground">
+              <div className="prose prose-neutral text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {content.body_md}
                 </ReactMarkdown>
               </div>
             ) : (
-              <p className="text-lg leading-relaxed text-muted-foreground">
+              <p className="text-muted-foreground text-lg leading-relaxed">
                 {content.body_md || content.intro}
               </p>
             )}
@@ -165,12 +165,12 @@ export default async function PracticeAreaPage({ params }: Props) {
                   {content.subtopics.map((s) => (
                     <div
                       key={s.title}
-                      className="rounded-xl border border-border bg-card p-6"
+                      className="border-border bg-card rounded-xl border p-6"
                     >
                       <h3 className="font-display text-base font-medium">
                         {s.title}
                       </h3>
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <p className="text-muted-foreground mt-2 text-sm">
                         {s.body}
                       </p>
                     </div>
@@ -187,14 +187,14 @@ export default async function PracticeAreaPage({ params }: Props) {
                 <ol className="mt-6 space-y-5">
                   {content.process.map((step, i) => (
                     <li key={step.title} className="flex gap-4">
-                      <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full bg-primary/10 font-display text-sm font-semibold text-primary">
+                      <span className="bg-primary/10 font-display text-primary mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm font-semibold">
                         {i + 1}
                       </span>
                       <div>
                         <h3 className="font-display text-base font-medium">
                           {step.title}
                         </h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                        <p className="text-muted-foreground mt-1 text-sm">
                           {step.body}
                         </p>
                       </div>
@@ -205,7 +205,7 @@ export default async function PracticeAreaPage({ params }: Props) {
             ) : null}
 
             {content.whatToDo.length > 0 ? (
-              <section className="mt-12 rounded-2xl border border-border bg-secondary/40 p-8">
+              <section className="border-border bg-secondary/40 mt-12 rounded-2xl border p-8">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                   What to do right away
                 </h2>
@@ -213,14 +213,14 @@ export default async function PracticeAreaPage({ params }: Props) {
                   {content.whatToDo.map((line) => (
                     <li key={line} className="flex items-start gap-3 text-sm">
                       <CheckCircle2
-                        className="mt-0.5 h-4 w-4 flex-none text-primary"
+                        className="text-primary mt-0.5 h-4 w-4 flex-none"
                         aria-hidden
                       />
                       <span className="text-foreground">{line}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-6 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-6 text-xs">
                   {DISCLAIMERS.general}
                 </p>
               </section>
@@ -234,7 +234,7 @@ export default async function PracticeAreaPage({ params }: Props) {
                   </h2>
                   <Link
                     href="/case-results"
-                    className="group/link inline-flex items-center gap-1.5 text-sm font-medium text-primary"
+                    className="group/link text-primary inline-flex items-center gap-1.5 text-sm font-medium"
                   >
                     <span className="underline-offset-4 group-hover/link:underline">
                       View all results
@@ -249,7 +249,7 @@ export default async function PracticeAreaPage({ params }: Props) {
                     <CaseResultCard key={r.id} result={r} />
                   ))}
                 </div>
-                <p className="mt-4 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-4 text-xs">
                   {DISCLAIMERS.results}
                 </p>
               </section>
