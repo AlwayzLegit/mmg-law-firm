@@ -15,6 +15,7 @@ export type KanbanCard = {
   created_at: string;
   follow_up_at: string | null;
   assigned_to: string | null;
+  tags: string[] | null;
 };
 
 /** Initials for an assignee chip, e.g. "Mihran Ghazaryan" → "MG". */
@@ -189,6 +190,19 @@ export default function KanbanBoard({
                         <p className="text-muted-foreground mt-0.5 text-xs">
                           {c.phone}
                         </p>
+                      ) : null}
+                      {c.tags && c.tags.length > 0 ? (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {c.tags.map((t) => (
+                            <Link
+                              key={t}
+                              href={`/admin/leads/board?tag=${encodeURIComponent(t)}`}
+                              className="border-border bg-secondary text-muted-foreground hover:text-primary rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                            >
+                              {t}
+                            </Link>
+                          ))}
+                        </div>
                       ) : null}
                       <div className="text-muted-foreground mt-2 flex items-center justify-between text-[11px]">
                         <time dateTime={c.created_at}>
