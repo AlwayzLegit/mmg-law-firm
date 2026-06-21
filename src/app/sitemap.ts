@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { getAttorneyProfile } from "@/lib/data/attorney";
 import { getPublishedPosts } from "@/lib/data/blog";
 import { getPublicContentFlags } from "@/lib/data/public-content";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
@@ -8,7 +9,14 @@ import {
   getPublishedCounties,
   getPublishedLocationPages,
 } from "@/lib/data/queries";
-import { canonicalUrl } from "@/lib/seo/canonical";
+import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+
+/** Normalize a possibly-relative image URL to absolute for the sitemap. */
+function absImage(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//.test(url)) return url;
+  return `${siteUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 // If the total ever exceeds 5,000 URLs, switch to generateSitemaps() with
 // chunks of 5,000. We're well under that for now.
@@ -52,11 +60,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           : true,
   );
 
+  // Attorney headshot, attached to the bio route as an indexable image.
+  let attorneyHeadshot: string | null = null;
+  try {
+    const attorney = await getAttorneyProfile("mihran-ghazaryan");
+    attorneyHeadshot = absImage(attorney?.headshot_url);
+  } catch (err) {
+    console.warn("[sitemap] attorney:", err);
+  }
+
   const entries: MetadataRoute.Sitemap = staticRoutes.map((r) => ({
     url: canonicalUrl(r.path),
     lastModified,
     changeFrequency: r.changeFrequency,
     priority: r.priority,
+    ...(r.path === "/attorneys/mihran-ghazaryan" && attorneyHeadshot
+      ? { images: [attorneyHeadshot] }
+      : {}),
   }));
 
   // Practice areas. Static seed is canonical for these — listed even when
@@ -126,6 +146,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const posts = await getPublishedPosts();
     for (const post of posts) {
+      const hero = absImage(post.hero_image_url);
       entries.push({
         url: canonicalUrl(`/blog/${post.slug}`),
         lastModified: post.published_at
@@ -133,6 +154,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           : lastModified,
         changeFrequency: "monthly",
         priority: 0.6,
+        ...(hero ? { images: [hero] } : {}),
       });
     }
   } catch (err) {
