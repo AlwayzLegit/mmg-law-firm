@@ -32,6 +32,26 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          // Belt-and-suspenders to Vercel's edge HSTS. Two years, subdomains,
+          // preload-eligible.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          // Intentionally a SAFE CSP subset: it locks down plugin/object
+          // embedding, <base> injection, and framing WITHOUT constraining
+          // script/style/connect sources — so it can't break Next.js inline
+          // hydration scripts, Turnstile, PostHog, GTM, Supabase, or the
+          // Google Maps embed. A full script-src/connect-src allowlist needs
+          // per-request nonces (proxy.ts) and staging verification; tracked
+          // as a follow-up rather than risking a white-screen on the live
+          // site. frame-ancestors 'none' is the modern equivalent of the
+          // X-Frame-Options above.
+          {
+            key: "Content-Security-Policy",
+            value:
+              "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests",
+          },
         ],
       },
     ];
