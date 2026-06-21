@@ -31,6 +31,13 @@ type Command = {
   ownerOnly?: boolean;
 };
 
+type LeadHit = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  status: string;
+};
+
 const COMMANDS: Command[] = [
   {
     label: "Dashboard",
@@ -181,12 +188,14 @@ export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
+  const [leads, setLeads] = useState<LeadHit[]>([]);
+
   const commands = useMemo(
     () => COMMANDS.filter((c) => !c.ownerOnly || isOwner),
     [isOwner],
   );
 
-  const results = useMemo(() => {
+  const navResults = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return commands;
     return commands.filter((c) =>
@@ -194,10 +203,49 @@ export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
     );
   }, [commands, query]);
 
+  // Combined, navigable list: nav matches first, then lead hits. Lead hits
+  // only count once the query is long enough to have triggered a fetch, so
+  // stale results from a previous longer query stay hidden.
+  const results = useMemo<Command[]>(() => {
+    if (query.trim().length < 2) return navResults;
+    const leadCmds: Command[] = leads.map((l) => ({
+      label: l.full_name,
+      href: `/admin/leads/${l.id}`,
+      group: l.phone ?? l.status,
+      icon: Users,
+    }));
+    return [...navResults, ...leadCmds];
+  }, [navResults, leads, query]);
+
+  // Debounced lead typeahead (queries the admin-only search endpoint).
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/lead-search?q=${encodeURIComponent(q)}`,
+          { signal: ctrl.signal },
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as { leads?: LeadHit[] };
+        setLeads(json.leads ?? []);
+      } catch {
+        // Aborted or offline — leave the previous results in place.
+      }
+    }, 180);
+    return () => {
+      ctrl.abort();
+      clearTimeout(t);
+    };
+  }, [query]);
+
   const close = useCallback(() => {
     setOpen(false);
     setQuery("");
     setActive(0);
+    setLeads([]);
   }, []);
 
   const run = useCallback(
@@ -303,8 +351,8 @@ export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
                   setActive(0);
                 }}
                 onKeyDown={onInputKeyDown}
-                placeholder="Jump to…"
-                aria-label="Search admin"
+                placeholder="Jump to a page or search leads…"
+                aria-label="Search admin and leads"
                 className="h-12 w-full bg-transparent text-sm outline-none"
               />
             </div>
