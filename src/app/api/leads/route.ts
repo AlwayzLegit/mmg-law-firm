@@ -88,8 +88,11 @@ export async function POST(request: NextRequest) {
 
   const desc = parsed.data.description ?? "";
   const urlsInDesc = desc.match(/(https?:\/\/|www\.)/gi)?.length ?? 0;
+  const honeypotTripped = (parsed.data.company ?? "").trim() !== "";
   const isSpam =
-    urlsInDesc >= 3 || /(https?:\/\/|www\.)/i.test(parsed.data.full_name);
+    honeypotTripped ||
+    urlsInDesc >= 3 ||
+    /(https?:\/\/|www\.)/i.test(parsed.data.full_name);
 
   const consentAt = new Date().toISOString();
 
