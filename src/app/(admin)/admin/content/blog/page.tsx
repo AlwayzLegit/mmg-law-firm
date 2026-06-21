@@ -1,19 +1,34 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewPostForm from "./new-post-form";
 
-export default async function ContentBlogAdmin() {
-  const supabase = await getServerSupabase();
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .select("id, slug, title, is_published, published_at, updated_at, tags")
-    .order("updated_at", { ascending: false })
-    .limit(100);
+const PAGE_SIZE = 50;
 
-  // eslint-disable-next-line react-hooks/purity
+export default async function ContentBlogAdmin({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const supabase = await getServerSupabase();
+  const { data, error, count } = await supabase
+    .from("blog_posts")
+    .select("id, slug, title, is_published, published_at, updated_at, tags", {
+      count: "exact",
+    })
+    .order("updated_at", { ascending: false })
+    .range(from, to);
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   const now = Date.now();
 
   return (
@@ -44,7 +59,12 @@ export default async function ContentBlogAdmin() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-base">
-            Posts ({data?.length ?? 0})
+            Posts ({total})
+            {totalPages > 1 ? (
+              <span className="text-muted-foreground ml-2 text-xs font-normal">
+                · page {page} of {totalPages}
+              </span>
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -107,6 +127,41 @@ export default async function ContentBlogAdmin() {
               })}
             </ul>
           )}
+
+          {totalPages > 1 ? (
+            <nav
+              className="border-border mt-6 flex items-center justify-between gap-3 border-t pt-4"
+              aria-label="Pagination"
+            >
+              {page > 1 ? (
+                <Link
+                  href={`/admin/content/blog?page=${page - 1}`}
+                  rel="prev"
+                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                  Previous
+                </Link>
+              ) : (
+                <span aria-hidden />
+              )}
+              <span className="text-muted-foreground text-xs">
+                Showing {from + 1}–{Math.min(to + 1, total)} of {total}
+              </span>
+              {page < totalPages ? (
+                <Link
+                  href={`/admin/content/blog?page=${page + 1}`}
+                  rel="next"
+                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
+                >
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+              ) : (
+                <span aria-hidden />
+              )}
+            </nav>
+          ) : null}
         </CardContent>
       </Card>
     </div>
