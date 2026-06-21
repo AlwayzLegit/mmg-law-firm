@@ -374,6 +374,108 @@ export async function setLeadTags(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+const EditNoteInput = z.object({
+  leadId: z.string().uuid(),
+  noteId: z.string().uuid(),
+  body: z.string().trim().min(1, "Note can't be empty").max(4000),
+});
+
+/**
+ * Edit a note's body. Allowed for the note's author or a firm owner only.
+ * Stamps updated_at and audit-logs the change.
+ */
+export async function editLeadNote(formData: FormData): Promise<ActionResult> {
+  const { user, profile } = await requireAdmin();
+
+  const parsed = EditNoteInput.safeParse({
+    leadId: formData.get("leadId"),
+    noteId: formData.get("noteId"),
+    body: formData.get("body"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  const supabase = await getServerSupabase();
+  const { data: note } = await supabase
+    .from("lead_notes")
+    .select("id, author_id, lead_id")
+    .eq("id", parsed.data.noteId)
+    .maybeSingle();
+  if (!note || note.lead_id !== parsed.data.leadId) {
+    return { ok: false, error: "Note not found." };
+  }
+  if (note.author_id !== user.id && profile.role !== "owner") {
+    return { ok: false, error: "You can only edit your own notes." };
+  }
+
+  const { error } = await supabase
+    .from("lead_notes")
+    .update({ body: parsed.data.body, updated_at: new Date().toISOString() })
+    .eq("id", parsed.data.noteId);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: "note_edited",
+  });
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  return { ok: true };
+}
+
+const PinNoteInput = z.object({
+  leadId: z.string().uuid(),
+  noteId: z.string().uuid(),
+  pinned: z.enum(["0", "1"]),
+});
+
+/**
+ * Pin or unpin a note. Any admin may pin — it's an organizational action that
+ * doesn't alter the note's content, so it isn't restricted to the author.
+ */
+export async function togglePinNote(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = PinNoteInput.safeParse({
+    leadId: formData.get("leadId"),
+    noteId: formData.get("noteId"),
+    pinned: formData.get("pinned"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = await getServerSupabase();
+  const { data: note } = await supabase
+    .from("lead_notes")
+    .select("id, lead_id")
+    .eq("id", parsed.data.noteId)
+    .maybeSingle();
+  if (!note || note.lead_id !== parsed.data.leadId) {
+    return { ok: false, error: "Note not found." };
+  }
+
+  const { error } = await supabase
+    .from("lead_notes")
+    .update({ is_pinned: parsed.data.pinned === "1" })
+    .eq("id", parsed.data.noteId);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: parsed.data.pinned === "1" ? "note_pinned" : "note_unpinned",
+  });
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  return { ok: true };
+}
+
 const DeleteNoteInput = z.object({
   leadId: z.string().uuid(),
   noteId: z.string().uuid(),

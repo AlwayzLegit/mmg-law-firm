@@ -9,10 +9,10 @@ import { getServerSupabase } from "@/lib/supabase/server";
 
 import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
-import DeleteNoteButton from "./delete-note-button";
 import FollowUpControl from "./follow-up-control";
 import LeadActivity, { type ActivityEvent } from "./lead-activity";
 import NoteCompose from "./note-compose";
+import NoteItem from "./note-item";
 import StatusControl from "./status-control";
 import TagsControl from "./tags-control";
 
@@ -84,8 +84,9 @@ export default async function LeadDetailPage({ params }: Props) {
 
   const { data: notes } = await supabase
     .from("lead_notes")
-    .select("id, body, author_id, created_at")
+    .select("id, body, author_id, created_at, updated_at, is_pinned")
     .eq("lead_id", id)
+    .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
   // Admins available as lead assignees.
@@ -378,26 +379,21 @@ export default async function LeadDetailPage({ params }: Props) {
               <NoteCompose leadId={lead.id} />
               {notes && notes.length > 0 ? (
                 <ul className="space-y-3">
-                  {notes.map((n) => {
-                    const canDelete =
-                      n.author_id === user.id || profile.role === "owner";
-                    return (
-                      <li
-                        key={n.id}
-                        className="border-border bg-secondary/30 rounded-md border p-3 text-sm"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="whitespace-pre-line">{n.body}</p>
-                          {canDelete ? (
-                            <DeleteNoteButton leadId={lead.id} noteId={n.id} />
-                          ) : null}
-                        </div>
-                        <p className="text-muted-foreground mt-2 text-xs">
-                          {new Date(n.created_at).toLocaleString("en-US")}
-                        </p>
-                      </li>
-                    );
-                  })}
+                  {notes.map((n) => (
+                    <NoteItem
+                      key={n.id}
+                      leadId={lead.id}
+                      note={{
+                        id: n.id,
+                        body: n.body,
+                        createdAt: n.created_at,
+                        updatedAt: n.updated_at ?? null,
+                        isPinned: n.is_pinned ?? false,
+                        canModify:
+                          n.author_id === user.id || profile.role === "owner",
+                      }}
+                    />
+                  ))}
                 </ul>
               ) : (
                 <p className="text-muted-foreground text-sm">
