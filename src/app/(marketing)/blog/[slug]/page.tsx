@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props) {
     title: post.title,
     description: post.meta_description ?? post.excerpt ?? post.title,
     path: `/blog/${post.slug}`,
-    image: post.hero_image_url ?? undefined,
+    image: post.hero_image_url ?? null, // null → per-page opengraph-image.tsx
     ogType: "article",
   });
 }
@@ -72,11 +72,11 @@ export default async function BlogPostPage({ params }: Props) {
       />
 
       <article className="container-prose py-16 md:py-20">
-        <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
+        <nav aria-label="Breadcrumb" className="text-muted-foreground text-sm">
           <Link href="/" className="hover:text-primary">
             Home
           </Link>
-          <span className="mx-1.5 text-muted-foreground/50">/</span>
+          <span className="text-muted-foreground/50 mx-1.5">/</span>
           <Link href="/blog" className="hover:text-primary">
             Blog
           </Link>
@@ -87,11 +87,11 @@ export default async function BlogPostPage({ params }: Props) {
             {post.title}
           </h1>
           {post.subtitle ? (
-            <p className="mt-4 text-lg text-muted-foreground">
+            <p className="text-muted-foreground mt-4 text-lg">
               {post.subtitle}
             </p>
           ) : null}
-          <p className="mt-4 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-4 text-sm">
             {post.author_name}
             {post.published_at ? (
               <>
@@ -111,28 +111,28 @@ export default async function BlogPostPage({ params }: Props) {
         {/* TODO(human): attorney must review every blog post before
             publish. body_md is rendered as untrusted markdown via
             react-markdown — links and images are sanitized by default. */}
-        <div className="prose prose-neutral mt-10 max-w-none [&_h2]:font-display [&_h2]:text-2xl [&_h2]:font-medium [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:font-display [&_h3]:text-xl [&_h3]:font-medium [&_h3]:mt-6 [&_p]:leading-relaxed [&_p]:text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline">
+        <div className="prose prose-neutral [&_h2]:font-display [&_h3]:font-display [&_p]:text-muted-foreground [&_a]:text-primary mt-10 max-w-none [&_a]:underline-offset-4 [&_a:hover]:underline [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-medium [&_h3]:mt-6 [&_h3]:text-xl [&_h3]:font-medium [&_p]:leading-relaxed">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {post.body_md}
           </ReactMarkdown>
         </div>
 
-        <footer className="mt-12 rounded-2xl border border-border bg-secondary/40 p-6">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">
+        <footer className="border-border bg-secondary/40 mt-12 rounded-2xl border p-6">
+          <p className="text-muted-foreground text-sm">
+            <span className="text-foreground font-medium">
               Need to talk through your case?
             </span>{" "}
             Free consultation with {FIRM.attorneyName}. Call{" "}
             <a
               href={`tel:${FIRM.phoneTel}`}
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="text-primary font-medium underline-offset-4 hover:underline"
             >
               {FIRM.phone}
             </a>{" "}
             or{" "}
             <Link
               href={`/contact?utm_source=blog&utm_medium=footer&utm_campaign=${post.slug}`}
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="text-primary font-medium underline-offset-4 hover:underline"
             >
               request a consultation online
             </Link>

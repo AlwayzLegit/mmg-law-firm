@@ -46,6 +46,7 @@ export async function generateMetadata({ params }: Props) {
       c.meta_description ??
       `${FIRM.legalName} represents ${c.name} clients in personal-injury matters. Free consultation. Bilingual representation.`,
     path: `/locations/${c.slug}`,
+    image: null, // per-page opengraph-image.tsx
   });
 }
 
@@ -114,7 +115,9 @@ export default async function CountyPage({ params }: Props) {
             </Link>
             <a
               href={`tel:${FIRM.phoneTel}`}
-              className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "marketing" }),
+              )}
             >
               Call {FIRM.phone}
             </a>
@@ -130,7 +133,7 @@ export default async function CountyPage({ params }: Props) {
                 Cities we cover in {c.name}
               </h2>
               {cities.length === 0 ? (
-                <p className="mt-4 text-muted-foreground">
+                <p className="text-muted-foreground mt-4">
                   We work throughout {c.name}. Call us to confirm we can take
                   your matter where you live.
                 </p>
@@ -140,15 +143,15 @@ export default async function CountyPage({ params }: Props) {
                     <li key={city.slug}>
                       <Link
                         href={`/locations/${c.slug}/${city.slug}`}
-                        className="group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/30"
+                        className="group border-border bg-card hover:border-primary/30 flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
                       >
                         <MapPin
-                          className="h-4 w-4 flex-none text-primary"
+                          className="text-primary h-4 w-4 flex-none"
                           aria-hidden
                         />
                         <span className="font-medium">{city.name}</span>
                         <ArrowRight
-                          className="ml-auto h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary"
+                          className="text-muted-foreground group-hover:text-primary ml-auto h-4 w-4 transition-colors"
                           aria-hidden
                         />
                       </Link>
@@ -159,14 +162,14 @@ export default async function CountyPage({ params }: Props) {
             </section>
 
             {c.local_stats_md ? (
-              <section className="mt-12 rounded-2xl border border-border bg-secondary/40 p-8">
+              <section className="border-border bg-secondary/40 mt-12 rounded-2xl border p-8">
                 <h2 className="font-display text-2xl font-medium tracking-tight">
                   About injuries in {c.name}
                 </h2>
-                <div className="mt-4 whitespace-pre-line text-muted-foreground">
+                <div className="text-muted-foreground mt-4 whitespace-pre-line">
                   {c.local_stats_md}
                 </div>
-                <p className="mt-6 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-6 text-xs">
                   {DISCLAIMERS.general}
                 </p>
               </section>
@@ -177,13 +180,13 @@ export default async function CountyPage({ params }: Props) {
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                   Court information
                 </h2>
-                <p className="mt-3 text-muted-foreground">
+                <p className="text-muted-foreground mt-3">
                   The county seat is {c.seat}. Most {c.name} personal-injury
                   matters are filed in the {c.name} Superior Court.
                 </p>
                 {c.superior_court_address ? (
-                  <address className="mt-4 not-italic rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
-                    <span className="block text-xs font-medium uppercase tracking-wide text-foreground">
+                  <address className="border-border bg-card text-muted-foreground mt-4 rounded-lg border p-4 text-sm not-italic">
+                    <span className="text-foreground block text-xs font-medium tracking-wide uppercase">
                       {c.name} Superior Court
                     </span>
                     <span className="mt-1 block whitespace-pre-line">
@@ -206,7 +209,10 @@ export default async function CountyPage({ params }: Props) {
         </div>
       </article>
 
-      <PracticeAreaGrid heading={`Practice areas in ${c.short_name}`} subheading="What we handle for clients across the county." />
+      <PracticeAreaGrid
+        heading={`Practice areas in ${c.short_name}`}
+        subheading="What we handle for clients across the county."
+      />
       <CtaBand />
     </>
   );

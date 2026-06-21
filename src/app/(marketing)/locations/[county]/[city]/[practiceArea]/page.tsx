@@ -11,14 +11,9 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import {
-  findPracticeArea,
-} from "@/lib/data/practice-areas";
+import { findPracticeArea } from "@/lib/data/practice-areas";
 import { PRACTICE_AREA_CONTENT } from "@/lib/data/practice-area-content";
-import {
-  getLocationPage,
-  getPublishedLocationPages,
-} from "@/lib/data/queries";
+import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -61,6 +56,7 @@ export async function generateMetadata({ params }: Props) {
       row.meta_description ??
       `${FIRM.legalName} handles ${row.practice_area_name.toLowerCase()} matters for ${row.city_name} clients. Free consultation. Bilingual representation.`,
     path: `/locations/${row.county_slug}/${row.city_slug}/${row.practice_area_slug}`,
+    image: null, // per-page opengraph-image.tsx
   });
 }
 
@@ -155,7 +151,9 @@ export default async function CityPracticePage({ params }: Props) {
             </Link>
             <a
               href={`tel:${FIRM.phoneTel}`}
-              className={cn(buttonVariants({ variant: "outline", size: "marketing" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "marketing" }),
+              )}
             >
               Call {FIRM.phone}
             </a>
@@ -170,7 +168,7 @@ export default async function CityPracticePage({ params }: Props) {
               <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                 {row.practice_area_name} matters in {row.city_name}
               </h2>
-              <div className="mt-4 whitespace-pre-line leading-relaxed text-muted-foreground">
+              <div className="text-muted-foreground mt-4 leading-relaxed whitespace-pre-line">
                 {row.local_angle_md}
               </div>
             </section>
@@ -178,18 +176,20 @@ export default async function CityPracticePage({ params }: Props) {
             {content?.subtopics?.length ? (
               <section className="mt-12">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  Types of {area?.nounPlural ?? row.practice_area_name.toLowerCase()} cases we handle
+                  Types of{" "}
+                  {area?.nounPlural ?? row.practice_area_name.toLowerCase()}{" "}
+                  cases we handle
                 </h2>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   {content.subtopics.map((s) => (
                     <div
                       key={s.title}
-                      className="rounded-2xl border border-border bg-card p-5"
+                      className="border-border bg-card rounded-2xl border p-5"
                     >
                       <h3 className="font-display text-base font-medium tracking-tight">
                         {s.title}
                       </h3>
-                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                      <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
                         {s.body}
                       </p>
                     </div>
@@ -208,14 +208,14 @@ export default async function CityPracticePage({ params }: Props) {
                 <ol className="mt-6 space-y-5">
                   {content.process.map((step, i) => (
                     <li key={step.title} className="flex gap-4">
-                      <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full bg-primary/10 font-display text-sm font-semibold text-primary">
+                      <span className="bg-primary/10 font-display text-primary mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm font-semibold">
                         {i + 1}
                       </span>
                       <div>
                         <h3 className="font-display text-base font-medium">
                           {step.title}
                         </h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                        <p className="text-muted-foreground mt-1 text-sm">
                           {step.body}
                         </p>
                       </div>
@@ -226,7 +226,7 @@ export default async function CityPracticePage({ params }: Props) {
             ) : null}
 
             {content?.whatToDo?.length ? (
-              <section className="mt-12 rounded-2xl border border-border bg-secondary/40 p-8">
+              <section className="border-border bg-secondary/40 mt-12 rounded-2xl border p-8">
                 <h2 className="font-display text-2xl font-medium tracking-tight">
                   What to do right away
                 </h2>
@@ -234,14 +234,14 @@ export default async function CityPracticePage({ params }: Props) {
                   {content.whatToDo.map((line) => (
                     <li key={line} className="flex items-start gap-3 text-sm">
                       <CheckCircle2
-                        className="mt-0.5 h-4 w-4 flex-none text-primary"
+                        className="text-primary mt-0.5 h-4 w-4 flex-none"
                         aria-hidden
                       />
                       <span className="text-foreground">{line}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-6 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-6 text-xs">
                   {DISCLAIMERS.general}
                 </p>
               </section>
@@ -264,7 +264,10 @@ export default async function CityPracticePage({ params }: Props) {
       </article>
 
       {row.faq_json?.length ? (
-        <Faq items={row.faq_json} heading={`${row.city_name} ${row.practice_area_name} FAQ`} />
+        <Faq
+          items={row.faq_json}
+          heading={`${row.city_name} ${row.practice_area_name} FAQ`}
+        />
       ) : content?.faqs?.length ? (
         <Faq items={content.faqs} heading={`${row.practice_area_name} FAQ`} />
       ) : null}

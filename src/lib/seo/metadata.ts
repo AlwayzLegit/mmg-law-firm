@@ -7,7 +7,13 @@ type BuildOpts = {
   title: string;
   description: string;
   path: string;
-  image?: string;
+  /**
+   * Explicit OG/Twitter image URL. Omit for the site default. Pass `null`
+   * on routes that ship their own `opengraph-image.tsx` so the file
+   * convention supplies a per-page image (an explicit value here would
+   * otherwise override it).
+   */
+  image?: string | null;
   noindex?: boolean;
   ogType?: "website" | "article" | "profile";
 };
@@ -21,10 +27,18 @@ export function buildMetadata({
   ogType = "website",
 }: BuildOpts): Metadata {
   const url = canonicalUrl(path);
-  const imageUrl = image.startsWith("http") ? image : `${siteUrl()}${image}`;
   // The root layout's title.template provides the " | MMG Law Firm" suffix —
   // pass the bare title here so we don't double it.
   const ogTitle = `${title} | ${FIRM.legalName}`;
+
+  // When image is null, omit images entirely so Next's opengraph-image.tsx
+  // file convention provides the (per-page) card.
+  const imageUrl =
+    image == null
+      ? null
+      : image.startsWith("http")
+        ? image
+        : `${siteUrl()}${image}`;
 
   return {
     title,
@@ -43,20 +57,17 @@ export function buildMetadata({
       siteName: FIRM.legalName,
       type: ogType,
       locale: "en_US",
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: ogTitle,
-        },
-      ],
+      ...(imageUrl
+        ? {
+            images: [{ url: imageUrl, width: 1200, height: 630, alt: ogTitle }],
+          }
+        : {}),
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
       description,
-      images: [imageUrl],
+      ...(imageUrl ? { images: [imageUrl] } : {}),
     },
   };
 }
