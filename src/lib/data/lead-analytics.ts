@@ -223,3 +223,121 @@ export async function getLeadAnalytics(
     topLandingPages: rank(rows, (r) => toPath(r.source_url), 8),
   };
 }
+
+export type ResponseStats = {
+  /** Leads in the window (non-spam) that have received a first staff touch. */
+  sample: number;
+  medianMinutes: number | null;
+  within1hPct: number | null;
+  within24hPct: number | null;
+  /** Open leads in the window still awaiting any staff response. */
+  pending: number;
+};
+
+// Audit actions that count as a genuine first staff response to a lead.
+const RESPONSE_ACTIONS = [
+  "status_change",
+  "note_added",
+  "assigned",
+  "conflict_check",
+];
+
+/**
+ * First-response-time stats: how fast the firm engages a new lead, measured
+ * from the lead's created_at to the earliest staff action in the audit log
+ * (status change, note, assignment, or conflict check). Lead intake is the
+ * #1 lever on conversion for a PI firm, so this is the metric to watch.
+ */
+export async function getResponseTimeStats(
+  supabase: SupabaseClient,
+  windowDays = 30,
+): Promise<ResponseStats> {
+  const since = new Date(Date.now() - windowDays * DAY_MS).toISOString();
+
+  const { data: leadRows } = await supabase
+    .from("leads")
+    .select("id, created_at, status")
+    .gte("created_at", since)
+    .neq("status", "spam");
+
+  const leads = (leadRows ?? []) as Array<{
+    id: string;
+    created_at: string;
+    status: string;
+  }>;
+  if (leads.length === 0) {
+    return {
+      sample: 0,
+      medianMinutes: null,
+      within1hPct: null,
+      within24hPct: null,
+      pending: 0,
+    };
+  }
+
+  const { data: eventRows } = await supabase
+    .from("audit_log")
+    .select("entity_id, ts")
+    .eq("entity", "leads")
+    .in(
+      "entity_id",
+      leads.map((l) => l.id),
+    )
+    .not("actor_id", "is", null)
+    .in("action", RESPONSE_ACTIONS)
+    .order("ts", { ascending: true });
+
+  // Earliest staff event per lead (rows are ts-ascending, so first wins).
+  const firstTouch = new Map<string, string>();
+  for (const e of (eventRows ?? []) as Array<{
+    entity_id: string;
+    ts: string;
+  }>) {
+    if (!firstTouch.has(e.entity_id)) firstTouch.set(e.entity_id, e.ts);
+  }
+
+  const minutes: number[] = [];
+  let pending = 0;
+  for (const l of leads) {
+    const t = firstTouch.get(l.id);
+    if (t) {
+      const m =
+        (new Date(t).getTime() - new Date(l.created_at).getTime()) / 60000;
+      if (m >= 0) minutes.push(m);
+    } else if (l.status !== "signed" && l.status !== "rejected") {
+      pending += 1; // still open and never touched
+    }
+  }
+
+  const sample = minutes.length;
+  if (sample === 0) {
+    return {
+      sample: 0,
+      medianMinutes: null,
+      within1hPct: null,
+      within24hPct: null,
+      pending,
+    };
+  }
+
+  minutes.sort((a, b) => a - b);
+  const mid = Math.floor(sample / 2);
+  const median =
+    sample % 2 === 0 ? (minutes[mid - 1] + minutes[mid]) / 2 : minutes[mid];
+
+  const pct = (n: number) => Math.round((n / sample) * 100);
+  return {
+    sample,
+    medianMinutes: Math.round(median),
+    within1hPct: pct(minutes.filter((m) => m <= 60).length),
+    within24hPct: pct(minutes.filter((m) => m <= 1440).length),
+    pending,
+  };
+}
+
+/** Humanize a minutes value for display ("42m", "3.5h", "2.1d"). */
+export function formatMinutes(min: number): string {
+  if (min < 60) return `${min}m`;
+  if (min < 1440) return `${(min / 60).toFixed(1)}h`;
+  return `${(min / 1440).toFixed(1)}d`;
+}
