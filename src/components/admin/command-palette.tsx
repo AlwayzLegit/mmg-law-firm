@@ -54,6 +54,13 @@ const COMMANDS: Command[] = [
     icon: Users,
   },
   {
+    label: "Work next new lead",
+    href: "/admin/leads/next",
+    group: "Leads",
+    keywords: "oldest untriaged intake queue first response",
+    icon: Users,
+  },
+  {
     label: "New leads",
     href: "/admin/leads?status=new",
     group: "Leads",
