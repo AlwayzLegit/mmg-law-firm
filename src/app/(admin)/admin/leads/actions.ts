@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { logAuditMany } from "@/lib/audit";
+import { logAudit, logAuditMany } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { normalizeTags } from "@/lib/leads/tags";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 const STATUS_VALUES = [
@@ -209,6 +210,107 @@ export async function createSavedView(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/admin/leads");
+  return { ok: true };
+}
+
+// -------------------------------------------------------------------
+// Tag management — rename / merge / delete a tag across all leads.
+// -------------------------------------------------------------------
+
+const RenameTagInput = z.object({
+  from: z.string().trim().min(1).max(30),
+  to: z.string().trim().min(1).max(30),
+});
+
+/**
+ * Rename a tag everywhere it appears. If the target already exists on a lead,
+ * the two collapse into one (a merge) because normalizeTags de-duplicates.
+ */
+export async function renameTag(formData: FormData): Promise<SimpleResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = RenameTagInput.safeParse({
+    from: formData.get("from"),
+    to: formData.get("to"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const from = normalizeTags([parsed.data.from])[0];
+  const to = normalizeTags([parsed.data.to])[0];
+  if (!from || !to) return { ok: false, error: "Invalid tag" };
+  if (from === to) return { ok: true };
+
+  const supabase = await getServerSupabase();
+  const { data: rows, error } = await supabase
+    .from("leads")
+    .select("id, tags")
+    .contains("tags", [from]);
+  if (error) return { ok: false, error: error.message };
+
+  let updated = 0;
+  for (const row of rows ?? []) {
+    const next = normalizeTags(
+      (row.tags as string[]).map((t) => (t === from ? to : t)),
+    );
+    const { error: upErr } = await supabase
+      .from("leads")
+      .update({ tags: next })
+      .eq("id", row.id);
+    if (!upErr) updated += 1;
+  }
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: null,
+    action: "tag_renamed",
+    diff: { from, to, leads: updated },
+  });
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin/leads/tags");
+  return { ok: true };
+}
+
+const DeleteTagInput = z.object({ tag: z.string().trim().min(1).max(30) });
+
+/** Remove a tag from every lead that has it. */
+export async function deleteTag(formData: FormData): Promise<SimpleResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = DeleteTagInput.safeParse({ tag: formData.get("tag") });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const tag = normalizeTags([parsed.data.tag])[0];
+  if (!tag) return { ok: false, error: "Invalid tag" };
+
+  const supabase = await getServerSupabase();
+  const { data: rows, error } = await supabase
+    .from("leads")
+    .select("id, tags")
+    .contains("tags", [tag]);
+  if (error) return { ok: false, error: error.message };
+
+  let updated = 0;
+  for (const row of rows ?? []) {
+    const next = (row.tags as string[]).filter((t) => t !== tag);
+    const { error: upErr } = await supabase
+      .from("leads")
+      .update({ tags: next })
+      .eq("id", row.id);
+    if (!upErr) updated += 1;
+  }
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: null,
+    action: "tag_deleted",
+    diff: { tag, leads: updated },
+  });
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin/leads/tags");
   return { ok: true };
 }
 

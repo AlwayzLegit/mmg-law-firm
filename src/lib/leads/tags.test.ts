@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeTags } from "./tags";
+import { normalizeTags, tagCounts } from "./tags";
 
 describe("normalizeTags", () => {
   it("trims and lower-cases", () => {
@@ -38,5 +38,32 @@ describe("normalizeTags", () => {
 
   it("returns an empty array for no input", () => {
     expect(normalizeTags([])).toEqual([]);
+  });
+});
+
+describe("tagCounts", () => {
+  it("tallies usage across leads", () => {
+    expect(
+      tagCounts([["vip", "spanish"], ["vip"], ["referral", "vip"]]),
+    ).toEqual([
+      { tag: "vip", count: 3 },
+      { tag: "referral", count: 1 },
+      { tag: "spanish", count: 1 },
+    ]);
+  });
+
+  it("sorts by count desc then alphabetically", () => {
+    const out = tagCounts([["b"], ["a"], ["a"], ["c"]]);
+    expect(out.map((t) => t.tag)).toEqual(["a", "b", "c"]);
+  });
+
+  it("ignores null/garbage entries", () => {
+    expect(tagCounts([null, undefined, ["ok"], ["", "ok"]])).toEqual([
+      { tag: "ok", count: 2 },
+    ]);
+  });
+
+  it("returns empty for no leads", () => {
+    expect(tagCounts([])).toEqual([]);
   });
 });

@@ -75,6 +75,13 @@ const COMMANDS: Command[] = [
     icon: Users,
   },
   {
+    label: "Manage tags",
+    href: "/admin/leads/tags",
+    group: "Leads",
+    keywords: "labels rename merge",
+    icon: Users,
+  },
+  {
     label: "Analytics",
     href: "/admin/analytics",
     group: "Go to",
