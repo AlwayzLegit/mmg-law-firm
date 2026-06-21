@@ -3,7 +3,10 @@ import { timingSafeEqual } from "node:crypto";
 
 import { env } from "@/lib/env";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { getLeadAnalytics } from "@/lib/data/lead-analytics";
+import {
+  getLeadAnalytics,
+  getResponseTimeStats,
+} from "@/lib/data/lead-analytics";
 import { renderLeadDigestEmail } from "@/lib/email/lead-digest";
 import { sendEmail } from "@/lib/email/resend";
 
@@ -58,8 +61,11 @@ async function handle(request: NextRequest) {
   }
 
   const supabase = getServiceSupabase();
-  const analytics = await getLeadAnalytics(supabase, 30);
-  const { subject, html } = renderLeadDigestEmail(analytics);
+  const [analytics, response] = await Promise.all([
+    getLeadAnalytics(supabase, 30),
+    getResponseTimeStats(supabase, 30),
+  ]);
+  const { subject, html } = renderLeadDigestEmail(analytics, response);
 
   const result = await sendEmail({ to, subject, html });
   if (!result.ok) {
