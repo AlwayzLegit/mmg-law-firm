@@ -14,7 +14,7 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { RelatedPracticeAreas } from "@/components/marketing/related-practice-areas";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import { ATTORNEY_IMAGES } from "@/lib/media";
+import { pickAttorneyImage } from "@/lib/media";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
@@ -143,7 +143,7 @@ export default async function PracticeAreaPage({ params }: Props) {
         }
         aside={
           <AttorneyHeroAside
-            image={ATTORNEY_IMAGES.practiceDetail}
+            image={pickAttorneyImage(slug)}
             alt={`${FIRM.attorneyName}, California ${area.name} attorney`}
             priority
           />
