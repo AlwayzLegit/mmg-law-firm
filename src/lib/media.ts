@@ -55,3 +55,47 @@ export const ATTORNEY_IMAGES = {
 
 /** Absolute public URL for the lead attorney's headshot (used to seed the DB). */
 export const ATTORNEY_HEADSHOT_URL = mediaUrl(ATTORNEY_IMAGES.portrait);
+
+/**
+ * Full pool of distinct attorney photos used to vary imagery across the many
+ * dynamic pages of a single template (practice areas, counties, cities,
+ * city × practice). Without this, every page of a template renders the one
+ * image bound to its role — i.e. the same photo repeated. `pickAttorneyImage`
+ * maps a stable seed (a slug or path) to one pool entry so each page gets a
+ * consistent, varied portrait. Includes the two spare portraits not bound to
+ * any fixed surface, for maximum spread.
+ */
+export const ATTORNEY_IMAGE_POOL: readonly string[] = [
+  ATTORNEY_IMAGES.portraitAside,
+  ATTORNEY_IMAGES.practiceDetail,
+  ATTORNEY_IMAGES.county,
+  ATTORNEY_IMAGES.city,
+  ATTORNEY_IMAGES.cityPractice,
+  ATTORNEY_IMAGES.standing,
+  ATTORNEY_IMAGES.meeting,
+  ATTORNEY_IMAGES.locationsIndex,
+  ATTORNEY_IMAGES.contact,
+  ATTORNEY_IMAGES.reviews,
+  ATTORNEY_IMAGES.blog,
+  ATTORNEY_IMAGES.caseResults,
+  ATTORNEY_IMAGES.portraitAlt,
+  // Spare portraits (the two near-identical "cigar removed" edits) — only
+  // ever surfaced through rotation, never bound to a fixed page.
+  "remove_the_cigar_from_his_hand_Nano_Banana_2_78462.png",
+  "remove_the_cigar_from_his_hand_Nano_Banana_2_89540.png",
+] as const;
+
+/**
+ * Deterministically pick a pool image from an arbitrary seed (slug/path) via
+ * an FNV-1a hash. Stable across builds — the same seed always maps to the same
+ * photo, so a page's image doesn't shuffle on every deploy.
+ */
+export function pickAttorneyImage(seed: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  const idx = (h >>> 0) % ATTORNEY_IMAGE_POOL.length;
+  return ATTORNEY_IMAGE_POOL[idx];
+}

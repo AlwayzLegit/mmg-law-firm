@@ -12,7 +12,7 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import { ATTORNEY_IMAGES } from "@/lib/media";
+import { pickAttorneyImage } from "@/lib/media";
 import { findPracticeArea } from "@/lib/data/practice-areas";
 import { PRACTICE_AREA_CONTENT } from "@/lib/data/practice-area-content";
 import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
@@ -163,7 +163,7 @@ export default async function CityPracticePage({ params }: Props) {
         }
         aside={
           <AttorneyHeroAside
-            image={ATTORNEY_IMAGES.cityPractice}
+            image={pickAttorneyImage(path)}
             alt={`${FIRM.attorneyName}, ${row.city_name} ${row.practice_area_name} attorney`}
             priority
           />

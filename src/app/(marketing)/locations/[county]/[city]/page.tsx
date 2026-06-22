@@ -9,7 +9,7 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import { ATTORNEY_IMAGES } from "@/lib/media";
+import { pickAttorneyImage } from "@/lib/media";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
   getAllPublishedCities,
@@ -138,7 +138,7 @@ export default async function CityPage({ params }: Props) {
         }
         aside={
           <AttorneyHeroAside
-            image={ATTORNEY_IMAGES.city}
+            image={pickAttorneyImage(`${county}/${city}`)}
             alt={`${FIRM.attorneyName}, ${c.name} personal-injury attorney`}
             priority
           />
