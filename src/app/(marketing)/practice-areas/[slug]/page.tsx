@@ -87,7 +87,10 @@ export default async function PracticeAreaPage({ params }: Props) {
       addressCountry: FIRM.address.country,
     },
     areaServed: { "@type": "State", name: "California" },
-    serviceType: area.lawyerPhrase,
+    // `knowsAbout` (valid on Organization/LegalService) carries the topical
+    // signal; `serviceType` is only valid on schema.org Service and was
+    // flagged NOT_RECOGNIZED in the site audit.
+    knowsAbout: area.lawyerPhrase,
   };
 
   const faqGraph = content.faqs.length > 0 ? buildFaqPage(content.faqs) : null;

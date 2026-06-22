@@ -76,6 +76,16 @@ export default async function CityPracticePage({ params }: Props) {
   const content = area ? PRACTICE_AREA_CONTENT[area.slug] : undefined;
   const path = `/locations/${row.county_slug}/${row.city_slug}/${row.practice_area_slug}`;
 
+  // Sibling practice-area pages in the same city. Cross-linking them gives each
+  // money page more than one internal inbound link (a low-internal-links notice
+  // in the site audit) and helps users move between local practice pages.
+  const siblings = (await getPublishedLocationPages()).filter(
+    (p) =>
+      p.county_slug === row.county_slug &&
+      p.city_slug === row.city_slug &&
+      p.practice_area_slug !== row.practice_area_slug,
+  );
+
   const legalService = {
     "@context": "https://schema.org",
     "@type": ["LegalService", "Attorney"],
@@ -92,7 +102,9 @@ export default async function CityPracticePage({ params }: Props) {
       addressCountry: FIRM.address.country,
     },
     areaServed: { "@type": "City", name: row.city_name },
-    serviceType: area?.lawyerPhrase ?? row.practice_area_name,
+    // `knowsAbout` is valid on Organization/LegalService; `serviceType` is
+    // only valid on schema.org Service (flagged NOT_RECOGNIZED in the audit).
+    knowsAbout: area?.lawyerPhrase ?? row.practice_area_name,
   };
 
   const faqGraph = row.faq_json?.length
@@ -257,6 +269,32 @@ export default async function CityPracticePage({ params }: Props) {
             ) : null}
 
             <DeadlinesCallout />
+
+            {siblings.length > 0 ? (
+              <section className="border-border mt-12 border-t pt-8">
+                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+                  More practice areas in {row.city_name}
+                </h2>
+                <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {siblings.map((s) => (
+                    <li key={s.practice_area_slug}>
+                      <Link
+                        href={`/locations/${s.county_slug}/${s.city_slug}/${s.practice_area_slug}`}
+                        className="group border-border bg-card hover:border-primary/40 flex items-center justify-between rounded-xl border p-4 text-sm font-medium transition-colors"
+                      >
+                        <span>
+                          {s.practice_area_name} in {s.city_name}
+                        </span>
+                        <ArrowRight
+                          className="text-muted-foreground group-hover:text-primary h-4 w-4 flex-none transition-colors"
+                          aria-hidden
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
