@@ -12,9 +12,10 @@ import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { RelatedPracticeAreas } from "@/components/marketing/related-practice-areas";
+import { SubjectImage } from "@/components/marketing/subject-image";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import { pickAttorneyImage } from "@/lib/media";
+import { PRACTICE_AREA_IMAGE, pickAttorneyImage } from "@/lib/media";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
@@ -153,6 +154,14 @@ export default async function PracticeAreaPage({ params }: Props) {
       <article className="container-page py-16 md:py-20">
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
           <div className="prose-area">
+            {PRACTICE_AREA_IMAGE[slug] ? (
+              <SubjectImage
+                image={PRACTICE_AREA_IMAGE[slug]}
+                alt={`${area.name} representation in California`}
+                className="mb-10"
+              />
+            ) : null}
+
             {content.body_from_db ? (
               <div className="prose prose-neutral text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>

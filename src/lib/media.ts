@@ -85,17 +85,58 @@ export const ATTORNEY_IMAGE_POOL: readonly string[] = [
   "remove_the_cigar_from_his_hand_Nano_Banana_2_89540.png",
 ] as const;
 
-/**
- * Deterministically pick a pool image from an arbitrary seed (slug/path) via
- * an FNV-1a hash. Stable across builds — the same seed always maps to the same
- * photo, so a page's image doesn't shuffle on every deploy.
- */
-export function pickAttorneyImage(seed: string): string {
+/** FNV-1a hash → unsigned 32-bit int. Stable across builds. */
+function fnv1a(seed: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
-  const idx = (h >>> 0) % ATTORNEY_IMAGE_POOL.length;
-  return ATTORNEY_IMAGE_POOL[idx];
+  return h >>> 0;
 }
+
+/**
+ * Deterministically pick a pool image from an arbitrary seed (slug/path).
+ * The same seed always maps to the same photo, so a page's image doesn't
+ * shuffle on every deploy.
+ */
+export function pickAttorneyImage(seed: string): string {
+  return ATTORNEY_IMAGE_POOL[fnv1a(seed) % ATTORNEY_IMAGE_POOL.length];
+}
+
+/**
+ * Generic, non-landmark California imagery for location pages (county / city /
+ * city × practice). Portrait-oriented to fit the hero-aside frame. Rotated
+ * deterministically per slug so each locale gets consistent, varied scenery —
+ * never an invented landmark (CRPC §7.1 truthfulness). Each entry carries its
+ * own alt text describing the scene.
+ */
+export const LOCATION_IMAGES: ReadonlyArray<{ name: string; alt: string }> = [
+  { name: "loc-ca-boulevard.webp", alt: "Palm-lined California boulevard" },
+  { name: "loc-courthouse.webp", alt: "California courthouse facade" },
+  { name: "loc-scales-of-justice.webp", alt: "Scales of justice statue" },
+  { name: "loc-ca-highway.webp", alt: "California freeway at dusk" },
+  { name: "loc-downtown.webp", alt: "California downtown street" },
+  { name: "loc-civic.webp", alt: "California civic building" },
+];
+
+/** Deterministic generic-CA scene for a location slug/path. */
+export function pickLocationImage(seed: string): { name: string; alt: string } {
+  return LOCATION_IMAGES[fnv1a(seed) % LOCATION_IMAGES.length];
+}
+
+/**
+ * Subject imagery per practice area (landscape), shown as an in-body content
+ * band on the practice-area detail page. Generated, illustrative, non-graphic.
+ */
+export const PRACTICE_AREA_IMAGE: Record<string, string> = {
+  "car-accidents": "pa-car-accidents.webp",
+  "truck-accidents": "pa-truck-accidents.webp",
+  "motorcycle-accidents": "pa-motorcycle-accidents.webp",
+  "pedestrian-accidents": "pa-pedestrian-accidents.webp",
+  "bicycle-accidents": "pa-bicycle-accidents.webp",
+  "slip-and-fall": "pa-slip-and-fall.webp",
+  "wrongful-death": "pa-wrongful-death.webp",
+  "dog-bites": "pa-dog-bites.webp",
+  "rideshare-accidents": "pa-rideshare-accidents.webp",
+};
