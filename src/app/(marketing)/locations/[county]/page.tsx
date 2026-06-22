@@ -10,7 +10,7 @@ import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import { pickAttorneyImage } from "@/lib/media";
+import { pickLocationImage } from "@/lib/media";
 import {
   getCountyBySlug,
   getCitiesInCounty,
@@ -127,8 +127,8 @@ export default async function CountyPage({ params }: Props) {
         }
         aside={
           <AttorneyHeroAside
-            image={pickAttorneyImage(county)}
-            alt={`${FIRM.attorneyName}, ${c.name} personal-injury attorney`}
+            image={pickLocationImage(county).name}
+            alt={pickLocationImage(county).alt}
             priority
           />
         }
