@@ -30,6 +30,54 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    // 301s from legacy Squarespace URLs to their new homes, preserving the
+    // link equity / inbound links the old paths still carry. (Surfaced as
+    // 4xx errors in the Semrush site audit after the rebuild cutover.)
+    return [
+      {
+        source: "/car-accidents",
+        destination: "/practice-areas/car-accidents",
+        permanent: true,
+      },
+      {
+        source: "/trucking-accidents",
+        destination: "/practice-areas/truck-accidents",
+        permanent: true,
+      },
+      {
+        source: "/motorcycle-accidents",
+        destination: "/practice-areas/motorcycle-accidents",
+        permanent: true,
+      },
+      {
+        source: "/pedestrian-accidents",
+        destination: "/practice-areas/pedestrian-accidents",
+        permanent: true,
+      },
+      {
+        source: "/bicycle-accidents",
+        destination: "/practice-areas/bicycle-accidents",
+        permanent: true,
+      },
+      {
+        source: "/slip-fall",
+        destination: "/practice-areas/slip-and-fall",
+        permanent: true,
+      },
+      {
+        source: "/personal-injury",
+        destination: "/practice-areas",
+        permanent: true,
+      },
+      {
+        source: "/about-mmg-lawfirm",
+        destination: "/attorneys/mihran-ghazaryan",
+        permanent: true,
+      },
+      { source: "/cart", destination: "/", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
