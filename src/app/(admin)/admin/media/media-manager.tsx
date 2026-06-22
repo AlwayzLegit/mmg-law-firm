@@ -2,17 +2,42 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Copy, CopyMinus, Trash2, Upload } from "lucide-react";
+import { Copy, CopyMinus, Link2, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { deleteMedia, removeDuplicateMedia, uploadMedia } from "./actions";
+import {
+  deleteMedia,
+  importMediaFromUrl,
+  removeDuplicateMedia,
+  uploadMedia,
+} from "./actions";
 
 export type MediaItem = { name: string; url: string };
 
 export default function MediaManager({ items }: { items: MediaItem[] }) {
   const [pending, startTransition] = React.useTransition();
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const [importUrl, setImportUrl] = React.useState("");
+  const [importName, setImportName] = React.useState("");
+
+  function onImport() {
+    const url = importUrl.trim();
+    if (url === "") return;
+    const fd = new FormData();
+    fd.set("url", url);
+    if (importName.trim()) fd.set("name", importName.trim());
+    startTransition(async () => {
+      const result = await importMediaFromUrl(fd);
+      if (result.ok) {
+        toast.success(`Imported as ${result.name}.`);
+        setImportUrl("");
+        setImportName("");
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
 
   function onPick() {
     inputRef.current?.click();
@@ -100,6 +125,49 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
           PNG, JPG, WebP, GIF, AVIF, or SVG · up to 10 MB. Copy a URL and paste
           it into a hero-image field.
         </p>
+
+        <div className="border-border mt-4 rounded-lg border border-dashed p-3">
+          <div className="flex items-center gap-1.5 text-sm font-medium">
+            <Link2 className="text-primary h-4 w-4" aria-hidden />
+            Import from URL
+          </div>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Fetches a remote image into the bucket (handy for AI-generated
+            images). Optionally set a fixed name so code can reference it.
+          </p>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <label className="grid gap-1 text-xs">
+              <span className="text-muted-foreground">Image URL</span>
+              <input
+                type="url"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder="https://…/image.webp"
+                className="border-border bg-background focus:ring-ring h-9 w-72 rounded-md border px-2 text-sm focus:ring-2 focus:outline-none"
+              />
+            </label>
+            <label className="grid gap-1 text-xs">
+              <span className="text-muted-foreground">Name (optional)</span>
+              <input
+                type="text"
+                value={importName}
+                onChange={(e) => setImportName(e.target.value)}
+                placeholder="pa-car-accidents.webp"
+                maxLength={80}
+                className="border-border bg-background focus:ring-ring h-9 w-56 rounded-md border px-2 text-sm focus:ring-2 focus:outline-none"
+              />
+            </label>
+            <Button
+              variant="outline"
+              onClick={onImport}
+              disabled={pending || importUrl.trim() === ""}
+              className="gap-1.5"
+            >
+              <Link2 className="h-4 w-4" aria-hidden />
+              Import
+            </Button>
+          </div>
+        </div>
       </div>
 
       {items.length === 0 ? (
