@@ -159,7 +159,7 @@ function CredentialsCard() {
       <article className="border-border bg-card relative overflow-hidden rounded-2xl border shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur">
         <div className="bg-secondary relative aspect-[5/4] w-full overflow-hidden">
           <Image
-            src={mediaUrl(ATTORNEY_IMAGES.portrait)}
+            src={mediaUrl(ATTORNEY_IMAGES.homepageHero)}
             alt={`${FIRM.attorneyName}, founder and managing attorney of ${FIRM.legalName}`}
             fill
             priority
