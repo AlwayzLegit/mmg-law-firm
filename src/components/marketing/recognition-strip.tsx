@@ -9,13 +9,13 @@ type Props = {
 };
 
 /**
- * Recognition strip — three trust-signal cards showing the attorney's
- * Super Lawyers Rising Stars years (2023 / 2024 / 2025), the firm's
- * contingency-fee approach, and the bilingual representation.
+ * Recognition strip — trust-signal cards showing the attorney's Super
+ * Lawyers Rising Stars years (2023–2026), the firm's contingency-fee
+ * approach, and the bilingual representation.
  *
  * Sources: Super Lawyers profile at
  * profiles.superlawyers.com/california/glendale/lawyer/mihran-ghazaryan
- * (Rising Stars 2023, 2024, 2025) and FIRM constants.
+ * (Rising Stars 2023–2026) and FIRM constants.
  */
 export function RecognitionStrip({ className }: Props) {
   return (
@@ -43,23 +43,23 @@ export function RecognitionStrip({ className }: Props) {
             <span className="bg-gradient-to-r from-[var(--color-gold-700,#a98442)] via-[var(--color-gold-500)] to-[var(--color-gold-700,#a98442)] bg-clip-text text-transparent">
               Super Lawyers Rising Stars
             </span>{" "}
-            three years running.
+            four years running.
           </h2>
           <p className="mt-4 text-sm text-muted-foreground md:text-base">
             Fewer than 2.5% of attorneys under 40 in California earn the
             Rising Stars designation each year. {FIRM.attorneyName} has been
-            selected by Super Lawyers in 2023, 2024, and 2025.
+            selected by Super Lawyers in 2023, 2024, 2025, and 2026.
           </p>
         </div>
 
-        <ul className="mx-auto mt-12 grid max-w-5xl gap-5 sm:grid-cols-3">
-          {[2023, 2024, 2025].map((year, idx) => (
+        <ul className="mx-auto mt-12 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[2023, 2024, 2025, 2026].map((year, idx) => (
             <li key={year}>
               <article
                 className={cn(
                   "group relative flex h-full flex-col items-center overflow-hidden rounded-3xl border border-border bg-card p-8 text-center ring-1 ring-border/30 transition-transform duration-300 hover:-translate-y-1",
-                  // The middle (most recent) card pops slightly
-                  idx === 2 && "md:scale-[1.04]",
+                  // The most recent year's card pops slightly
+                  idx === 3 && "lg:scale-[1.04]",
                 )}
               >
                 {/* ribbon corner */}
@@ -110,10 +110,10 @@ export function RecognitionStrip({ className }: Props) {
           </div>
           <div className="text-center sm:border-r sm:border-border">
             <p className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-              State + Federal
+              Personal injury
             </p>
             <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              CA Courts + C.D. Cal.
+              Plaintiff-side · Statewide CA
             </p>
           </div>
           <div className="text-center">
