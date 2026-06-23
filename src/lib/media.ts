@@ -23,7 +23,9 @@ export function mediaUrl(objectName: string): string {
 // Each role maps to a DISTINCT photo so no two surfaces repeat the same image.
 // Served through next/image, so Vercel resizes + re-encodes to AVIF/WebP.
 export const ATTORNEY_IMAGES = {
-  /** Homepage hero card (priority/LCP). ~5.1 MB. */
+  /** Homepage hero card (priority/LCP) — owner-uploaded photo. */
+  homepageHero: "1782243220190-homepage.jpg",
+  /** Homepage "Meet" / headshot seed portrait. ~5.1 MB. */
   portrait: "Male_attorney_from_reference_p_Nano_Banana_Pro_35884.png",
   /** Homepage "Meet" bio card. ~5.8 MB. */
   portraitAlt: "Male_attorney_from_reference_p_Nano_Banana_Pro_30573.png",
