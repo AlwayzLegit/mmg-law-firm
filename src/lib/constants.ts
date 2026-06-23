@@ -28,7 +28,7 @@ export const FIRM = {
     country: "US",
   },
   geo: { lat: 34.1466, lng: -118.2553 },
-  hours: "Mon–Fri 9:00–18:00",
+  hours: "Mon–Fri 9:00 AM–6:00 PM",
   /** Languages — seed fallback. Canonical source: attorney_profiles.languages. */
   languages: ["English", "Armenian", "Russian"],
   /** Founding year — seed fallback. Canonical source: firm_settings.founded_year. */
