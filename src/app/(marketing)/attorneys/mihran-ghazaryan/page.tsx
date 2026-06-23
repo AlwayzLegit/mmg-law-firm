@@ -373,9 +373,10 @@ function BioBody({ profile }: { profile: AttorneyProfile }) {
         <Section title="Languages and community">
           <p>
             The firm operates in {profile.languages.join(", ")}.{" "}
-            {FIRM.address.city} sits at the center of one of the country&apos;s
-            largest Armenian-American communities, and the practice is
-            intentionally rooted there while serving clients across the state.
+            {FIRM.address.city}{" "}
+            sits at the center of one of the country&apos;s largest
+            Armenian-American communities, and the practice is intentionally
+            rooted there while serving clients across the state.
           </p>
         </Section>
       ) : null}
