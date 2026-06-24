@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Props) {
     });
   }
   return buildMetadata({
-    title: `${row.city_name} ${row.practice_area_name} Lawyer`,
+    title: `${row.city_name} ${row.practice_area_name} Attorney`,
     description:
       row.meta_description ??
       `${FIRM.legalName} handles ${row.practice_area_name.toLowerCase()} matters for ${row.city_name} clients. Free consultation. Bilingual representation.`,

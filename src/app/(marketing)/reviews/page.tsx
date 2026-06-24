@@ -6,7 +6,7 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { TestimonialsSection } from "@/components/marketing/testimonial-card";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
-import { ATTORNEY_IMAGES } from "@/lib/media";
+import { pickLocationImage } from "@/lib/media";
 import { getApprovedTestimonials } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildReviewsSchema } from "@/lib/seo/schema";
@@ -49,8 +49,8 @@ export default async function ReviewsPage() {
         description={DISCLAIMERS.testimonial}
         aside={
           <AttorneyHeroAside
-            image={ATTORNEY_IMAGES.reviews}
-            alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
+            image={pickLocationImage("reviews").name}
+            alt={pickLocationImage("reviews").alt}
             priority
           />
         }

@@ -1,8 +1,8 @@
 import Image from "next/image";
 
-import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 
-export const PRACTICE_AREAS_HERO_IMG = mediaUrl(ATTORNEY_IMAGES.portraitAside);
+export const PRACTICE_AREAS_HERO_IMG = mediaUrl("loc-scales-of-justice.webp");
 
 export function practiceAreasHeroImageExists(): boolean {
   // The aside image now lives in the media bucket and always exists.
@@ -25,7 +25,7 @@ export function PracticeAreasHeroAside() {
       <div className="border-border relative aspect-[5/4] w-full overflow-hidden rounded-2xl border">
         <Image
           src={PRACTICE_AREAS_HERO_IMG}
-          alt="Reviewing the file at MMG Law Firm"
+          alt="Scales of justice — California personal-injury representation"
           fill
           className="object-cover"
           sizes="(min-width: 1024px) 480px, 100vw"

@@ -5,7 +5,7 @@ import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
-import { ATTORNEY_IMAGES } from "@/lib/media";
+import { pickLocationImage } from "@/lib/media";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -36,8 +36,8 @@ export default function ContactPage() {
         description="Tell us briefly what happened and we'll be in touch within one business hour during office hours. There is no fee unless we win your case."
         aside={
           <AttorneyHeroAside
-            image={ATTORNEY_IMAGES.contact}
-            alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
+            image={pickLocationImage("contact").name}
+            alt={pickLocationImage("contact").alt}
             priority
           />
         }

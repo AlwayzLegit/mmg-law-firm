@@ -6,7 +6,7 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
-import { ATTORNEY_IMAGES } from "@/lib/media";
+import { pickLocationImage } from "@/lib/media";
 import { getPublishedCaseResults } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -40,8 +40,8 @@ export default async function CaseResultsPage() {
         }
         aside={
           <AttorneyHeroAside
-            image={ATTORNEY_IMAGES.caseResults}
-            alt={`${FIRM.attorneyName}, ${FIRM.legalName}`}
+            image={pickLocationImage("case-results").name}
+            alt={pickLocationImage("case-results").alt}
             priority
           />
         }

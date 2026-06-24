@@ -23,7 +23,7 @@ const POINTS: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: ShieldCheck,
     title: "Respected attorney",
-    body: "Mihran M. Ghazaryan is licensed to practice in California state and federal courts. The firm has built its reputation representing plaintiffs injured in truck, motorcycle, and car accidents and in slips and falls.",
+    body: "Mihran M. Ghazaryan is licensed by the State Bar of California and selected to Super Lawyers Rising Stars (2023–2026). The firm represents plaintiffs injured in truck, motorcycle, and car accidents and in slips and falls.",
   },
   {
     icon: HandCoins,
@@ -33,7 +33,7 @@ const POINTS: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: Scale,
     title: "A real attorney handles your case",
-    body: "MMG Law Firm is a premier civil-litigation firm dedicated to representing plaintiffs, handling a limited number of cases at a time so each one gets the attention it deserves.",
+    body: "MMG Law Firm is a plaintiff's personal-injury practice that handles a limited number of cases at a time, so each one gets the attention it deserves.",
   },
 ];
 
@@ -73,7 +73,7 @@ export function WhyMmg({ className }: { className?: string }) {
         <div className="max-w-2xl">
           <SectionEyebrow inverted>Why MMG</SectionEyebrow>
           <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
-            How we work — and why it matters.
+            Why injured Californians choose MMG.
           </h2>
           <p className="mt-4 text-primary-foreground/75">
             Solo practice means a real attorney handles every case. Bilingual.

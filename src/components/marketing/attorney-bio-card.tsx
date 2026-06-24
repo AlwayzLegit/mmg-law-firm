@@ -25,9 +25,10 @@ type Props = {
 const DEFAULT_SLUG = "mihran-ghazaryan";
 
 /** Used when an attorney profile has no headshot_url set in the DB. Points at
- *  the attorney's portrait in the media bucket (optimized by Vercel), so the
- *  homepage "Meet" section never falls back to the gradient initials. */
-const DEFAULT_HEADSHOT_URL = mediaUrl(ATTORNEY_IMAGES.portraitAlt);
+ *  the firm's real owner-provided photo in the media bucket (optimized by
+ *  Vercel), so the homepage "Meet" section never falls back to the gradient
+ *  initials. */
+const DEFAULT_HEADSHOT_URL = mediaUrl(ATTORNEY_IMAGES.homepageHero);
 
 export async function AttorneyBioCard({
   className,
