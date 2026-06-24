@@ -125,6 +125,12 @@ export function RecognitionStrip({ className }: Props) {
             </p>
           </div>
         </div>
+
+        <p className="mx-auto mt-10 max-w-2xl text-center text-xs leading-relaxed text-muted-foreground/80">
+          Super Lawyers Rising Stars is a peer-nominated, research-driven
+          selection limited to no more than 2.5% of California attorneys under
+          40 each year. Recognition is not a guarantee of any future result.
+        </p>
       </div>
     </section>
   );

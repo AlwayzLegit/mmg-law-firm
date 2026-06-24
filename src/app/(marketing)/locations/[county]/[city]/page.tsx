@@ -157,9 +157,9 @@ export default async function CityPage({ params }: Props) {
                 if you&apos;re not sure where your situation fits.
               </p>
               <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                {PRACTICE_AREAS.sort(
-                  (a, b) => a.displayOrder - b.displayOrder,
-                ).map((area) => {
+                {[...PRACTICE_AREAS]
+                  .sort((a, b) => a.displayOrder - b.displayOrder)
+                  .map((area) => {
                   // Prefer the city × practice page when the attorney has
                   // published unique copy for that combo. Otherwise fall back
                   // to the always-available practice-area hub — never link

@@ -31,8 +31,9 @@ export function PracticeAreaGrid({
       </div>
 
       <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {PRACTICE_AREAS.sort((a, b) => a.displayOrder - b.displayOrder).map(
-          (area, idx) => (
+        {[...PRACTICE_AREAS]
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map((area, idx) => (
             <li key={area.slug}>
               <PracticeAreaCard area={area} index={idx} />
             </li>
