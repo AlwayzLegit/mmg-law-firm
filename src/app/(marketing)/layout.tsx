@@ -8,7 +8,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <SiteHeader />
-      <main id="main-content" className="flex-1 pb-14 md:pb-0">
+      <main id="main-content" className="flex-1 pb-20 md:pb-0">
         {children}
       </main>
       <SiteFooter />

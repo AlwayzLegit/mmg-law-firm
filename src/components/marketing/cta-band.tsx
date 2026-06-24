@@ -64,7 +64,7 @@ export function CtaBand({
             href="/contact"
             className={cn(
               buttonVariants({ variant: "secondary", size: "marketing" }),
-              "group/cta bg-primary-foreground text-primary hover:bg-primary-foreground",
+              "group/cta bg-primary-foreground text-primary hover:bg-primary-foreground/90",
             )}
           >
             <span>Request consultation</span>
