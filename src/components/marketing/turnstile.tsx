@@ -3,6 +3,9 @@
 import * as React from "react";
 import Script from "next/script";
 
+import { FIRM } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+
 type TurnstileApi = {
   render: (
     el: HTMLElement,
@@ -42,9 +45,12 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
   const widgetIdRef = React.useRef<string | null>(null);
   const [loaded, setLoaded] = React.useState(false);
 
-  // Dev fallback: if no site key configured, set a placeholder token immediately.
+  // Dev fallback: with no site key configured (typical local dev), emit a
+  // placeholder token the server accepts in non-production. In production a
+  // missing key is a misconfiguration — we deliberately do NOT emit a stub
+  // (the server would reject it); the render path below shows a visible notice.
   React.useEffect(() => {
-    if (!siteKey) {
+    if (!siteKey && process.env.NODE_ENV !== "production") {
       onToken("dev-no-turnstile");
     }
   }, [siteKey, onToken]);
@@ -70,10 +76,7 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
 
   if (!siteKey) {
     // In dev we surface the missing-key reason out loud so the developer
-    // knows the form is in stub mode. In production a visitor never sees
-    // that — they get nothing where the widget would render, so the form
-    // looks normal. Submission will fail server-side (turnstile-secret-
-    // missing) and the form's onSubmit catch shows the user-facing error.
+    // knows the form is in stub mode.
     if (process.env.NODE_ENV !== "production") {
       return (
         <p className={className}>
@@ -84,7 +87,26 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
         </p>
       );
     }
-    return null;
+    // Production misconfiguration: the anti-bot key is missing, so the widget
+    // can't load and the form can't be verified. Tell the visitor plainly and
+    // give them a way through (a phone call) instead of letting submit fail
+    // with a cryptic validation error.
+    return (
+      <div
+        role="alert"
+        className={cn(
+          "border-border bg-secondary/60 text-foreground rounded-lg border px-4 py-3 text-sm",
+          className,
+        )}
+      >
+        Our verification step is temporarily unavailable, so this form
+        can&apos;t be submitted right now. Please call us at{" "}
+        <a href={`tel:${FIRM.phoneTel}`} className="text-primary font-semibold underline">
+          {FIRM.phone}
+        </a>{" "}
+        and we&apos;ll start your free consultation by phone.
+      </div>
+    );
   }
 
   return (
