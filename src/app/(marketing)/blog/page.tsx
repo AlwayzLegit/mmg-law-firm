@@ -11,7 +11,7 @@ import { pickLocationImage } from "@/lib/media";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
-  title: "Blog",
+  title: "California Personal Injury Blog",
   description:
     "Articles on California personal-injury law, claim process, and what to do after an accident — written by Mihran M. Ghazaryan.",
   path: "/blog",

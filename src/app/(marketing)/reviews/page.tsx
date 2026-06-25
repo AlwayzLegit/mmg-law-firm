@@ -13,7 +13,7 @@ import { buildReviewsSchema } from "@/lib/seo/schema";
 import { jsonLd } from "@/lib/seo/json-ld";
 
 export const metadata = buildMetadata({
-  title: "Client Reviews",
+  title: "California Personal Injury Lawyer Reviews",
   description: `Approved client reviews of ${FIRM.legalName}. Testimonials reflect the experiences of individual clients; results vary.`,
   path: "/reviews",
 });
@@ -45,7 +45,7 @@ export default async function ReviewsPage() {
       <PageHero
         eyebrow="Client experiences"
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reviews" }]}
-        title="What clients say."
+        title="MMG Law Firm Client Reviews"
         description={DISCLAIMERS.testimonial}
         aside={
           <AttorneyHeroAside

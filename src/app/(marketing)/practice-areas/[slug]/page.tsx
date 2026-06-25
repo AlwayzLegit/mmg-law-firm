@@ -16,7 +16,11 @@ import { SubjectImage } from "@/components/marketing/subject-image";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREA_IMAGE, pickLocationImage } from "@/lib/media";
-import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
+import {
+  PRACTICE_AREAS,
+  findPracticeArea,
+  lawyerPhraseTitle,
+} from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { getPublishedLocationPages } from "@/lib/data/queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
@@ -48,7 +52,7 @@ export async function generateMetadata({ params }: Props) {
   }
   const resolved = await getPracticeAreaContent(slug);
   return buildMetadata({
-    title: `California ${area.name} Lawyer`,
+    title: `California ${lawyerPhraseTitle(area)}`,
     description:
       resolved?.meta_description ??
       `${resolved?.intro ?? area.intro} Free consultation with ${FIRM.attorneyName}.`,
@@ -131,7 +135,7 @@ export default async function PracticeAreaPage({ params }: Props) {
           { label: "Practice Areas", href: "/practice-areas" },
           { label: area.name },
         ]}
-        title={`California ${area.name} Attorney`}
+        title={`California ${lawyerPhraseTitle(area)}`}
         description={content.intro}
         actions={
           <div className="flex flex-wrap items-center gap-3">
