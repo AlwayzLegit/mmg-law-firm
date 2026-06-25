@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
+import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
@@ -12,6 +13,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
+import { localFaqItems } from "@/lib/data/local-faq";
 import {
   getAllPublishedCities,
   getCityBySlug,
@@ -20,7 +22,7 @@ import {
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
+import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 
 export const dynamicParams = true;
@@ -86,6 +88,9 @@ export default async function CityPage({ params }: Props) {
     parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
   };
 
+  const faqItems = localFaqItems({ place: c.name, countyName: c.county_name });
+  const faqGraph = buildFaqPage(faqItems);
+
   return (
     <>
       <BreadcrumbJsonLd
@@ -99,6 +104,10 @@ export default async function CityPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }}
       />
 
       <PageHero
@@ -217,6 +226,8 @@ export default async function CityPage({ params }: Props) {
           </aside>
         </div>
       </article>
+
+      <Faq items={faqItems} heading={`${c.name} Personal Injury FAQ`} />
 
       <CtaBand />
     </>

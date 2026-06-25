@@ -5,6 +5,7 @@ import { ArrowRight, MapPin } from "lucide-react";
 import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
+import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
@@ -12,6 +13,7 @@ import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
+import { localFaqItems } from "@/lib/data/local-faq";
 import {
   getCountyBySlug,
   getCitiesInCounty,
@@ -21,7 +23,7 @@ import {
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
+import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 
 export const dynamicParams = true;
@@ -89,6 +91,9 @@ export default async function CountyPage({ params }: Props) {
     parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
   };
 
+  const faqItems = localFaqItems({ place: c.name });
+  const faqGraph = buildFaqPage(faqItems);
+
   return (
     <>
       <BreadcrumbJsonLd
@@ -101,6 +106,10 @@ export default async function CountyPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }}
       />
 
       <PageHero
@@ -261,6 +270,9 @@ export default async function CountyPage({ params }: Props) {
         heading={`Practice areas in ${c.short_name}`}
         subheading="What we handle for clients across the county."
       />
+
+      <Faq items={faqItems} heading={`${c.name} Personal Injury FAQ`} />
+
       <CtaBand />
     </>
   );
