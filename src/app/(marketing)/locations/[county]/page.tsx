@@ -4,6 +4,7 @@ import { ArrowRight, MapPin } from "lucide-react";
 
 import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
+import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
@@ -15,6 +16,7 @@ import {
   getCountyBySlug,
   getCitiesInCounty,
   getPublishedCounties,
+  getPublishedLocationPages,
 } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
@@ -57,7 +59,13 @@ export default async function CountyPage({ params }: Props) {
   const c = await getCountyBySlug(county);
   if (!c) notFound();
 
-  const cities = await getCitiesInCounty(c.slug);
+  const [cities, allLocationPages] = await Promise.all([
+    getCitiesInCounty(c.slug),
+    getPublishedLocationPages(),
+  ]);
+  const countyLocationPages = allLocationPages.filter(
+    (p) => p.county_slug === c.slug,
+  );
   const path = `/locations/${c.slug}`;
 
   const legalService = {
@@ -203,6 +211,34 @@ export default async function CountyPage({ params }: Props) {
                     </span>
                   </address>
                 ) : null}
+              </section>
+            ) : null}
+
+            <DeadlinesCallout />
+
+            {countyLocationPages.length > 0 ? (
+              <section className="mt-12">
+                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+                  Local practice-area pages in {c.short_name}
+                </h2>
+                <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {countyLocationPages.map((p) => (
+                    <li key={`${p.city_slug}/${p.practice_area_slug}`}>
+                      <Link
+                        href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}
+                        className="group border-border bg-card hover:border-primary/30 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors"
+                      >
+                        <span className="text-sm font-medium">
+                          {p.city_name} {p.practice_area_name}
+                        </span>
+                        <ArrowRight
+                          className="text-muted-foreground group-hover:text-primary h-4 w-4 flex-none transition-colors"
+                          aria-hidden
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </section>
             ) : null}
           </div>

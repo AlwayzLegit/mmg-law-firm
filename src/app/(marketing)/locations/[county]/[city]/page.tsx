@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
+import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
@@ -198,6 +199,8 @@ export default async function CityPage({ params }: Props) {
                 </p>
               </section>
             ) : null}
+
+            <DeadlinesCallout />
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
