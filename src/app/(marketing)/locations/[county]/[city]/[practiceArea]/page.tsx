@@ -13,7 +13,7 @@ import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
-import { findPracticeArea } from "@/lib/data/practice-areas";
+import { findPracticeArea, lawyerPhraseTitle } from "@/lib/data/practice-areas";
 import { PRACTICE_AREA_CONTENT } from "@/lib/data/practice-area-content";
 import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
@@ -52,8 +52,12 @@ export async function generateMetadata({ params }: Props) {
       noindex: true,
     });
   }
+  const metaArea = findPracticeArea(row.practice_area_slug);
+  const metaPhrase = metaArea
+    ? lawyerPhraseTitle(metaArea)
+    : row.practice_area_name;
   return buildMetadata({
-    title: `${row.city_name} ${row.practice_area_name} Attorney`,
+    title: `${row.city_name} ${metaPhrase}`,
     description:
       row.meta_description ??
       `${FIRM.legalName} handles ${row.practice_area_name.toLowerCase()} matters for ${row.city_name} clients. Free consultation. Bilingual representation.`,
@@ -79,12 +83,26 @@ export default async function CityPracticePage({ params }: Props) {
   // Sibling practice-area pages in the same city. Cross-linking them gives each
   // money page more than one internal inbound link (a low-internal-links notice
   // in the site audit) and helps users move between local practice pages.
-  const siblings = (await getPublishedLocationPages()).filter(
+  const allLocationPages = await getPublishedLocationPages();
+  const siblings = allLocationPages.filter(
     (p) =>
       p.county_slug === row.county_slug &&
       p.city_slug === row.city_slug &&
       p.practice_area_slug !== row.practice_area_slug,
   );
+  // Same practice area in OTHER cities — gives every money page a dense lateral
+  // link mesh (most cities currently publish only one practice area, so the
+  // same-city "siblings" list is usually empty). Same-county cities first, then
+  // the rest of the state; capped at 6.
+  const samePractice = allLocationPages.filter(
+    (p) =>
+      p.practice_area_slug === row.practice_area_slug &&
+      p.city_slug !== row.city_slug,
+  );
+  const nearbyCities = [
+    ...samePractice.filter((p) => p.county_slug === row.county_slug),
+    ...samePractice.filter((p) => p.county_slug !== row.county_slug),
+  ].slice(0, 6);
 
   const legalService = {
     "@context": "https://schema.org",
@@ -149,7 +167,7 @@ export default async function CityPracticePage({ params }: Props) {
           },
           { label: row.practice_area_name },
         ]}
-        title={`${row.city_name} ${row.practice_area_name} Attorney`}
+        title={`${row.city_name} ${area ? lawyerPhraseTitle(area) : row.practice_area_name}`}
         description={row.intro_md ?? undefined}
         actions={
           <div className="flex flex-wrap items-center gap-3">
@@ -284,6 +302,32 @@ export default async function CityPracticePage({ params }: Props) {
                       >
                         <span>
                           {s.practice_area_name} in {s.city_name}
+                        </span>
+                        <ArrowRight
+                          className="text-muted-foreground group-hover:text-primary h-4 w-4 flex-none transition-colors"
+                          aria-hidden
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {nearbyCities.length > 0 ? (
+              <section className="border-border mt-12 border-t pt-8">
+                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+                  {row.practice_area_name} in nearby cities
+                </h2>
+                <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {nearbyCities.map((p) => (
+                    <li key={`${p.county_slug}/${p.city_slug}`}>
+                      <Link
+                        href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}
+                        className="group border-border bg-card hover:border-primary/40 flex items-center justify-between rounded-xl border p-4 text-sm font-medium transition-colors"
+                      >
+                        <span>
+                          {p.practice_area_name} in {p.city_name}
                         </span>
                         <ArrowRight
                           className="text-muted-foreground group-hover:text-primary h-4 w-4 flex-none transition-colors"

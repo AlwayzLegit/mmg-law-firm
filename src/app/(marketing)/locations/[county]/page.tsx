@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props) {
     });
   }
   return buildMetadata({
-    title: `${c.name} Personal-Injury Attorney`,
+    title: `${c.name} Personal Injury Lawyer`,
     description:
       c.meta_description ??
       `${FIRM.legalName} represents ${c.name} clients in personal-injury matters. Free consultation. Bilingual representation.`,
@@ -98,7 +98,7 @@ export default async function CountyPage({ params }: Props) {
           { label: "Locations", href: "/locations" },
           { label: c.name },
         ]}
-        title={`${c.name} Personal-Injury Attorney`}
+        title={`${c.name} Personal Injury Lawyer`}
         description={
           c.intro_md ??
           `${FIRM.legalName} represents ${c.name} clients across the full range of personal-injury matters. Free consultation. Bilingual counsel. No fee unless we win your case.`

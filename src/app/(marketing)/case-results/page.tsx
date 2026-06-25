@@ -11,7 +11,7 @@ import { getPublishedCaseResults } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
-  title: "Case Results",
+  title: "California Personal Injury Case Results",
   description: `Anonymized personal-injury case results from ${FIRM.legalName}. Past results do not guarantee a similar outcome.`,
   path: "/case-results",
 });
@@ -34,7 +34,7 @@ export default async function CaseResultsPage() {
 
       <PageHero
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Case Results" }]}
-        title="Selected recent recoveries."
+        title="California Personal Injury Case Results"
         description={
           <>Anonymized to protect client privacy. {DISCLAIMERS.results}</>
         }

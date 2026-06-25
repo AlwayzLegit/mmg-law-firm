@@ -132,3 +132,10 @@ export const PRACTICE_AREAS: PracticeArea[] = [
 export function findPracticeArea(slug: string): PracticeArea | undefined {
   return PRACTICE_AREAS.find((p) => p.slug === slug);
 }
+
+/** Title-cased money keyword for titles/H1s, e.g. "Car Accident Lawyer",
+ *  "Premises Liability Lawyer". Built from `lawyerPhrase` so on-page copy
+ *  targets the term people actually search. */
+export function lawyerPhraseTitle(area: PracticeArea): string {
+  return area.lawyerPhrase.replace(/\b\w/g, (c) => c.toUpperCase());
+}

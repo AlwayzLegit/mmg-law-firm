@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props) {
     });
   }
   return buildMetadata({
-    title: `${c.name} Personal-Injury Attorney`,
+    title: `${c.name} Personal Injury Lawyer`,
     description:
       c.meta_description ??
       `${FIRM.legalName} represents ${c.name} clients in personal-injury matters across ${c.county_name}. Free consultation. Bilingual counsel.`,
@@ -104,7 +104,7 @@ export default async function CityPage({ params }: Props) {
           { label: c.county_name, href: `/locations/${c.county_slug}` },
           { label: c.name },
         ]}
-        title={`${c.name} Personal-Injury Attorney`}
+        title={`${c.name} Personal Injury Lawyer`}
         description={
           c.intro_md ??
           // Fallback used when the attorney hasn't written city-specific

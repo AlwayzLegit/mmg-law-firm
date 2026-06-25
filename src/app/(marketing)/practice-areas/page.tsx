@@ -9,7 +9,7 @@ import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
-  title: "Practice Areas",
+  title: "California Personal Injury Practice Areas",
   description:
     "California personal-injury practice areas — car, truck, motorcycle, pedestrian, bicycle, slip-and-fall, wrongful death, dog bites, and rideshare accidents.",
   path: "/practice-areas",
