@@ -20,6 +20,7 @@ import {
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
+import { FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 
 export const dynamicParams = true;
@@ -68,6 +69,7 @@ export default async function CityPage({ params }: Props) {
   const legalService = {
     "@context": "https://schema.org",
     "@type": "LegalService",
+    "@id": `${canonicalUrl(path)}#legal-service`,
     name: `${FIRM.legalName} — ${c.name}`,
     url: canonicalUrl(path),
     image: defaultOgImageUrl(),
@@ -81,6 +83,7 @@ export default async function CityPage({ params }: Props) {
       addressCountry: FIRM.address.country,
     },
     areaServed: { "@type": "City", name: c.name },
+    parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
   };
 
   return (

@@ -8,7 +8,12 @@ import { canonicalUrl, defaultOgImageUrl, siteUrl } from "@/lib/seo/canonical";
 
 type GraphNode = Record<string, unknown>;
 
-const FIRM_ID = `${siteUrl()}#legal-service`;
+/** Canonical `@id` of the firm's single LegalService entity, defined in the
+ *  sitewide graph (buildOrganizationGraph). Per-page LegalService nodes
+ *  reference this via `parentOrganization` so search engines see one business
+ *  serving many areas — not many competing businesses. */
+export const FIRM_LEGAL_SERVICE_ID = `${siteUrl()}#legal-service`;
+const FIRM_ID = FIRM_LEGAL_SERVICE_ID;
 const ATTORNEY_ID = `${siteUrl()}#attorney-mihran`;
 const WEBSITE_ID = `${siteUrl()}#website`;
 

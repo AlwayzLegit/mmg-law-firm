@@ -19,7 +19,7 @@ import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { buildFaqPage } from "@/lib/seo/schema";
+import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 
 // Spec §17 hard rule #1: city × practice pages require unique local_angle_md
@@ -107,6 +107,7 @@ export default async function CityPracticePage({ params }: Props) {
   const legalService = {
     "@context": "https://schema.org",
     "@type": ["LegalService", "Attorney"],
+    "@id": `${canonicalUrl(path)}#legal-service`,
     name: `${FIRM.legalName} — ${row.practice_area_name} in ${row.city_name}`,
     url: canonicalUrl(path),
     image: defaultOgImageUrl(),
@@ -120,6 +121,7 @@ export default async function CityPracticePage({ params }: Props) {
       addressCountry: FIRM.address.country,
     },
     areaServed: { "@type": "City", name: row.city_name },
+    parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
     // `knowsAbout` is valid on Organization/LegalService; `serviceType` is
     // only valid on schema.org Service (flagged NOT_RECOGNIZED in the audit).
     knowsAbout: area?.lawyerPhrase ?? row.practice_area_name,

@@ -27,7 +27,7 @@ import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { buildFaqPage } from "@/lib/seo/schema";
+import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 
 export const dynamicParams = false;
@@ -101,6 +101,7 @@ export default async function PracticeAreaPage({ params }: Props) {
       addressCountry: FIRM.address.country,
     },
     areaServed: { "@type": "State", name: "California" },
+    parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
     // `knowsAbout` (valid on Organization/LegalService) carries the topical
     // signal; `serviceType` is only valid on schema.org Service and was
     // flagged NOT_RECOGNIZED in the site audit.
