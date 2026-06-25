@@ -18,6 +18,7 @@ import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREA_IMAGE, pickLocationImage } from "@/lib/media";
 import { PRACTICE_AREAS, findPracticeArea } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
+import { getPublishedLocationPages } from "@/lib/data/queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
@@ -61,11 +62,20 @@ export default async function PracticeAreaPage({ params }: Props) {
   const area = findPracticeArea(slug);
   if (!area) notFound();
 
-  const [content, inlineResults] = await Promise.all([
+  const [content, inlineResults, locationPages] = await Promise.all([
     getPracticeAreaContent(slug),
     getCaseResultsForPracticeArea(slug, 3),
+    getPublishedLocationPages(),
   ]);
   if (!content) notFound();
+
+  // City pages with published local copy for THIS practice area. Surfacing
+  // them as links gives each city × practice money page more than one inbound
+  // internal link (Semrush "only one internal link" notice) and lets the
+  // authoritative practice hub pass topical signal down to them.
+  const cityLinks = locationPages
+    .filter((p) => p.practice_area_slug === slug)
+    .sort((a, b) => a.city_name.localeCompare(b.city_name));
 
   const path = `/practice-areas/${area.slug}`;
 
@@ -287,6 +297,38 @@ export default async function PracticeAreaPage({ params }: Props) {
           </aside>
         </div>
       </article>
+
+      {cityLinks.length > 0 ? (
+        <section className="border-border bg-secondary/30 border-t">
+          <div className="container-page py-16 md:py-20">
+            <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+              {area.name} representation by city
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl">
+              We handle {area.nounSingular} cases across California. Explore the
+              cities where we&apos;ve detailed our local experience:
+            </p>
+            <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {cityLinks.map((p) => (
+                <li key={`${p.county_slug}/${p.city_slug}`}>
+                  <Link
+                    href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}
+                    className="group border-border bg-card hover:border-primary/30 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors"
+                  >
+                    <span className="font-medium">
+                      {p.city_name} {area.shortName}
+                    </span>
+                    <ArrowRight
+                      className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors"
+                      aria-hidden
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {content.faqs.length > 0 ? (
         <Faq items={content.faqs} heading={`${area.shortName} FAQ`} />

@@ -67,6 +67,15 @@ export default async function AttorneyBioPage() {
       "@type": "LegalService",
       name: FIRM.legalName,
       url: siteUrl(),
+      telephone: FIRM.phone,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: FIRM.address.street,
+        addressLocality: FIRM.address.city,
+        addressRegion: FIRM.address.state,
+        postalCode: FIRM.address.zip,
+        addressCountry: FIRM.address.country,
+      },
     },
     memberOf: {
       "@type": "Organization",
