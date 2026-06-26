@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 
 import { getServerSupabase } from "@/lib/supabase/server";
 import { trustCurrentDevice } from "@/lib/auth/device-trust";
@@ -6,28 +7,58 @@ import { trustCurrentDevice } from "@/lib/auth/device-trust";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Link-based OTP types we accept on this callback. `token_hash` links are
+// produced by admin.generateLink (invites) and the email templates
+// (recovery, email change). The 6-digit device code is verified elsewhere
+// (login-actions) and is intentionally not in this set.
+const OTP_TYPES = new Set<EmailOtpType>([
+  "invite",
+  "magiclink",
+  "recovery",
+  "signup",
+  "email_change",
+  "email",
+]);
+
 /**
- * Magic-link callback. Supabase signInWithOtp with PKCE returns the user
- * here with `?code=...&next=/admin`. We exchange the code for a session
- * (which sets the auth cookie via the SSR cookie writer in proxy.ts) and
- * redirect to the requested destination.
+ * Auth callback for both email link mechanisms:
  *
- * If the exchange fails (link expired, code reused, etc.), bounce to
- * /login with an error code so the form can render a useful message.
+ * 1. PKCE (`?code=...`) — produced by `signInWithOtp` for the normal
+ *    magic-link login. Exchanged via `exchangeCodeForSession`. This needs the
+ *    PKCE verifier cookie, so it only works in the browser that requested it.
+ *
+ * 2. token_hash (`?token_hash=...&type=...`) — produced by
+ *    `admin.generateLink` (admin invites) and the recovery/email-change
+ *    templates. Verified via `verifyOtp`, which needs NO prior client state —
+ *    so it works for a brand-new invited user who has never visited before.
+ *
+ * Either path sets the auth cookie via the SSR cookie writer in proxy.ts.
+ * On failure (expired/reused link, missing params) we bounce to /login with
+ * an error code so the form can render a useful message.
  */
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.clone();
   const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash");
+  const type = url.searchParams.get("type");
   const next = url.searchParams.get("next") ?? "/admin";
 
-  if (!code) {
+  const supabase = await getServerSupabase();
+
+  let data;
+  let error;
+  if (tokenHash && type && OTP_TYPES.has(type as EmailOtpType)) {
+    ({ data, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: type as EmailOtpType,
+    }));
+  } else if (code) {
+    ({ data, error } = await supabase.auth.exchangeCodeForSession(code));
+  } else {
     url.pathname = "/login";
     url.search = "?error=missing-code";
     return NextResponse.redirect(url);
   }
-
-  const supabase = await getServerSupabase();
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     url.pathname = "/login";

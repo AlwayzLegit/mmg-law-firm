@@ -9,6 +9,9 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { revokeAllDevices, trustCurrentDevice } from "@/lib/auth/device-trust";
 import { logAudit } from "@/lib/audit";
+import { sendEmail } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/leads/intake";
+import { FIRM } from "@/lib/constants";
 
 const InviteInput = z.object({
   email: z.string().trim().email("Enter a valid email"),
@@ -19,11 +22,58 @@ const InviteInput = z.object({
 export type InviteResult = { ok: true } | { ok: false; error: string };
 
 /**
+ * Generate a sign-in link for an admin invite.
+ *
+ * We use `admin.generateLink` (not `inviteUserByEmail`) because we send the
+ * email ourselves via Resend and, crucially, build a `token_hash` link that
+ * /auth/callback verifies with `verifyOtp`. That works for a brand-new user
+ * with no prior browser state — unlike the PKCE `?code=` flow, whose verifier
+ * cookie the invitee never has, which is why the old invite produced the
+ * "sign-in link was missing a code" error.
+ *
+ * `invite` creates the auth user if absent; if they already exist (a re-send),
+ * fall back to `magiclink`, which signs the existing user in.
+ */
+async function generateAdminSignInLink(
+  supabase: ReturnType<typeof getServiceSupabase>,
+  email: string,
+): Promise<
+  | { ok: true; userId: string; url: string }
+  | { ok: false; error: string }
+> {
+  const next = encodeURIComponent("/admin");
+
+  async function linkFor(type: "invite" | "magiclink") {
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type,
+      email,
+    });
+    if (error || !data.user || !data.properties?.hashed_token) {
+      return { data: null, error };
+    }
+    const url = `${siteUrl()}/auth/callback?token_hash=${encodeURIComponent(
+      data.properties.hashed_token,
+    )}&type=${type}&next=${next}`;
+    return { data: { userId: data.user.id, url }, error: null };
+  }
+
+  let res = await linkFor("invite");
+  // Already-registered users can't be re-invited; sign them in instead.
+  if (!res.data && /registered|already|exist/i.test(res.error?.message ?? "")) {
+    res = await linkFor("magiclink");
+  }
+  if (!res.data) {
+    return { ok: false, error: res.error?.message ?? "Couldn't create invite." };
+  }
+  return { ok: true, ...res.data };
+}
+
+/**
  * Invite a new admin user. Only existing owners can invite.
  *
- * Calls Supabase admin API to create-or-find the auth user and dispatch a
- * magic link, then upserts an admin_profiles row binding the user to a
- * role. The new user lands at /auth/callback after clicking the link.
+ * Generates a token_hash sign-in link, upserts an admin_profiles row binding
+ * the user to a role, then emails the link via Resend. The new user lands at
+ * /auth/callback after clicking, which verifies the link and signs them in.
  */
 export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
   const { profile, user } = await requireAdmin();
@@ -46,20 +96,14 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
 
   const supabase = getServiceSupabase();
 
-  const { data: invite, error: inviteErr } =
-    await supabase.auth.admin.inviteUserByEmail(parsed.data.email, {
-      redirectTo: `${siteUrl()}/auth/callback?next=/admin`,
-    });
-  if (inviteErr || !invite.user) {
-    return {
-      ok: false,
-      error: inviteErr?.message ?? "Couldn't send invite.",
-    };
+  const link = await generateAdminSignInLink(supabase, parsed.data.email);
+  if (!link.ok) {
+    return { ok: false, error: link.error };
   }
 
   const { error: upErr } = await supabase.from("admin_profiles").upsert(
     {
-      user_id: invite.user.id,
+      user_id: link.userId,
       role: parsed.data.role,
       full_name: parsed.data.full_name,
     },
@@ -69,10 +113,44 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
     return { ok: false, error: upErr.message };
   }
 
+  const sent = await sendEmail({
+    to: parsed.data.email,
+    subject: `You've been invited to the ${FIRM.legalName} admin`,
+    html: `
+      <div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
+        <h2 style="margin: 0 0 12px;">You're invited to ${FIRM.legalName}</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #444;">
+          ${escapeHtml(profile.full_name ?? "An administrator")} has invited you
+          to the ${FIRM.legalName} admin as
+          <strong>${parsed.data.role}</strong>. Click the button below to sign in
+          and get started.
+        </p>
+        <p style="margin: 24px 0;">
+          <a href="${link.url}" style="display: inline-block; background: #2b46d8; color: #fff; text-decoration: none; padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            Accept invite &amp; sign in
+          </a>
+        </p>
+        <p style="font-size: 12px; line-height: 1.6; color: #888;">
+          This link signs you in and verifies this device. It expires after a
+          short time — if it stops working, ask the person who invited you to
+          resend it. If you weren't expecting this, you can ignore this email.
+        </p>
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 12px; color: #aaa;">${FIRM.legalName}</p>
+      </div>
+    `,
+  });
+  if (!sent.ok) {
+    return {
+      ok: false,
+      error: `Profile created, but the invite email failed to send (${sent.error ?? "unknown"}). You can resend from this page.`,
+    };
+  }
+
   logAudit({
     actor_id: user.id,
     entity: "admin_profiles",
-    entity_id: invite.user.id,
+    entity_id: link.userId,
     action: "invite",
     diff: { email: parsed.data.email, role: parsed.data.role },
   });
