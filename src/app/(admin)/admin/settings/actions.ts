@@ -31,8 +31,13 @@ export type InviteResult = { ok: true } | { ok: false; error: string };
  * cookie the invitee never has, which is why the old invite produced the
  * "sign-in link was missing a code" error.
  *
- * `invite` creates the auth user if absent; if they already exist (a re-send),
- * fall back to `magiclink`, which signs the existing user in.
+ * `invite` creates the auth user if absent. If they already exist — e.g. a
+ * user who was removed (which deletes only the admin_profiles row, not the
+ * auth user) and is being re-added, or one invited before — `invite` fails,
+ * so we fall back to `magiclink`, which signs the existing user in. The
+ * fallback is unconditional and exception-safe: Supabase's "already exists"
+ * error can arrive as a returned error OR a thrown exception, and its exact
+ * wording varies, so we never gate the fallback on matching error text.
  */
 async function generateAdminSignInLink(
   supabase: ReturnType<typeof getServiceSupabase>,
@@ -43,27 +48,38 @@ async function generateAdminSignInLink(
 > {
   const next = encodeURIComponent("/admin");
 
-  async function linkFor(type: "invite" | "magiclink") {
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type,
-      email,
-    });
-    if (error || !data.user || !data.properties?.hashed_token) {
-      return { data: null, error };
+  async function linkFor(
+    type: "invite" | "magiclink",
+  ): Promise<
+    | { data: { userId: string; url: string }; error: null }
+    | { data: null; error: string | null }
+  > {
+    try {
+      const { data, error } = await supabase.auth.admin.generateLink({
+        type,
+        email,
+      });
+      if (error || !data?.user || !data.properties?.hashed_token) {
+        return { data: null, error: error?.message ?? null };
+      }
+      const url = `${siteUrl()}/auth/callback?token_hash=${encodeURIComponent(
+        data.properties.hashed_token,
+      )}&type=${type}&next=${next}`;
+      return { data: { userId: data.user.id, url }, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : String(e) };
     }
-    const url = `${siteUrl()}/auth/callback?token_hash=${encodeURIComponent(
-      data.properties.hashed_token,
-    )}&type=${type}&next=${next}`;
-    return { data: { userId: data.user.id, url }, error: null };
   }
 
   let res = await linkFor("invite");
-  // Already-registered users can't be re-invited; sign them in instead.
-  if (!res.data && /registered|already|exist/i.test(res.error?.message ?? "")) {
+  // If the invite didn't produce a link for ANY reason (the common one being
+  // an already-existing auth user), sign the existing user in with a magic
+  // link instead.
+  if (!res.data) {
     res = await linkFor("magiclink");
   }
   if (!res.data) {
-    return { ok: false, error: res.error?.message ?? "Couldn't create invite." };
+    return { ok: false, error: res.error ?? "Couldn't create invite." };
   }
   return { ok: true, ...res.data };
 }
