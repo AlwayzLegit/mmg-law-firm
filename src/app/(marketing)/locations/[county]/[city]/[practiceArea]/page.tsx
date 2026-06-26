@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { CompensationSection } from "@/components/marketing/compensation-section";
@@ -209,8 +211,13 @@ export default async function CityPracticePage({ params }: Props) {
               <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                 {row.practice_area_name} matters in {row.city_name}
               </h2>
-              <div className="text-muted-foreground mt-4 leading-relaxed whitespace-pre-line">
-                {row.local_angle_md}
+              {/* Rendered as Markdown so deepened pages can use H2/H3 section
+                  headings and lists. Plain-paragraph rows (the default local
+                  copy) render identically as <p> elements. */}
+              <div className="prose prose-neutral text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground prose-h2:text-xl prose-h2:md:text-2xl prose-h2:mt-10 prose-h3:text-base mt-4 max-w-none leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {row.local_angle_md}
+                </ReactMarkdown>
               </div>
             </section>
 
