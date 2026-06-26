@@ -61,6 +61,12 @@ export async function POST(request: NextRequest) {
 
   const turnstile = await verifyTurnstile(parsed.data.turnstileToken, ip);
   if (!turnstile.ok) {
+    // Log the Cloudflare error code (not the token/IP) so a misconfigured
+    // widget is diagnosable from the Vercel runtime logs. Common reasons:
+    // "turnstile-secret-missing" (TURNSTILE_SECRET_KEY unset), "missing-token"
+    // (widget failed client-side — usually a hostname not allow-listed for the
+    // site key), "invalid-input-secret" (secret/site-key pair mismatch).
+    console.warn(`[leads] turnstile verification failed: ${turnstile.reason}`);
     return NextResponse.json(
       { ok: false, error: "turnstile-failed", reason: turnstile.reason },
       { status: 400 },
