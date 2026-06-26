@@ -36,7 +36,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
-import { env } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import {
   LeadSchema,
@@ -579,7 +578,13 @@ export function LeadForm({
             render={({ field }) => (
               <FormItem>
                 <Turnstile
-                  siteKey={env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                  // Read process.env directly (NOT via the @/lib/env object):
+                  // Next.js only inlines NEXT_PUBLIC_* into the CLIENT bundle
+                  // for literal `process.env.NEXT_PUBLIC_X` references. Going
+                  // through the aggregated env object (safeParse(process.env))
+                  // left this empty in the browser, so the widget always fell
+                  // back to "unavailable" even with the key set in Vercel.
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
                   onToken={handleTurnstileToken}
                   action="lead-form"
                 />
