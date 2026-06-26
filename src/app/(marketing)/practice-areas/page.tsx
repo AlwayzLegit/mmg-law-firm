@@ -9,9 +9,9 @@ import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
-  title: "California Personal Injury Practice Areas",
+  title: "California Personal Injury & Employment Law Practice Areas",
   description:
-    "California personal-injury practice areas — car, truck, motorcycle, pedestrian, bicycle, slip-and-fall, wrongful death, dog bites, and rideshare accidents.",
+    "California practice areas — car, truck, motorcycle, pedestrian, bicycle, slip-and-fall, wrongful death, dog bites, rideshare, and catastrophic-injury cases, plus employment law: wrongful termination, discrimination, and unpaid wages.",
   path: "/practice-areas",
 });
 
@@ -33,11 +33,11 @@ export default function PracticeAreasPage() {
         ]}
         title={
           <>
-            Personal injury, across every cause of injury{" "}
+            Personal injury and employment law{" "}
             <span className="text-primary">in California.</span>
           </>
         }
-        description="We focus exclusively on personal injury — and within that, on the kinds of cases we know how to win. Pick the area that matches your situation, or call us if you're not sure where it fits."
+        description="Personal injury is the heart of our practice — and we also stand up for California employees. Pick the area that matches your situation, or call us if you're not sure where it fits."
         aside={practiceAreasHeroImageExists() ? <PracticeAreasHeroAside /> : undefined}
       />
 

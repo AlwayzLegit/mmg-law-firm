@@ -125,7 +125,7 @@ export default async function CityPage({ params }: Props) {
           // template — pull in the Glendale-office framing and the
           // languages we work in. The page is structurally useful as a
           // navigation hub even before per-city copy lands.
-          `From our Glendale office, ${FIRM.legalName} represents ${c.name} clients across ${c.county_name} in personal-injury matters only — auto, motorcycle and bike crashes, slip-and-fall, dog bites, and wrongful death. Free consultation in ${FIRM.languages.join(", ")}.`
+          `From our Glendale office, ${FIRM.legalName} represents ${c.name} clients across ${c.county_name} — auto, motorcycle and bike crashes, slip-and-fall, dog bites, wrongful death, and California employment matters. Free consultation in ${FIRM.languages.join(", ")}.`
         }
         actions={
           <div className="flex flex-wrap items-center gap-3">

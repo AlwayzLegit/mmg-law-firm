@@ -16,7 +16,7 @@ type Props = {
 export function PracticeAreaGrid({
   className,
   heading = "Practice areas",
-  subheading = "Personal injury is what we do — across every common cause of injury in California.",
+  subheading = "Personal injury is the heart of our practice — and we also stand up for California employees in the workplace.",
 }: Props) {
   return (
     <section className={cn("container-page py-20 md:py-28", className)}>

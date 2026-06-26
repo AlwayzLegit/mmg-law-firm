@@ -159,7 +159,7 @@ export async function AttorneyBioCard({
                 label={`Counsel in ${profile.languages.join(", ")}`}
               />
             ) : null}
-            <Stat icon={Award} label="Personal-injury practice exclusively" />
+            <Stat icon={Award} label="Personal injury & employment law" />
             {lawSchoolLine ? (
               <Stat icon={GraduationCap} label={lawSchoolLine} />
             ) : null}

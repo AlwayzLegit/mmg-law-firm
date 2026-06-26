@@ -225,8 +225,8 @@ export default async function CityPracticePage({ params }: Props) {
               <section className="mt-12">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
                   Types of{" "}
-                  {area?.nounPlural ?? row.practice_area_name.toLowerCase()}{" "}
-                  cases we handle
+                  {area?.nounPlural ?? row.practice_area_name.toLowerCase()} we
+                  handle
                 </h2>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   {content.subtopics.map((s) => (
@@ -246,7 +246,10 @@ export default async function CityPracticePage({ params }: Props) {
               </section>
             ) : null}
 
-            <CompensationSection nounSingular={area?.nounSingular} />
+            <CompensationSection
+              nounSingular={area?.nounSingular}
+              category={area?.category}
+            />
 
             {content?.process?.length ? (
               <section className="mt-12">
@@ -295,7 +298,7 @@ export default async function CityPracticePage({ params }: Props) {
               </section>
             ) : null}
 
-            <DeadlinesCallout />
+            <DeadlinesCallout category={area?.category} />
 
             {siblings.length > 0 ? (
               <section className="border-border mt-12 border-t pt-8">
@@ -373,7 +376,11 @@ export default async function CityPracticePage({ params }: Props) {
       ) : null}
 
       <CtaBand
-        heading={`Injured in ${row.city_name}?`}
+        heading={
+          area?.category === "employment"
+            ? `Mistreated at work in ${row.city_name}?`
+            : `Injured in ${row.city_name}?`
+        }
         body="Free consultation. Bilingual counsel. No fee unless we win your case."
       />
     </>

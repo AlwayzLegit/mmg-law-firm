@@ -342,7 +342,7 @@ export default async function PracticeAreaPage({ params }: Props) {
       <RelatedPracticeAreas currentSlug={area.slug} max={4} />
 
       <CtaBand
-        heading={`Injured in a ${area.nounSingular}?`}
+        heading={area.ctaHeading ?? `Injured in a ${area.nounSingular}?`}
         body="Free consultation. Bilingual counsel. No fee unless we win your case."
       />
     </>

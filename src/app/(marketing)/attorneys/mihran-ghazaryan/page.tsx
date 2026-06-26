@@ -268,7 +268,7 @@ function Hero({ profile }: { profile: AttorneyProfile }) {
               ) : null}
               <Stat
                 icon={<Award className="h-4 w-4" aria-hidden />}
-                label="Personal-injury practice exclusively"
+                label="Personal injury & employment law"
               />
             </ul>
 

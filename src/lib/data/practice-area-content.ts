@@ -371,4 +371,118 @@ export const PRACTICE_AREA_CONTENT: Record<string, PracticeAreaContent> = {
       },
     ],
   },
+  // TODO(human): attorney review required — AI-drafted catastrophic-injury copy.
+  "catastrophic-injury": {
+    body: "A catastrophic injury changes the rest of a person's life — and the value of the case is measured over that whole life, not just the first hospital bill. Traumatic brain injury, spinal-cord damage and paralysis, severe burns, amputations, and multiple fractures demand a different kind of preparation: life-care planning, vocational and economic experts, and treating physicians who can speak to a lifetime of future cost. Insurers fight these cases hardest because the exposure is largest, so we build the long-term medical and financial picture early and document it relentlessly.",
+    subtopics: [
+      {
+        title: "Traumatic brain injury (TBI)",
+        body: "From concussion with lasting cognitive effects to severe TBI. We pair imaging and neuropsychological testing with day-in-the-life evidence so the invisible effects are made concrete.",
+      },
+      {
+        title: "Spinal-cord injury and paralysis",
+        body: "Paraplegia and quadriplegia carry lifelong attendant-care and accessibility costs. A life-care plan quantifies them so the demand reflects the real future.",
+      },
+      {
+        title: "Amputation, severe burns, and disfigurement",
+        body: "Permanent loss and scarring support significant non-economic damages alongside future surgical and prosthetic costs.",
+      },
+      {
+        title: "Multiple fractures and polytrauma",
+        body: "Injuries needing several surgeries, hardware, and extended rehabilitation, where future-treatment proof drives the value.",
+      },
+    ],
+    process: COMMON_PROCESS,
+    whatToDo: [
+      "Follow every treatment recommendation and keep all specialist appointments — gaps in care get used against you.",
+      "Keep a journal of pain, limitations, and how daily life has changed.",
+      "Preserve everything: medical records, bills, the device or vehicle involved, and the scene if possible.",
+      "Designate one family member to track providers and expenses while you focus on recovery.",
+      "Do not accept an early settlement before the full extent of future care is known.",
+      "Do not give a recorded statement to the insurer before speaking with a lawyer.",
+    ],
+    faqs: [
+      {
+        question: "Why does a catastrophic-injury case take longer?",
+        answer:
+          "Because the value depends on your future — and that can't be measured until your treating doctors can describe what recovery and lifelong care look like. Settling before you reach maximum medical improvement risks leaving future costs uncovered. We move the case forward in parallel so the timeline is driven by your medicine, not by delay.",
+      },
+      {
+        question: "What is a life-care plan and why does it matter?",
+        answer:
+          "A life-care plan is an expert-prepared roadmap of the future medical care, equipment, therapy, and assistance a catastrophic injury will require, with the projected cost of each. It turns 'lifelong harm' into a documented number an insurer and a jury can evaluate. It is often the single most important piece of evidence in these cases.",
+      },
+      {
+        question: "The insurer offered a large check quickly. Should I take it?",
+        answer:
+          "A fast, large-sounding offer is often still far below the lifetime cost of a catastrophic injury — insurers know an early release ends their exposure. Before signing anything, have the offer measured against a life-care plan and an economic analysis. We do that at no cost in the consultation.",
+      },
+    ],
+  },
+  // TODO(human): attorney review required — AI-drafted California employment-law
+  // copy (FEHA / Labor Code framing). Confirm before long-term use.
+  "employment-law": {
+    body: "California gives employees some of the strongest workplace protections in the country — and most workers never learn what they're owed until something goes wrong. We represent employees in wrongful termination, discrimination and harassment, retaliation and whistleblower claims, and unpaid wages and overtime. These cases turn on documentation and timing: what was said, what was written, who knew what, and which deadline applies. We help you preserve the record and hold the employer to the standard the law sets.",
+    subtopics: [
+      {
+        title: "Wrongful termination",
+        body: "Firings that violate the FEHA, retaliate for protected activity, or breach California public policy — including terminations dressed up as layoffs or performance issues.",
+      },
+      {
+        title: "Discrimination and harassment",
+        body: "Adverse treatment or a hostile environment based on a protected class — race, sex, age, disability, religion, national origin, pregnancy, and more — under the FEHA.",
+      },
+      {
+        title: "Retaliation and whistleblower claims",
+        body: "Punishment for reporting harassment, unsafe conditions, or unlawful conduct, or for taking protected leave. California law protects employees who speak up.",
+      },
+      {
+        title: "Unpaid wages and overtime",
+        body: "Off-the-clock work, missed meal and rest breaks, misclassification, and unpaid final wages — Labor Code claims that carry penalties on top of the wages owed.",
+      },
+    ],
+    process: [
+      {
+        title: "Free, confidential consultation",
+        body: "We listen first and tell you plainly whether you appear to have a claim. The conversation is confidential and there's no fee to have it — and we're careful if you're still employed.",
+      },
+      {
+        title: "Preserve the record",
+        body: "Offer letters, handbooks, performance reviews, emails and texts, pay stubs, and a timeline of events. The contemporaneous record is what wins or loses an employment case, so we lock it down early.",
+      },
+      {
+        title: "Administrative exhaustion and the demand",
+        body: "FEHA claims generally require a complaint with the Civil Rights Department and a right-to-sue notice first. We handle that step, then present a documented demand to the employer.",
+      },
+      {
+        title: "Litigation when necessary",
+        body: "Many matters resolve through negotiation or mediation. When an employer won't be reasonable, we file and prepare the case fully — which is usually what moves the number.",
+      },
+    ],
+    whatToDo: [
+      "Write down a dated timeline of what happened while it's fresh.",
+      "Save copies of relevant documents to a personal (non-work) account — offer letter, reviews, emails, texts, pay records.",
+      "Keep notes of who said what, when, and who else was present.",
+      "Be careful about signing severance or release agreements before they're reviewed — deadlines to accept are usually negotiable.",
+      "Report harassment or discrimination through your employer's stated process where it's safe to do so.",
+      "Talk to a lawyer before resigning — quitting can change the claim and the remedies available.",
+    ],
+    faqs: [
+      {
+        question: "Do I have to file with a government agency before I can sue?",
+        answer:
+          "For most California FEHA claims (discrimination, harassment, retaliation), yes — you generally must file a complaint with the Civil Rights Department and obtain a right-to-sue notice first. We handle that administrative step for you. Some claims, such as certain wage claims, follow different paths. The deadlines matter, so don't wait to ask.",
+      },
+      {
+        question: "Can I be fired for reporting harassment or a safety problem?",
+        answer:
+          "No. California law prohibits retaliation against employees for reporting harassment, discrimination, unsafe conditions, or other unlawful conduct, and for taking legally protected leave. If you were disciplined or terminated after speaking up, the timing itself can be powerful evidence. Preserve the record and call us.",
+      },
+      {
+        question: "I signed a severance agreement. Is it too late?",
+        answer:
+          "Not necessarily — it depends on what you signed and when, and whether the release was valid. Have the agreement reviewed before assuming your rights are gone. If you've been presented with severance but haven't signed, talk to a lawyer first; the terms and the deadline to accept are more negotiable than they appear.",
+      },
+    ],
+  },
 };

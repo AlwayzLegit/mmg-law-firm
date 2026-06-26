@@ -24,6 +24,11 @@ const NAV_PRACTICE = [
   { label: "Wrongful Death", href: "/practice-areas/wrongful-death" },
   { label: "Dog Bites", href: "/practice-areas/dog-bites" },
   { label: "Rideshare Accidents", href: "/practice-areas/rideshare-accidents" },
+  {
+    label: "Catastrophic Injury",
+    href: "/practice-areas/catastrophic-injury",
+  },
+  { label: "Employment Law", href: "/practice-areas/employment-law" },
 ];
 
 const NAV_FIRM = [

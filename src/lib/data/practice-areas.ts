@@ -16,6 +16,20 @@ export type PracticeArea = {
   icon: string;
   intro: string;
   displayOrder: number;
+  /**
+   * Practice family. Most areas are personal-injury ("injury"); the templates
+   * default to injury framing (damages = medical/lost wages/pain, two-year
+   * CCP §335.1 deadline, "Injured in …?" CTAs). "employment" swaps those for
+   * employment-appropriate copy (back pay/front pay/emotional distress, CRD/
+   * FEHA deadlines, workplace-dispute CTAs). Undefined ⇒ "injury".
+   */
+  category?: "injury" | "employment";
+  /**
+   * Optional override for the closing CTA-band heading on the practice hub.
+   * The default `Injured in a ${nounSingular}?` reads wrong for some areas
+   * (e.g. "Injured in a wrongful death?"), so those set an explicit prompt.
+   */
+  ctaHeading?: string;
 };
 
 export const PRACTICE_AREAS: PracticeArea[] = [
@@ -107,6 +121,7 @@ export const PRACTICE_AREAS: PracticeArea[] = [
     intro:
       "If a loved one was lost to another's negligence, California gives surviving family members the right to seek accountability. We approach these matters with the care they require.",
     displayOrder: 70,
+    ctaHeading: "Lost a loved one to negligence?",
   },
   {
     slug: "dog-bites",
@@ -132,6 +147,39 @@ export const PRACTICE_AREAS: PracticeArea[] = [
     intro:
       "Uber and Lyft cases involve layered insurance policies that change depending on the driver's app status at the moment of the crash. We know how to navigate them.",
     displayOrder: 90,
+  },
+  {
+    slug: "catastrophic-injury",
+    name: "Catastrophic Injury",
+    shortName: "Catastrophic Injury",
+    nounSingular: "catastrophic injury",
+    nounPlural: "catastrophic injuries",
+    // Semrush US: "catastrophic injury lawyer"/"attorney" both rank; "lawyer"
+    // leads our title/H1 pattern, "attorney" appears in body/meta for variety.
+    lawyerPhrase: "catastrophic injury lawyer",
+    icon: "Brain",
+    intro:
+      "Traumatic brain and spinal-cord injuries, severe burns, amputations, and other permanent harm. These claims turn on life-care planning and expert proof of lifelong cost — we build them for the long term.",
+    displayOrder: 35,
+    category: "injury",
+    ctaHeading: "Living with a catastrophic injury?",
+  },
+  {
+    slug: "employment-law",
+    name: "Employment Law",
+    shortName: "Employment",
+    nounSingular: "workplace matter",
+    nounPlural: "workplace matters",
+    // Semrush US gap vs. local competitors: "wrongful termination" + "employment
+    // lawyer" + discrimination terms. "employment lawyer" anchors title/H1;
+    // wrongful-termination/discrimination phrasing lives in body/meta.
+    lawyerPhrase: "employment lawyer",
+    icon: "Briefcase",
+    intro:
+      "Wrongful termination, workplace discrimination and harassment, retaliation, and unpaid wages. California gives employees some of the nation's strongest protections — we hold employers to them.",
+    displayOrder: 100,
+    category: "employment",
+    ctaHeading: "Mistreated at work?",
   },
 ];
 
