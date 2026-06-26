@@ -85,7 +85,9 @@ export const PRACTICE_AREAS: PracticeArea[] = [
     shortName: "Slip and Fall",
     nounSingular: "slip and fall",
     nounPlural: "slip and fall accidents",
-    lawyerPhrase: "premises liability lawyer",
+    // Semrush US: "slip and fall lawyer" 90.5k/mo vs "premises liability
+    // lawyer" 27.1k — target the higher-volume term in titles/H1s.
+    lawyerPhrase: "slip and fall lawyer",
     icon: "TriangleAlert",
     intro:
       "Wet floors, uneven walkways, broken stairs, and inadequate security. Premises liability cases turn on notice — we build the timeline before evidence disappears.",
@@ -97,7 +99,10 @@ export const PRACTICE_AREAS: PracticeArea[] = [
     shortName: "Wrongful Death",
     nounSingular: "wrongful death",
     nounPlural: "wrongful death matters",
-    lawyerPhrase: "wrongful death attorney",
+    // Semrush US: "wrongful death lawyer" 135k/mo vs "wrongful death
+    // attorney" 110k — "lawyer" leads in titles/H1s; "attorney" still
+    // appears in body/meta for keyword variety.
+    lawyerPhrase: "wrongful death lawyer",
     icon: "HeartCrack",
     intro:
       "If a loved one was lost to another's negligence, California gives surviving family members the right to seek accountability. We approach these matters with the care they require.",
@@ -109,7 +114,8 @@ export const PRACTICE_AREAS: PracticeArea[] = [
     shortName: "Dog Bite",
     nounSingular: "dog bite injury",
     nounPlural: "dog bite injuries",
-    lawyerPhrase: "dog bite attorney",
+    // Semrush US: "dog bite lawyer" 49.5k/mo vs "dog bite attorney" 33.1k.
+    lawyerPhrase: "dog bite lawyer",
     icon: "Dog",
     intro:
       "California is a strict-liability state for dog bites. Owners are responsible for injuries even on a first incident — we work directly with the owner's homeowners or renters insurer.",
@@ -134,8 +140,17 @@ export function findPracticeArea(slug: string): PracticeArea | undefined {
 }
 
 /** Title-cased money keyword for titles/H1s, e.g. "Car Accident Lawyer",
- *  "Premises Liability Lawyer". Built from `lawyerPhrase` so on-page copy
- *  targets the term people actually search. */
+ *  "Slip and Fall Lawyer". Built from `lawyerPhrase` so on-page copy targets
+ *  the term people actually search. Connector words (and/of/the) stay
+ *  lowercase unless they lead the phrase, so it reads as a natural headline. */
 export function lawyerPhraseTitle(area: PracticeArea): string {
-  return area.lawyerPhrase.replace(/\b\w/g, (c) => c.toUpperCase());
+  const small = new Set(["and", "of", "the"]);
+  return area.lawyerPhrase
+    .split(" ")
+    .map((word, i) =>
+      i > 0 && small.has(word)
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(" ");
 }
