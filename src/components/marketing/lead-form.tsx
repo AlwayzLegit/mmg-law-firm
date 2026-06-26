@@ -129,6 +129,19 @@ export function LeadForm({
     if (gclid) form.setValue("gclid", gclid);
   }, [form]);
 
+  // Funnel step 2: the form was rendered (an impression). Combined with
+  // $pageview (step 1), lead_form_started (step 3) and lead_submitted (step 4)
+  // this gives a full visit → form-view → start → submit funnel. Fired once
+  // per mount; no PII, just the variant + matter/location context.
+  React.useEffect(() => {
+    captureEvent("lead_form_viewed", {
+      variant,
+      practice_area: defaultPracticeArea ?? null,
+      city_slug: defaultCitySlug ?? null,
+      county_slug: defaultCountySlug ?? null,
+    });
+  }, [variant, defaultPracticeArea, defaultCitySlug, defaultCountySlug]);
+
   async function onSubmit(values: LeadFormValues) {
     // Abort a hung request rather than leaving the user spinning indefinitely.
     const controller = new AbortController();

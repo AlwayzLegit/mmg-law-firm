@@ -4,6 +4,10 @@ import { env } from "@/lib/env";
 
 export type RankedPage = { label: string; count: number };
 export type DailyPoint = { date: string; count: number };
+/** One step of the website behavioral funnel (visitors at that stage). */
+export type FunnelStep = { label: string; count: number };
+/** One row of the recent-activity feed. */
+export type RecentEvent = { event: string; path: string; ts: string };
 
 export type WebAnalytics = {
   /** False when the PostHog query env vars aren't set. */
@@ -17,6 +21,12 @@ export type WebAnalytics = {
   daily: DailyPoint[];
   topPages: RankedPage[];
   topReferrers: RankedPage[];
+  /** Visit → form-view → form-start → submit funnel (unique people, 30d),
+   *  plus phone clicks as an alternate conversion. */
+  funnel: FunnelStep[];
+  phoneClicks: number;
+  /** Most recent website events for the activity feed. */
+  recentEvents: RecentEvent[];
 };
 
 const EMPTY: Omit<WebAnalytics, "configured"> = {
@@ -28,6 +38,9 @@ const EMPTY: Omit<WebAnalytics, "configured"> = {
   daily: [],
   topPages: [],
   topReferrers: [],
+  funnel: [],
+  phoneClicks: 0,
+  recentEvents: [],
 };
 
 /**
@@ -89,7 +102,8 @@ export async function getWebAnalytics(): Promise<WebAnalytics> {
   const host = deriveQueryHost(env.NEXT_PUBLIC_POSTHOG_HOST);
 
   try {
-    const [kpiRows, dailyRows, pageRows, refRows] = await Promise.all([
+    const [kpiRows, dailyRows, pageRows, refRows, funnelRows, recentRows] =
+      await Promise.all([
       hogql(
         host,
         projectId,
@@ -131,6 +145,33 @@ export async function getWebAnalytics(): Promise<WebAnalytics> {
            AND properties.$referring_domain != '$direct'
          GROUP BY ref ORDER BY c DESC LIMIT 8`,
       ),
+      // Behavioral funnel (unique people per stage, 30d) + phone clicks.
+      hogql(
+        host,
+        projectId,
+        apiKey,
+        `SELECT
+           uniqIf(person_id, event = '$pageview') AS visitors,
+           uniqIf(person_id, event = 'lead_form_viewed') AS form_viewers,
+           uniqIf(person_id, event = 'lead_form_started') AS form_starters,
+           uniqIf(person_id, event = 'lead_submitted') AS submitters,
+           countIf(event = 'phone_click') AS phone_clicks
+         FROM events
+         WHERE timestamp > now() - INTERVAL 30 DAY
+           AND event IN ('$pageview','lead_form_viewed','lead_form_started','lead_submitted','phone_click')`,
+      ),
+      // Recent activity feed — latest website events of interest.
+      hogql(
+        host,
+        projectId,
+        apiKey,
+        `SELECT event,
+                coalesce(nullIf(properties.$pathname, ''), nullIf(properties.pathname, ''), '') AS path,
+                timestamp
+         FROM events
+         WHERE event IN ('$pageview','lead_form_viewed','lead_form_started','lead_submitted','phone_click')
+         ORDER BY timestamp DESC LIMIT 25`,
+      ),
     ]);
 
     const kpi = kpiRows[0] ?? [];
@@ -144,6 +185,21 @@ export async function getWebAnalytics(): Promise<WebAnalytics> {
       count: Number(r[1] ?? 0),
     }));
 
+    const fr = funnelRows[0] ?? [];
+    const funnel: FunnelStep[] = [
+      { label: "Visitors", count: Number(fr[0] ?? 0) },
+      { label: "Viewed form", count: Number(fr[1] ?? 0) },
+      { label: "Started form", count: Number(fr[2] ?? 0) },
+      { label: "Submitted", count: Number(fr[3] ?? 0) },
+    ];
+    const phoneClicks = Number(fr[4] ?? 0);
+
+    const recentEvents: RecentEvent[] = recentRows.map((r) => ({
+      event: String(r[0] ?? ""),
+      path: typeof r[1] === "string" ? r[1] : "",
+      ts: String(r[2] ?? ""),
+    }));
+
     return {
       configured: true,
       hasData: pageviews30 > 0,
@@ -154,6 +210,9 @@ export async function getWebAnalytics(): Promise<WebAnalytics> {
       daily,
       topPages: pageRows.map(toRanked),
       topReferrers: refRows.map(toRanked),
+      funnel,
+      phoneClicks,
+      recentEvents,
     };
   } catch (err) {
     console.warn("[web-analytics] query failed:", err);

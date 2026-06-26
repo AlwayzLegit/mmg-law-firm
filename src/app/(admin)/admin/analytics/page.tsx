@@ -249,9 +249,136 @@ export default async function AdminAnalyticsPage({
             <RankCard title="Top pages (30d)" rows={web.topPages} />
             <RankCard title="Top referrers (30d)" rows={web.topReferrers} />
           </div>
+
+          {/* Behavioral funnel — visit → form view → start → submit (30d). */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-base">
+                Visitor funnel (30d)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WebFunnel steps={web.funnel} />
+              <p className="text-muted-foreground mt-4 text-xs">
+                Unique people at each stage. {web.phoneClicks} phone-number
+                click{web.phoneClicks === 1 ? "" : "s"} in the same window
+                (an alternate conversion not shown in the bars).
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Live event feed — everything happening on the site. */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-base">Recent activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {web.recentEvents.length === 0 ? (
+                <Empty>No recent events.</Empty>
+              ) : (
+                <ul className="divide-border divide-y text-sm">
+                  {web.recentEvents.map((e, i) => (
+                    <li
+                      key={`${e.ts}-${i}`}
+                      className="flex items-center justify-between gap-3 py-2"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`inline-block h-2 w-2 flex-none rounded-full ${EVENT_DOT[e.event] ?? "bg-muted-foreground"}`}
+                          aria-hidden
+                        />
+                        <span className="font-medium">
+                          {EVENT_LABEL[e.event] ?? e.event}
+                        </span>
+                        {e.path ? (
+                          <span className="text-muted-foreground min-w-0 truncate">
+                            {e.path}
+                          </span>
+                        ) : null}
+                      </span>
+                      <time
+                        className="text-muted-foreground flex-none text-xs"
+                        dateTime={e.ts}
+                      >
+                        {formatEventTime(e.ts)}
+                      </time>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
+  );
+}
+
+const EVENT_LABEL: Record<string, string> = {
+  $pageview: "Page view",
+  lead_form_viewed: "Viewed lead form",
+  lead_form_started: "Started lead form",
+  lead_submitted: "Submitted lead",
+  phone_click: "Clicked phone number",
+};
+
+const EVENT_DOT: Record<string, string> = {
+  $pageview: "bg-muted-foreground/50",
+  lead_form_viewed: "bg-primary/50",
+  lead_form_started: "bg-primary",
+  lead_submitted: "bg-success",
+  phone_click: "bg-[var(--color-gold-500)]",
+};
+
+/** Compact relative time for the activity feed (e.g. "3m", "2h", "5d"). */
+function formatEventTime(iso: string): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  const secs = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}
+
+function WebFunnel({ steps }: { steps: { label: string; count: number }[] }) {
+  const top = steps[0]?.count ?? 0;
+  if (top === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        No funnel data in the last 30 days yet.
+      </p>
+    );
+  }
+  return (
+    <ul className="grid gap-3">
+      {steps.map((s, i) => {
+        const pctOfTop = Math.round((s.count / top) * 100);
+        const prev = i > 0 ? steps[i - 1].count : s.count;
+        const stepPct = prev > 0 ? Math.round((s.count / prev) * 100) : 0;
+        return (
+          <li key={s.label} className="text-sm">
+            <div className="flex items-center justify-between">
+              <span>{s.label}</span>
+              <span className="font-medium">
+                {s.count}{" "}
+                <span className="text-muted-foreground text-xs">
+                  {i === 0 ? `(${pctOfTop}%)` : `(${stepPct}% of prior)`}
+                </span>
+              </span>
+            </div>
+            <div className="bg-secondary mt-1 h-2 w-full overflow-hidden rounded-full">
+              <div
+                className="bg-primary h-full"
+                style={{ width: `${pctOfTop}%` }}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

@@ -40,6 +40,22 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Site-wide phone-click capture. `tel:` links live in the header, footer,
+  // every page hero, and CTA bands — a delegated listener captures all of them
+  // as a `phone_click` conversion event without instrumenting each component.
+  // No PII: we record only the page path, not the number (it's a firm constant).
+  React.useEffect(() => {
+    if (!POSTHOG_KEY) return;
+    function onClick(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+      const link = target?.closest?.('a[href^="tel:"]') as HTMLAnchorElement | null;
+      if (!link) return;
+      posthog.capture("phone_click", { pathname: window.location.pathname });
+    }
+    document.addEventListener("click", onClick, { capture: true });
+    return () => document.removeEventListener("click", onClick, { capture: true });
+  }, []);
+
   if (!POSTHOG_KEY) return <>{children}</>;
   return (
     <PHProvider client={posthog}>
