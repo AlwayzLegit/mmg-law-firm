@@ -486,3 +486,45 @@ export const PRACTICE_AREA_CONTENT: Record<string, PracticeAreaContent> = {
     ],
   },
 };
+
+// TODO(human): attorney review required — AI-drafted "how the attorney helps"
+// copy. It describes service and approach only — no outcome promises, no
+// invented results — but should be confirmed before long-term use.
+//
+// Each entry is a short paragraph (Markdown) describing how attorney
+// Mihran M. Ghazaryan personally handles this kind of matter. Rendered on the
+// practice-area hub and on every city × practice page under a
+// "How our attorney helps with …" heading.
+const ATTORNEY_HELP: Record<string, string> = {
+  "car-accidents":
+    "When you hire MMG Law Firm, attorney Mihran M. Ghazaryan handles your case personally — not a case manager you never meet. He reviews the police report and your medical records himself, takes over every call with the adjuster, and looks for coverage others miss, including your own uninsured/underinsured-motorist policy. He also manages the medical liens that can quietly eat into a recovery, so more of any settlement stays with you.",
+  "truck-accidents":
+    "Truck cases are won or lost in the first days, so Mihran M. Ghazaryan moves immediately to preserve the evidence — the electronic logging device, the driver's hours-of-service records, and the truck's onboard data — before it can be overwritten. He identifies every responsible party (driver, carrier, broker, and their separate insurers) and applies the federal motor-carrier rules that govern these cases, building the claim for the larger exposure a commercial policy carries.",
+  "motorcycle-accidents":
+    "Riders walk in facing a built-in bias, and Mihran M. Ghazaryan's job is to dismantle it. He documents the mechanics of the crash — often with reconstruction — to show what actually happened, presents your injuries in full, and pushes back hard when an insurer tries to blame the rider. You deal directly with the attorney building that narrative, not a rotating intake team.",
+  "pedestrian-accidents":
+    "Pedestrian injuries are usually severe, and the right-of-way analysis is everything. Mihran M. Ghazaryan investigates the crosswalk, signal timing, and roadway conditions, and where a city vehicle or dangerous public road is involved he protects the short six-month government-claim deadline that can otherwise end a case before it starts. He coordinates your care and documents the full extent of your losses.",
+  "bicycle-accidents":
+    "Mihran M. Ghazaryan documents the bike-specific facts insurers prefer to ignore — door-zone collisions, unsafe passing, and right-hook turns — and counters the reflexive assumption that the cyclist was at fault. He gathers the scene evidence, witness accounts, and medical record that put the claim on solid ground, and handles the insurer directly so you can heal.",
+  "slip-and-fall":
+    "Premises cases turn on notice — whether the owner knew or should have known about the hazard — so Mihran M. Ghazaryan builds the timeline early, before surveillance video is recorded over and conditions are fixed. He secures incident reports, photographs, and maintenance records, identifies the right defendant, and presents a documented demand rather than letting the insurer set the terms.",
+  "wrongful-death":
+    "These are the matters Mihran M. Ghazaryan approaches with the most care. He identifies the family members California law allows to bring a claim, handles the process so the family doesn't have to relive it at every turn, and accounts fully for both the economic and the human losses — quietly, respectfully, and with the family's wishes leading the way.",
+  "dog-bites":
+    "California holds dog owners strictly liable, and Mihran M. Ghazaryan works directly with the owner's homeowners or renters insurer so families aren't put in the position of suing a neighbor out of pocket. He documents the bite, the medical treatment, and any scarring with the seriousness these injuries — especially to children — deserve.",
+  "rideshare-accidents":
+    "Uber and Lyft cases come down to which policy applies at the exact moment of the crash, and Mihran M. Ghazaryan maps that timeline precisely. He pulls the trip data, pinpoints the driver's app status, and pursues the up-to-$1M coverage that applies during an active ride — coverage adjusters won't volunteer. You work with the attorney untangling those layered policies, start to finish.",
+  "catastrophic-injury":
+    "A catastrophic injury is measured over a lifetime, and Mihran M. Ghazaryan builds it that way. He assembles the life-care plan and the medical and economic experts who can prove the true future cost, refuses the quick lowball offer insurers use to close out large exposure early, and prepares the case for the long horizon it requires — so the recovery reflects the care you'll actually need.",
+  "employment-law":
+    "Mihran M. Ghazaryan starts with a confidential review of what happened and tells you plainly whether you have a claim. He helps you preserve the record that wins employment cases — the emails, reviews, and timeline — handles the Civil Rights Department complaint and right-to-sue process, and holds the employer to California's strong protections for employees. Where it fits, his fee comes only from a recovery.",
+};
+
+/** "How our attorney helps" paragraph for a practice area, with a safe generic
+ *  fallback so a brand-new practice slug still renders the section. */
+export function getAttorneyHelp(slug: string, nounSingular: string): string {
+  return (
+    ATTORNEY_HELP[slug] ??
+    `When you hire MMG Law Firm, attorney Mihran M. Ghazaryan handles your ${nounSingular} matter personally — reviewing the facts himself, dealing with the insurer or opposing party directly, and keeping you informed at every step. Because he keeps his caseload deliberate, your questions are answered by the lawyer actually handling your case.`
+  );
+}

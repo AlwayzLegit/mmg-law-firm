@@ -295,7 +295,10 @@ const PasswordInput = z
  * password login instead of the magic link (new devices still need the code).
  */
 export async function setPassword(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  // allowUnonboarded: this is the action the /onboarding page calls, so the
+  // caller is (by definition) a user who hasn't set a password yet — don't
+  // bounce them back to onboarding before they can complete it.
+  const { user } = await requireAdmin({ allowUnonboarded: true });
 
   const parsed = PasswordInput.safeParse(formData.get("password"));
   if (!parsed.success) {
@@ -311,6 +314,16 @@ export async function setPassword(formData: FormData): Promise<ActionResult> {
   if (error) {
     return { ok: false, error: error.message };
   }
+
+  // Mark onboarding complete (so requireAdmin stops sending them to /onboarding)
+  // and trust this device, both via the service-role client to bypass RLS on
+  // admin_profiles. Then the next sign-in is email + password, no link needed.
+  const admin = getServiceSupabase();
+  await admin
+    .from("admin_profiles")
+    .update({ password_set: true })
+    .eq("user_id", user.id);
+  await trustCurrentDevice(user.id);
 
   logAudit({
     actor_id: user.id,

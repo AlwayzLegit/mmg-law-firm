@@ -22,6 +22,8 @@ import {
   lawyerPhraseTitle,
 } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
+import { getAttorneyHelp } from "@/lib/data/practice-area-content";
+import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { getPublishedLocationPages } from "@/lib/data/queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
@@ -191,6 +193,11 @@ export default async function PracticeAreaPage({ params }: Props) {
                 {content.body_md || content.intro}
               </p>
             )}
+
+            <AttorneyHelpSection
+              practiceLabel={area.name.toLowerCase()}
+              body={getAttorneyHelp(area.slug, area.nounSingular)}
+            />
 
             {content.subtopics.length > 0 ? (
               <section className="mt-12">

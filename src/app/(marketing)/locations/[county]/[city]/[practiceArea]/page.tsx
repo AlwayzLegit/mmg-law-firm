@@ -16,7 +16,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
 import { findPracticeArea, lawyerPhraseTitle } from "@/lib/data/practice-areas";
-import { PRACTICE_AREA_CONTENT } from "@/lib/data/practice-area-content";
+import {
+  PRACTICE_AREA_CONTENT,
+  getAttorneyHelp,
+} from "@/lib/data/practice-area-content";
+import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
@@ -220,6 +224,17 @@ export default async function CityPracticePage({ params }: Props) {
                 </ReactMarkdown>
               </div>
             </section>
+
+            <AttorneyHelpSection
+              practiceLabel={
+                area?.name.toLowerCase() ??
+                row.practice_area_name.toLowerCase()
+              }
+              body={getAttorneyHelp(
+                row.practice_area_slug,
+                area?.nounSingular ?? row.practice_area_name.toLowerCase(),
+              )}
+            />
 
             {content?.subtopics?.length ? (
               <section className="mt-12">
