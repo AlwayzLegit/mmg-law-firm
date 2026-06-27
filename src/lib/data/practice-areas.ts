@@ -181,6 +181,73 @@ export const PRACTICE_AREAS: PracticeArea[] = [
     category: "employment",
     ctaHeading: "Mistreated at work?",
   },
+  // Employment sub-niches. Semrush gap vs. local competitors (agemianlawgroup,
+  // boyamianlaw): each is a distinct low-difficulty, high-intent search with
+  // real volume that the firm's single employment hub didn't target directly.
+  {
+    slug: "wrongful-termination",
+    name: "Wrongful Termination",
+    shortName: "Wrongful Termination",
+    nounSingular: "wrongful termination",
+    nounPlural: "wrongful termination cases",
+    // Semrush: "wrongful termination california" 2,400 (KD 14); "wrongful
+    // firing laws" 14,800 (informational — targeted via blog).
+    lawyerPhrase: "wrongful termination lawyer",
+    icon: "UserX",
+    intro:
+      "Fired for an illegal reason — retaliation, discrimination, or in violation of California public policy? At-will doesn't mean an employer can fire you for any reason. We hold them accountable.",
+    displayOrder: 110,
+    category: "employment",
+    ctaHeading: "Fired for the wrong reason?",
+  },
+  {
+    slug: "workplace-discrimination",
+    name: "Workplace Discrimination",
+    shortName: "Discrimination",
+    nounSingular: "discrimination case",
+    nounPlural: "discrimination cases",
+    // Semrush: "employment discrimination lawyer" 4,400 (KD 26); "workplace
+    // discrimination attorney" 3,600 (KD 18); "pregnancy discrimination
+    // attorney" 1,300 (KD 6).
+    lawyerPhrase: "discrimination lawyer",
+    icon: "Ban",
+    intro:
+      "Treated differently because of race, sex, age, disability, pregnancy, religion, or national origin? California's FEHA gives employees strong protection — we enforce it.",
+    displayOrder: 120,
+    category: "employment",
+    ctaHeading: "Discriminated against at work?",
+  },
+  {
+    slug: "sexual-harassment",
+    name: "Sexual Harassment",
+    shortName: "Sexual Harassment",
+    nounSingular: "sexual harassment case",
+    nounPlural: "sexual harassment cases",
+    // Semrush: "los angeles sexual harassment lawyer" 1,300 (KD 20).
+    lawyerPhrase: "sexual harassment lawyer",
+    icon: "ShieldAlert",
+    intro:
+      "Quid pro quo demands or a hostile work environment? California law guarantees a workplace free of sexual harassment — and the right to be made whole when an employer fails to stop it.",
+    displayOrder: 130,
+    category: "employment",
+    ctaHeading: "Harassed at work?",
+  },
+  {
+    slug: "wage-and-hour",
+    name: "Unpaid Wages & Overtime",
+    shortName: "Wage & Hour",
+    nounSingular: "wage claim",
+    nounPlural: "wage and hour claims",
+    // Semrush: wage/hour + unpaid-overtime cluster; pairs with the employment
+    // hub's Labor Code coverage.
+    lawyerPhrase: "wage and hour lawyer",
+    icon: "Coins",
+    intro:
+      "Unpaid overtime, missed meal and rest breaks, off-the-clock work, or a final paycheck withheld? California's Labor Code carries penalties on top of the wages — we recover both.",
+    displayOrder: 140,
+    category: "employment",
+    ctaHeading: "Not paid what you're owed?",
+  },
 ];
 
 export function findPracticeArea(slug: string): PracticeArea | undefined {

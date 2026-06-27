@@ -46,6 +46,26 @@ const COMMON_PROCESS: ProcessStep[] = [
   },
 ];
 
+// Shared process for employment matters (used by the employment sub-practices).
+const EMPLOYMENT_PROCESS: ProcessStep[] = [
+  {
+    title: "Free, confidential consultation",
+    body: "We listen first and tell you plainly whether you appear to have a claim. The conversation is confidential and there's no fee to have it — and we're careful if you're still employed.",
+  },
+  {
+    title: "Preserve the record",
+    body: "Offer letters, handbooks, performance reviews, emails and texts, pay stubs, and a dated timeline. The contemporaneous record is what wins an employment case, so we lock it down early.",
+  },
+  {
+    title: "Administrative exhaustion and the demand",
+    body: "FEHA claims generally require a complaint with the Civil Rights Department and a right-to-sue notice first. We handle that step, then present a documented demand to the employer.",
+  },
+  {
+    title: "Litigation when necessary",
+    body: "Many matters resolve through negotiation or mediation. When an employer won't be reasonable, we file and prepare the case fully — which is usually what moves the number.",
+  },
+];
+
 export const PRACTICE_AREA_CONTENT: Record<string, PracticeAreaContent> = {
   "car-accidents": {
     body: "California car-accident cases turn on small details — exact timing, signal phases, vehicle dynamics, and how the medical record reads in the first 72 hours. We act quickly to lock those facts down so the other side cannot reshape them later. Whether the collision happened on a Glendale surface street, the 405, or a Central Valley freeway, the playbook is the same: a careful liability investigation, a tight medical record, and a firm posture with the insurer.",
@@ -485,6 +505,178 @@ export const PRACTICE_AREA_CONTENT: Record<string, PracticeAreaContent> = {
       },
     ],
   },
+  // TODO(human): attorney review required — AI-drafted CA employment copy.
+  "wrongful-termination": {
+    body: "California is an at-will state — but at-will never meant an employer can fire you for an unlawful reason. A termination is wrongful when it's because of a protected characteristic, in retaliation for protected activity (reporting harassment, a safety hazard, or wage theft; taking protected leave), or in violation of a clear public policy. These cases turn on timing and the paper trail: what your reviews said before, what changed, and what was said around the decision. We help you preserve that record and hold the employer to account.",
+    subtopics: [
+      {
+        title: "Retaliation",
+        body: "Fired after reporting harassment, discrimination, unsafe conditions, or wage violations — or after taking protected leave. The timing itself is often powerful evidence.",
+      },
+      {
+        title: "Discrimination-based firing",
+        body: "Terminations driven by race, sex, age, disability, pregnancy, religion, or national origin, often dressed up as a layoff or a sudden performance problem.",
+      },
+      {
+        title: "Public-policy and whistleblower terminations",
+        body: "Being fired for refusing to break the law, for jury duty, or for reporting illegal conduct (Labor Code §1102.5).",
+      },
+    ],
+    process: EMPLOYMENT_PROCESS,
+    whatToDo: [
+      "Write a dated timeline of what happened while it's fresh.",
+      "Save offer letters, reviews, emails, texts, and pay records to a personal (non-work) account.",
+      "Don't sign a severance or release before it's reviewed — the deadline is usually negotiable.",
+      "Note who made the decision and what reason they gave, in writing if possible.",
+      "Talk to a lawyer before resigning — quitting can change the claim.",
+    ],
+    faqs: [
+      {
+        question: "Can I be fired for no reason in California?",
+        answer:
+          "Yes — at-will employment means an employer can end the relationship for any reason or no reason. What they cannot do is fire you for an illegal reason: because of a protected characteristic, in retaliation for protected activity, or in violation of public policy. If any of those is in play, 'at-will' is not a defense.",
+      },
+      {
+        question: "How long do I have to bring a wrongful-termination claim?",
+        answer:
+          "It depends on the theory. FEHA claims generally require a complaint with the Civil Rights Department (commonly within three years) followed by one year to sue after the right-to-sue notice; a wrongful-termination-in-violation-of-public-policy claim generally runs two years. The deadlines differ, so don't wait to ask.",
+      },
+      {
+        question: "What can I recover?",
+        answer:
+          "Depending on the case: lost wages and benefits (back pay), future lost earnings (front pay), emotional-distress damages, and in some cases punitive damages and attorney's fees. No honest lawyer can promise a number — it depends on the facts and the evidence.",
+      },
+    ],
+  },
+  // TODO(human): attorney review required — AI-drafted CA employment copy.
+  "workplace-discrimination": {
+    body: "California's Fair Employment and Housing Act (FEHA) is broader than federal law: it protects employees from discrimination based on race, color, national origin, sex, gender identity, pregnancy, age (40+), disability, medical condition, religion, sexual orientation, and more — and it applies to employers with as few as five employees. Discrimination can be an obvious adverse action (firing, demotion, pay cut) or a pattern of being passed over, written up, or excluded. We document the comparators and the timeline that show the real reason.",
+    subtopics: [
+      {
+        title: "Adverse-action discrimination",
+        body: "Termination, demotion, denied promotion, or pay disparity tied to a protected characteristic rather than performance.",
+      },
+      {
+        title: "Pregnancy and disability discrimination",
+        body: "Failure to accommodate, or punishment for needing leave or a reasonable accommodation under FEHA and the PDLL.",
+      },
+      {
+        title: "Failure to accommodate / interactive process",
+        body: "California requires employers to engage in a good-faith interactive process and provide reasonable accommodation for disability, pregnancy, and religion.",
+      },
+    ],
+    process: EMPLOYMENT_PROCESS,
+    whatToDo: [
+      "Keep a dated log of incidents — what happened, who was present, what was said.",
+      "Save performance reviews and any written comparisons to other employees.",
+      "Put accommodation requests in writing and keep copies.",
+      "Report through your employer's stated process where it's safe to do so.",
+      "Preserve the record to a personal account and talk to a lawyer about the CRD complaint.",
+    ],
+    faqs: [
+      {
+        question: "Do I have to file with a government agency first?",
+        answer:
+          "For most FEHA discrimination claims, yes — you generally must file a complaint with California's Civil Rights Department and obtain a right-to-sue notice before suing. We handle that administrative step for you. The deadlines matter, so it's best to act early.",
+      },
+      {
+        question: "How do I prove discrimination if no one admitted it?",
+        answer:
+          "Most cases are built on circumstantial evidence — timing, shifting explanations, how similarly-situated employees were treated, statistics, and the paper trail. Direct admissions are rare; a documented pattern is what carries these cases.",
+      },
+      {
+        question: "Does FEHA cover small employers?",
+        answer:
+          "Yes — FEHA applies to employers with five or more employees (and harassment claims apply to employers of any size), which is broader than federal Title VII's 15-employee threshold.",
+      },
+    ],
+  },
+  // TODO(human): attorney review required — AI-drafted CA employment copy.
+  "sexual-harassment": {
+    body: "California law guarantees a workplace free of sexual harassment, and it holds employers responsible when they fail to prevent or stop it. Harassment takes two forms: quid pro quo (a manager conditioning a job benefit on sexual conduct) and a hostile work environment (severe or pervasive conduct that alters the conditions of your job). It can come from supervisors, coworkers, or even non-employees like clients. We handle these matters with discretion and build the record — the reports, the witnesses, the timeline — that an employer can't explain away.",
+    subtopics: [
+      {
+        title: "Quid pro quo harassment",
+        body: "A supervisor tying a raise, promotion, schedule, or continued employment to sexual demands.",
+      },
+      {
+        title: "Hostile work environment",
+        body: "Severe or pervasive unwelcome conduct — comments, advances, messages, touching — that a reasonable person would find abusive.",
+      },
+      {
+        title: "Retaliation for reporting",
+        body: "Punishment after you complained about harassment is itself unlawful, and the timing is often strong evidence.",
+      },
+    ],
+    process: EMPLOYMENT_PROCESS,
+    whatToDo: [
+      "Save harassing messages, emails, and texts — and screenshot anything that might be deleted.",
+      "Keep a dated log of incidents and who witnessed them.",
+      "Report through your employer's process where safe; their response (or lack of one) matters.",
+      "Preserve everything to a personal account.",
+      "Talk to a lawyer about your options before signing anything or resigning.",
+    ],
+    faqs: [
+      {
+        question: "Does my employer have to have a certain number of employees?",
+        answer:
+          "No. Under California's FEHA, the prohibition on sexual harassment applies to employers of any size — even those with a single employee — which is broader than the federal threshold.",
+      },
+      {
+        question: "What if I didn't report it right away?",
+        answer:
+          "A delay doesn't end your claim. Many people don't report immediately out of fear of retaliation, and the law accounts for that. The contemporaneous evidence — messages, a journal, witnesses — still matters; preserve it and talk to a lawyer.",
+      },
+      {
+        question: "Can I be fired for complaining about harassment?",
+        answer:
+          "No. Retaliating against an employee for reporting harassment is independently unlawful. If you were disciplined or terminated after you complained, that timing can strengthen both the harassment and the retaliation claim.",
+      },
+    ],
+  },
+  // TODO(human): attorney review required — AI-drafted CA wage & hour copy.
+  "wage-and-hour": {
+    body: "California's wage-and-hour protections are among the strongest in the country, and violations are common — unpaid overtime, off-the-clock work, missed or interrupted meal and rest breaks, misclassification as 'exempt' or as an independent contractor, and final paychecks withheld after separation. These claims carry penalties on top of the wages owed, and the recovery often reaches back years. We reconstruct the hours from pay stubs, schedules, and records to show what you were actually owed.",
+    subtopics: [
+      {
+        title: "Unpaid overtime & off-the-clock work",
+        body: "California overtime starts after 8 hours in a day (not just 40 in a week), plus double-time rules. Work performed before clocking in or after clocking out is compensable.",
+      },
+      {
+        title: "Meal & rest break violations",
+        body: "Employees are generally owed a 30-minute meal period and paid rest breaks; missed or interrupted breaks trigger premium pay.",
+      },
+      {
+        title: "Misclassification & final pay",
+        body: "Being labeled 'exempt' or an independent contractor to avoid overtime, and waiting-time penalties when final wages aren't paid on time.",
+      },
+    ],
+    process: EMPLOYMENT_PROCESS,
+    whatToDo: [
+      "Keep your pay stubs, schedules, and any record of hours actually worked.",
+      "Note when you missed or were interrupted during meal and rest breaks.",
+      "Save communications about your classification, duties, and pay.",
+      "Don't rely on memory alone — contemporaneous records drive these claims.",
+      "Talk to a lawyer about whether to file with the Labor Commissioner or in court.",
+    ],
+    faqs: [
+      {
+        question: "How far back can I recover unpaid wages?",
+        answer:
+          "Generally three years for Labor Code wage claims, and up to four years when paired with California's Unfair Competition Law. Waiting-time and other penalties can add to the recovery. Because the clock is running, it's best not to wait.",
+      },
+      {
+        question: "My employer calls me 'salaried' — am I still owed overtime?",
+        answer:
+          "Maybe. A salary alone doesn't make you exempt; the law looks at your actual duties and whether you meet a specific exemption. Misclassification is one of the most common wage violations, and a 'salaried' title doesn't settle it.",
+      },
+      {
+        question: "What does it cost to bring a wage claim?",
+        answer:
+          "We typically handle these on a contingency basis — no upfront cost — and many California wage statutes shift the employee's reasonable attorney's fees onto an employer that broke the law. The consultation is free.",
+      },
+    ],
+  },
 };
 
 // TODO(human): attorney review required — AI-drafted "how the attorney helps"
@@ -518,6 +710,14 @@ const ATTORNEY_HELP: Record<string, string> = {
     "A catastrophic injury is measured over a lifetime, and Mihran M. Ghazaryan builds it that way. He assembles the life-care plan and the medical and economic experts who can prove the true future cost, refuses the quick lowball offer insurers use to close out large exposure early, and prepares the case for the long horizon it requires — so the recovery reflects the care you'll actually need.",
   "employment-law":
     "Mihran M. Ghazaryan starts with a confidential review of what happened and tells you plainly whether you have a claim. He helps you preserve the record that wins employment cases — the emails, reviews, and timeline — handles the Civil Rights Department complaint and right-to-sue process, and holds the employer to California's strong protections for employees. Where it fits, his fee comes only from a recovery.",
+  "wrongful-termination":
+    "Mihran M. Ghazaryan looks past the reason the employer wrote down to the one that actually drove the firing. He reconstructs the timeline — your reviews before, what changed, who decided, and what was said — preserves the paper trail, and handles the Civil Rights Department step where it applies. He tells you honestly whether 'at-will' is a real defense in your case or a cover, and pursues the back pay, front pay, and emotional-distress damages the law allows.",
+  "workplace-discrimination":
+    "Discrimination is rarely admitted, so Mihran M. Ghazaryan builds it from the evidence around it — how comparable employees were treated, shifting explanations, the accommodation requests that went unanswered, and the timing. He handles the FEHA complaint and right-to-sue process, and presses the employer on the interactive-process and reasonable-accommodation duties California imposes. You work directly with the attorney assembling that record.",
+  "sexual-harassment":
+    "Mihran M. Ghazaryan handles these matters with discretion and care. He preserves the messages, reports, and witness accounts before they disappear, evaluates both the harassment and any retaliation that followed, and holds the employer to its duty to prevent and stop it. He explains your options plainly — including what reporting and not-yet-reporting mean for your claim — and pursues the full range of relief the law provides.",
+  "wage-and-hour":
+    "Mihran M. Ghazaryan reconstructs what you were actually owed from pay stubs, schedules, and the hours you really worked — the overtime, off-the-clock time, and missed breaks an employer hoped you wouldn't track. He tests a 'salaried' or 'contractor' label against your real duties, and pursues the penalties California stacks on top of unpaid wages. These cases are typically contingency, with fees often shifted onto the employer that broke the law.",
 };
 
 /** "How our attorney helps" paragraph for a practice area, with a safe generic
