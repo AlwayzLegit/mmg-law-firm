@@ -24,7 +24,7 @@ export async function sendEmail({
   subject: string;
   html: string;
   replyTo?: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
   const resend = getResend();
   if (!resend || !env.RESEND_FROM_EMAIL) {
     if (process.env.NODE_ENV !== "production") {
@@ -33,7 +33,7 @@ export async function sendEmail({
     return { ok: true };
   }
   try {
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: Array.isArray(to) ? to : [to],
       subject,
@@ -44,7 +44,8 @@ export async function sendEmail({
       console.warn("[email] resend error:", error);
       return { ok: false, error: error.message };
     }
-    return { ok: true };
+    // The Resend message id correlates later delivery/open webhook events.
+    return { ok: true, id: data?.id };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
     console.warn("[email] exception:", msg);

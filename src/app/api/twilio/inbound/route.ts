@@ -1,9 +1,9 @@
-import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { env } from "@/lib/env";
 import { siteUrl } from "@/lib/seo/canonical";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { verifyTwilioSignature, formToParams } from "@/lib/sms/twilio-verify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,28 +19,6 @@ function twiml() {
 }
 
 /**
- * Verify Twilio's X-Twilio-Signature: HMAC-SHA1 of (url + sorted param
- * key/value pairs) keyed by the auth token, base64-encoded.
- * https://www.twilio.com/docs/usage/security#validating-requests
- */
-function isValidSignature(
-  url: string,
-  params: Record<string, string>,
-  signature: string,
-): boolean {
-  const data = Object.keys(params)
-    .sort()
-    .reduce((acc, key) => acc + key + params[key], url);
-  const expected = crypto
-    .createHmac("sha1", env.TWILIO_AUTH_TOKEN)
-    .update(Buffer.from(data, "utf-8"))
-    .digest("base64");
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
-}
-
-/**
  * Inbound SMS webhook. Twilio POSTs form-encoded params when a lead replies to
  * one of our texts. We verify the signature, match the sender's phone to a
  * lead, and append the reply to that lead's message thread (service-role
@@ -52,13 +30,10 @@ export async function POST(request: Request) {
   if (!env.TWILIO_AUTH_TOKEN) return twiml();
 
   const signature = request.headers.get("x-twilio-signature") ?? "";
-  const raw = await request.text();
-  const form = new URLSearchParams(raw);
-  const params: Record<string, string> = {};
-  for (const [k, v] of form.entries()) params[k] = v;
+  const params = formToParams(await request.text());
 
   const url = `${siteUrl()}/api/twilio/inbound`;
-  if (!signature || !isValidSignature(url, params, signature)) {
+  if (!verifyTwilioSignature(url, params, signature)) {
     // Reject forged/unsigned requests.
     return new NextResponse("invalid signature", { status: 403 });
   }

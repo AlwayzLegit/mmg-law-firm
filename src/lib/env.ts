@@ -15,6 +15,10 @@ const ServerEnvSchema = z.object({
   RESEND_API_KEY: z.string().default(""),
   RESEND_FROM_EMAIL: z.string().email().or(z.literal("")).default(""),
   LEAD_NOTIFY_EMAIL: z.string().email().or(z.literal("")).default(""),
+  // Svix signing secret for the Resend webhook (delivery/open/bounce events).
+  // Format "whsec_<base64>". When unset, /api/resend/webhook returns 200 but
+  // never updates state (can't verify authenticity).
+  RESEND_WEBHOOK_SECRET: z.string().default(""),
 
   TWILIO_ACCOUNT_SID: z.string().default(""),
   TWILIO_AUTH_TOKEN: z.string().default(""),

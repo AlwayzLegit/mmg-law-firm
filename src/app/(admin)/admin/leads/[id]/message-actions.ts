@@ -112,6 +112,8 @@ export async function sendLeadMessage(
     if (!r.ok) {
       status = "failed";
       sendError = r.error ?? "Email failed to send.";
+    } else {
+      providerId = r.id ?? null;
     }
   }
 

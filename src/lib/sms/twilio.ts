@@ -1,6 +1,7 @@
 import "server-only";
 
 import { env } from "@/lib/env";
+import { siteUrl } from "@/lib/seo/canonical";
 
 export type SmsResult = {
   ok: boolean;
@@ -45,6 +46,8 @@ export async function sendSms({
     To: to,
     From: env.TWILIO_FROM_NUMBER,
     Body: body,
+    // Twilio will POST delivery updates (sent → delivered / failed) here.
+    StatusCallback: `${siteUrl()}/api/twilio/status`,
   });
 
   try {

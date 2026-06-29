@@ -186,6 +186,22 @@ export default function LeadMessages({
   );
 }
 
+function StatusTag({ status }: { status: string }) {
+  if (status === "failed") {
+    return <span className="text-destructive font-medium"> · failed</span>;
+  }
+  if (status === "opened") {
+    return <span className="font-medium"> · opened</span>;
+  }
+  if (status === "delivered") {
+    return <span> · delivered</span>;
+  }
+  if (status === "sent" || status === "queued") {
+    return <span> · sent</span>;
+  }
+  return null;
+}
+
 function MessageBubble({ message: m }: { message: LeadMessage }) {
   const outbound = m.direction === "outbound";
   const Icon = m.channel === "sms" ? MessageSquare : Mail;
@@ -225,9 +241,7 @@ function MessageBubble({ message: m }: { message: LeadMessage }) {
             hour: "numeric",
             minute: "2-digit",
           })}
-          {m.status === "failed" ? (
-            <span className="font-medium text-destructive"> · failed</span>
-          ) : null}
+          {outbound ? <StatusTag status={m.status} /> : null}
         </p>
       </div>
     </li>
