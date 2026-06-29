@@ -7,9 +7,13 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getWebAnalytics } from "@/lib/data/web-analytics";
 import {
   formatMinutes,
+  getConversionBreakdowns,
   getLeadAnalytics,
+  getMonthlyTrend,
   getResponseTimeStats,
   STATUS_ORDER,
+  type ConversionRow,
+  type MonthlyPoint,
   type Ranked,
 } from "@/lib/data/lead-analytics";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -31,9 +35,11 @@ export default async function AdminAnalyticsPage({
 
   const supabase = await getServerSupabase();
   const webPromise = getWebAnalytics();
-  const [a, response] = await Promise.all([
+  const [a, response, conversion, monthly] = await Promise.all([
     getLeadAnalytics(supabase, range),
     getResponseTimeStats(supabase, range),
+    getConversionBreakdowns(supabase, range),
+    getMonthlyTrend(supabase, 12),
   ]);
   const web = await webPromise;
 
@@ -200,6 +206,41 @@ export default async function AdminAnalyticsPage({
           title={`Top landing pages (${range}d)`}
           rows={a.topLandingPages}
         />
+      </div>
+
+      {/* Conversion / ROI — which channels actually sign clients, not just
+          generate volume. */}
+      <h2 className="font-display mt-10 text-xl font-medium tracking-tight">
+        Conversion &amp; ROI
+      </h2>
+      <p className="text-muted-foreground mt-1 text-sm">
+        Leads vs. signed clients per channel over the last {range} days. Sorted
+        by signed — a loud source that never signs ranks below a quiet one that
+        does.
+      </p>
+      <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <ConversionCard
+          title={`By source (${range}d)`}
+          rows={conversion.bySource}
+        />
+        <ConversionCard
+          title={`By practice area (${range}d)`}
+          rows={conversion.byPracticeArea}
+        />
+        <ConversionCard
+          title={`By county (${range}d)`}
+          rows={conversion.byCounty}
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Monthly trend (12 mo)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MonthlyTrend points={monthly} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Website traffic — from PostHog pageviews (independent 7/30d windows). */}
@@ -472,6 +513,111 @@ function RankCard({ title, rows }: { title: string; rows: Ranked[] }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ConversionCard({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: ConversionRow[];
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <Empty>No data yet.</Empty>
+        ) : (
+          <ul className="divide-border divide-y">
+            <li className="text-muted-foreground flex items-center justify-between gap-3 py-1 text-[11px] font-medium tracking-wide uppercase">
+              <span>Channel</span>
+              <span className="flex-none">Leads · Signed · Rate</span>
+            </li>
+            {rows.map((r) => (
+              <li
+                key={r.label}
+                className="flex items-center justify-between gap-3 py-2 text-sm"
+              >
+                {r.href ? (
+                  <Link
+                    href={r.href}
+                    className="hover:text-primary min-w-0 truncate underline-offset-4 hover:underline"
+                    title={`View ${r.label} leads`}
+                  >
+                    {r.label}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 truncate">{r.label}</span>
+                )}
+                <span className="flex-none tabular-nums">
+                  <span className="text-muted-foreground">{r.leads}</span>
+                  <span className="text-muted-foreground"> · </span>
+                  <span className="font-medium text-success">{r.signed}</span>
+                  <span className="text-muted-foreground"> · </span>
+                  <span
+                    className={
+                      r.signedPct > 0 ? "font-medium" : "text-muted-foreground"
+                    }
+                  >
+                    {r.signedPct}%
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MonthlyTrend({ points }: { points: MonthlyPoint[] }) {
+  const max = Math.max(1, ...points.map((p) => p.leads));
+  const fmt = (key: string) => {
+    const [y, m] = key.split("-");
+    return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-US", {
+      month: "short",
+    });
+  };
+  return (
+    <div>
+      <div className="flex h-32 items-end gap-1">
+        {points.map((p) => (
+          <div
+            key={p.month}
+            className="flex flex-1 flex-col items-center gap-1"
+            title={`${p.month}: ${p.leads} leads, ${p.signed} signed`}
+          >
+            <div className="flex w-full flex-1 items-end">
+              <div
+                className="bg-primary/20 relative w-full overflow-hidden rounded-t"
+                style={{ height: `${Math.round((p.leads / max) * 100)}%` }}
+              >
+                {/* Signed portion fills from the bottom. */}
+                <div
+                  className="bg-primary absolute inset-x-0 bottom-0"
+                  style={{
+                    height: p.leads
+                      ? `${Math.round((p.signed / p.leads) * 100)}%`
+                      : "0%",
+                  }}
+                />
+              </div>
+            </div>
+            <span className="text-muted-foreground text-[10px]">
+              {fmt(p.month)}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="text-muted-foreground mt-3 text-xs">
+        Bar height = leads; filled portion = signed.
+      </p>
+    </div>
   );
 }
 

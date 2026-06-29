@@ -335,6 +335,149 @@ export async function getResponseTimeStats(
   };
 }
 
+/** One row of a conversion/ROI breakdown: how a channel converts to signed. */
+export type ConversionRow = {
+  label: string;
+  leads: number;
+  signed: number;
+  /** signed / leads, whole percent. */
+  signedPct: number;
+  href?: string;
+};
+
+export type ConversionBreakdowns = {
+  bySource: ConversionRow[];
+  byPracticeArea: ConversionRow[];
+  byCounty: ConversionRow[];
+};
+
+type ConvRow = {
+  status: LeadStatus;
+  utm_source: string | null;
+  practice_areas: { name: string; slug: string } | null;
+  counties: { name: string; slug: string } | null;
+};
+
+/** Tally leads + signed per dimension, ranked by signed (ROI), then volume. */
+function convRank(
+  rows: ConvRow[],
+  pick: (r: ConvRow) => { name: string; slug: string } | { name: string } | null | undefined,
+  hrefBase: string | null,
+  limit: number,
+): ConversionRow[] {
+  const tally = new Map<
+    string,
+    { leads: number; signed: number; slug: string | null }
+  >();
+  for (const row of rows) {
+    if (row.status === "spam") continue; // spam isn't a real lead
+    const v = pick(row);
+    if (!v?.name) continue;
+    const slug = "slug" in v ? v.slug : null;
+    const cur = tally.get(v.name) ?? { leads: 0, signed: 0, slug };
+    cur.leads += 1;
+    if (row.status === "signed") cur.signed += 1;
+    tally.set(v.name, cur);
+  }
+  return [...tally.entries()]
+    .map(([label, { leads, signed, slug }]) => ({
+      label,
+      leads,
+      signed,
+      signedPct: leads > 0 ? Math.round((signed / leads) * 100) : 0,
+      href:
+        hrefBase && slug
+          ? `${hrefBase}${encodeURIComponent(slug)}`
+          : undefined,
+    }))
+    .sort((a, b) => b.signed - a.signed || b.leads - a.leads)
+    .slice(0, limit);
+}
+
+/**
+ * Conversion / ROI breakdowns: for each source, practice area, and county,
+ * how many leads it produced AND how many became signed clients. This is the
+ * ROI lens the volume rankings can't give — a channel can be loud but never
+ * sign, or quiet but convert.
+ */
+export async function getConversionBreakdowns(
+  supabase: SupabaseClient,
+  windowDays = 90,
+): Promise<ConversionBreakdowns> {
+  const since = new Date(Date.now() - windowDays * DAY_MS).toISOString();
+  const { data } = await supabase
+    .from("leads")
+    .select(
+      "status, utm_source, practice_areas(name, slug), counties(name, slug)",
+    )
+    .gte("created_at", since);
+  const rows = (data ?? []) as unknown as ConvRow[];
+
+  return {
+    bySource: convRank(
+      rows,
+      (r) => (r.utm_source ? { name: r.utm_source } : null),
+      "/admin/leads?source=",
+      8,
+    ),
+    byPracticeArea: convRank(
+      rows,
+      (r) => r.practice_areas,
+      "/admin/leads?pa=",
+      8,
+    ),
+    byCounty: convRank(rows, (r) => r.counties, "/admin/leads?county=", 10),
+  };
+}
+
+export type MonthlyPoint = {
+  /** "YYYY-MM". */
+  month: string;
+  leads: number;
+  signed: number;
+};
+
+/**
+ * Month-by-month lead + signed counts for a longer-horizon trend than the
+ * windowed daily series. Non-spam leads only.
+ */
+export async function getMonthlyTrend(
+  supabase: SupabaseClient,
+  months = 12,
+): Promise<MonthlyPoint[]> {
+  const start = new Date();
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  start.setMonth(start.getMonth() - (months - 1));
+
+  const { data } = await supabase
+    .from("leads")
+    .select("status, created_at")
+    .gte("created_at", start.toISOString())
+    .neq("status", "spam");
+  const rows = (data ?? []) as Array<{ status: string; created_at: string }>;
+
+  // Seed every month in range so the trend has no gaps.
+  const index = new Map<string, MonthlyPoint>();
+  const order: string[] = [];
+  for (let i = 0; i < months; i++) {
+    const d = new Date(start);
+    d.setMonth(start.getMonth() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const point = { month: key, leads: 0, signed: 0 };
+    index.set(key, point);
+    order.push(key);
+  }
+  for (const r of rows) {
+    const key = r.created_at.slice(0, 7);
+    const point = index.get(key);
+    if (!point) continue;
+    point.leads += 1;
+    if (r.status === "signed") point.signed += 1;
+  }
+  return order.map((k) => index.get(k)!);
+}
+
 /** Humanize a minutes value for display ("42m", "3.5h", "2.1d"). */
 export function formatMinutes(min: number): string {
   if (min < 60) return `${min}m`;
