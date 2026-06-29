@@ -6,6 +6,7 @@ import {
   FileText,
   Image as ImageIcon,
   BarChart3,
+  Search,
   Settings,
   ScrollText,
   LogOut,
@@ -44,6 +45,7 @@ const NAV = [
     icon: BarChart3,
     exact: true,
   },
+  { href: "/admin/seo", label: "SEO", icon: Search, exact: true },
   {
     href: "/admin/audit",
     label: "Audit Log",

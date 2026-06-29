@@ -100,8 +100,15 @@ const COMMANDS: Command[] = [
     label: "Analytics",
     href: "/admin/analytics",
     group: "Go to",
-    keywords: "reports stats conversion",
+    keywords: "reports stats conversion roi",
     icon: BarChart3,
+  },
+  {
+    label: "SEO command center",
+    href: "/admin/seo",
+    group: "Go to",
+    keywords: "content health meta sitemap search console rankings",
+    icon: Search,
   },
   {
     label: "Media library",
