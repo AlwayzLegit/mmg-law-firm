@@ -1,0 +1,109 @@
+# Google Search Console disavow file — mmg-lawfirm.com
+# Generated from Semrush referring-domain audit (June 2026).
+#
+# WHAT THIS IS: a list of auto-generated scraper / spam directories pointing
+# at mmg-lawfirm.com. These are the "118.139.x.x" Singapore-hosted link-
+# farm cluster (linksnatcher.*, websiterace.com, getwebsiteworth.com, etc.)
+# plus assorted parked/junk domains. They pass no value and exist only to
+# scrape site stats.
+#
+# HOW TO USE: only upload this if Google Search Console flags a manual action
+# or unnatural-links warning. Google generally ignores junk links on its own,
+# so this is a LOW-PRIORITY, defensive file — not an emergency. Build real
+# citations first (see citation-outreach-targets.md).
+#
+# Upload at: https://search.google.com/search-console/disavow-links
+# Format: one "domain:<host>" per line disavows the entire domain.
+#
+# NOT disavowed (legitimate — left in place): superlawyers.com,
+# expertise.com, clearwaylaw.com, motorcycleaccidentpros.com,
+# top10accidentlawyers.com, toplawdog.com, losabogadoshispanos.us,
+# mmg-lawfirm.com (self), mmglawfirm.squarespace.com (old site).
+#
+# Re-audit before uploading: run the Semrush backlinks_refdomains report
+# again in case the list has grown or any entry has turned legitimate.
+
+domain:all-aged-domains.com
+domain:alljobs.info
+domain:alltopleveldomains.space
+domain:allwebsitesdirectory.com
+domain:australianwebdirectory.pro
+domain:australianwebdirectory.shop
+domain:bestwebstats.com
+domain:blacksonwhites.com
+domain:blinks.monster
+domain:bmwyng.com
+domain:booksreadr.org
+domain:carplz.com
+domain:domain.com.lc
+domain:domainanalysis.org
+domain:domains.com.bz
+domain:domainsc.com
+domain:domainwork.space
+domain:drjack.world
+domain:ecommercebenchmarking.com
+domain:egyptiandirectory.com
+domain:findinfo.in
+domain:gamerkun.com
+domain:gaswagenweser.blogspot.com
+domain:getwebsiteworth.com
+domain:global-ranks.pages.dev
+domain:globalecommerce.org
+domain:goooogla.com
+domain:hebagh.cv
+domain:homefinance.co.in
+domain:imagetou.com
+domain:indexaward.com
+domain:indians.cc
+domain:jikininki.pages.dev
+domain:jobsapp.info
+domain:knows.monster
+domain:knows.sbs
+domain:linksnatcher.art
+domain:linksnatcher.com
+domain:lydiaroyrealestate.com
+domain:marathiladies.com
+domain:marathilaws.com
+domain:mp3fresh.net
+domain:musweb.org
+domain:optimisedwebsites.com
+domain:pagesearch.net
+domain:prashikshan.in
+domain:preparation.co.in
+domain:procycling.org
+domain:pudhe.com
+domain:quero.party
+domain:queries.co.in
+domain:read.org.in
+domain:ready.pro
+domain:runningwebsites.net
+domain:screenshots.wiki
+domain:seoprobox.click
+domain:sergechel.info
+domain:simplewebdirectory.com
+domain:startupwebsolutions.com.au
+domain:takes.homes
+domain:takes.sbs
+domain:taxies.biz
+domain:theface.in
+domain:themumbai.in
+domain:thirty.co.in
+domain:topleveldomains.space
+domain:tunca.org
+domain:tyre.pro
+domain:tyres.pro
+domain:uaewebdirectory.info
+domain:wallpapers.pro
+domain:wants.cfd
+domain:way2check.art
+domain:way2check.cv
+domain:websiterace.com
+domain:websitescrawl.art
+domain:websitesea.com
+domain:webworthchecker.cv
+domain:wonvision.com
+domain:ycm.info
+domain:youtoo.in
+domain:1000.co.in
+domain:2x9.co
+domain:5913231.cc
