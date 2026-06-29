@@ -16,6 +16,7 @@ import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
 import FollowUpControl from "./follow-up-control";
 import LeadActivity, { type ActivityEvent } from "./lead-activity";
+import LeadMessages, { type LeadMessage } from "./lead-messages";
 import NoteCompose from "./note-compose";
 import NoteItem from "./note-item";
 import QuickLog from "./quick-log";
@@ -138,6 +139,30 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
     .order("ts", { ascending: false })
     .limit(50);
   const actorName = new Map(admins.map((a) => [a.userId, a.label]));
+
+  // Message thread (outbound SMS/email + inbound replies).
+  const { data: messageRows } = await supabase
+    .from("lead_messages")
+    .select(
+      "id, channel, direction, subject, body, status, error, author_id, created_at",
+    )
+    .eq("lead_id", id)
+    .order("created_at", { ascending: true })
+    .limit(200);
+  const messages: LeadMessage[] = (messageRows ?? []).map((m) => ({
+    id: m.id as string,
+    channel: m.channel as "sms" | "email",
+    direction: m.direction as "outbound" | "inbound",
+    subject: (m.subject as string | null) ?? null,
+    body: m.body as string,
+    status: m.status as string,
+    error: (m.error as string | null) ?? null,
+    createdAt: m.created_at as string,
+    authorLabel: m.author_id
+      ? (actorName.get(m.author_id as string) ?? "An admin")
+      : null,
+  }));
+
   const activity: ActivityEvent[] = (auditRows ?? []).map((r) => ({
     id: r.id as string,
     action: r.action as string,
@@ -367,6 +392,21 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
         </div>
 
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Communications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeadMessages
+                leadId={lead.id}
+                fullName={lead.full_name}
+                hasPhone={Boolean(lead.phone)}
+                hasEmail={Boolean(lead.email)}
+                messages={messages}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Status</CardTitle>
