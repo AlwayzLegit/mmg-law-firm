@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { MESSAGE_TEMPLATES, fillTemplate } from "@/lib/data/message-templates";
+import { type MessageTemplate, fillTemplate } from "@/lib/data/message-templates";
 
 import { sendLeadMessage } from "./message-actions";
 
@@ -30,6 +30,7 @@ type Props = {
   hasPhone: boolean;
   hasEmail: boolean;
   messages: LeadMessage[];
+  templates: MessageTemplate[];
 };
 
 export default function LeadMessages({
@@ -38,6 +39,7 @@ export default function LeadMessages({
   hasPhone,
   hasEmail,
   messages,
+  templates: allTemplates,
 }: Props) {
   // Default to whichever channel the lead can actually receive.
   const [channel, setChannel] = React.useState<"sms" | "email">(
@@ -47,11 +49,11 @@ export default function LeadMessages({
   const [body, setBody] = React.useState("");
   const [pending, startTransition] = React.useTransition();
 
-  const templates = MESSAGE_TEMPLATES.filter((t) => t.channel === channel);
+  const templates = allTemplates.filter((t) => t.channel === channel);
   const channelDisabled = channel === "sms" ? !hasPhone : !hasEmail;
 
   function applyTemplate(id: string) {
-    const t = MESSAGE_TEMPLATES.find((x) => x.id === id);
+    const t = allTemplates.find((x) => x.id === id);
     if (!t) return;
     setBody(fillTemplate(t.body, fullName));
     if (t.channel === "email" && t.subject) {

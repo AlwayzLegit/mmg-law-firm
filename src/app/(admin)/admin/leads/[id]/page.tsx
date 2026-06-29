@@ -15,6 +15,11 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
 import FollowUpControl from "./follow-up-control";
+import {
+  MESSAGE_TEMPLATES,
+  type MessageTemplate,
+} from "@/lib/data/message-templates";
+
 import LeadActivity, { type ActivityEvent } from "./lead-activity";
 import LeadMessages, { type LeadMessage } from "./lead-messages";
 import NoteCompose from "./note-compose";
@@ -144,6 +149,17 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
     .order("ts", { ascending: false })
     .limit(50);
   const actorName = new Map(admins.map((a) => [a.userId, a.label]));
+
+  // Active message templates (DB-managed, with static fallback if none exist).
+  const { data: templateRows } = await supabase
+    .from("message_templates")
+    .select("id, label, channel, subject, body")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  const templates =
+    templateRows && templateRows.length > 0
+      ? (templateRows as MessageTemplate[])
+      : MESSAGE_TEMPLATES;
 
   // Message thread (outbound SMS/email + inbound replies).
   const { data: messageRows } = await supabase
@@ -428,6 +444,7 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
                 hasPhone={Boolean(lead.phone)}
                 hasEmail={Boolean(lead.email)}
                 messages={messages}
+                templates={templates}
               />
             </CardContent>
           </Card>

@@ -51,7 +51,7 @@ export default function AdminRowActions({
         onChange={onRoleChange}
         disabled={pending || isSelf}
         aria-label="Role"
-        className="h-8 rounded-md border border-border bg-background px-2 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+        className="border-input h-8 rounded-md border bg-transparent px-2 text-xs capitalize outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
       >
         {ROLES.map((r) => (
           <option key={r} value={r} className="capitalize">

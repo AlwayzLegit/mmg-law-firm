@@ -125,6 +125,13 @@ const COMMANDS: Command[] = [
     icon: Settings,
   },
   {
+    label: "Message templates",
+    href: "/admin/settings/templates",
+    group: "Leads",
+    keywords: "canned replies sms email communications",
+    icon: Users,
+  },
+  {
     label: "Audit log",
     href: "/admin/audit",
     group: "Go to",

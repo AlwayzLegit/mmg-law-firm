@@ -68,6 +68,23 @@ export default async function AdminSettingsPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <SecurityCard />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Communications</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <p className="text-muted-foreground">
+              Manage the canned SMS and email templates used in the lead
+              Communications panel.
+            </p>
+            <Link
+              href="/admin/settings/templates"
+              className="text-primary mt-3 inline-block font-medium hover:underline"
+            >
+              Edit message templates →
+            </Link>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
