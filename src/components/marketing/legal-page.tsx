@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import type { ResolvedLegalPage } from "@/lib/data/legal-page-queries";
 
 type Props = {
@@ -16,6 +17,12 @@ type Props = {
 export function LegalPagePresentation({ page }: Props) {
   return (
     <article className="container-prose py-16">
+      <BreadcrumbJsonLd
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: page.title, path: `/legal/${page.slug}` },
+        ]}
+      />
       <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
         Legal
       </p>

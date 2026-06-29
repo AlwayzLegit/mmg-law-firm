@@ -54,7 +54,7 @@ export default function StatusControl({
           name="status"
           value={status}
           onChange={(e) => setStatus(e.currentTarget.value)}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm capitalize focus:outline-none focus:ring-2 focus:ring-ring"
+          className="h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-sm capitalize shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(20,30,80,0.04)] transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           {LEAD_STATUSES.map((s) => (
             <option key={s} value={s} className="capitalize">
