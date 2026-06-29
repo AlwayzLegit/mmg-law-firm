@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   BarChart3,
   Building2,
+  CalendarCheck,
   FileText,
   Gavel,
   Image as ImageIcon,
@@ -44,6 +45,13 @@ const COMMANDS: Command[] = [
     href: "/admin",
     group: "Go to",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Today",
+    href: "/admin/today",
+    group: "Go to",
+    keywords: "tasks agenda follow-ups due to-do",
+    icon: CalendarCheck,
   },
   { label: "Leads", href: "/admin/leads", group: "Go to", icon: Users },
   {

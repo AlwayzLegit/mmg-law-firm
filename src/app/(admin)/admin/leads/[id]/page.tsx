@@ -22,6 +22,11 @@ import NoteItem from "./note-item";
 import QuickLog from "./quick-log";
 import StatusControl from "./status-control";
 import TagsControl from "./tags-control";
+import {
+  TaskList,
+  AddTaskForm,
+  type TaskItem,
+} from "../../tasks/task-ui";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -160,6 +165,26 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
     createdAt: m.created_at as string,
     authorLabel: m.author_id
       ? (actorName.get(m.author_id as string) ?? "An admin")
+      : null,
+  }));
+
+  // Open + recently-done tasks for this lead.
+  const { data: taskRows } = await supabase
+    .from("tasks")
+    .select("id, title, due_at, done, lead_id, assigned_to")
+    .eq("lead_id", id)
+    .order("done", { ascending: true })
+    .order("due_at", { ascending: true, nullsFirst: false })
+    .limit(50);
+  const leadTasks: TaskItem[] = (taskRows ?? []).map((t) => ({
+    id: t.id as string,
+    title: t.title as string,
+    dueAt: (t.due_at as string | null) ?? null,
+    done: Boolean(t.done),
+    leadId: id,
+    leadName: null,
+    assigneeLabel: t.assigned_to
+      ? (actorName.get(t.assigned_to as string) ?? null)
       : null,
   }));
 
@@ -446,6 +471,20 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
               <FollowUpControl
                 leadId={lead.id}
                 current={lead.follow_up_at ?? null}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tasks</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <AddTaskForm leadId={lead.id} />
+              <TaskList
+                tasks={leadTasks}
+                showLead={false}
+                emptyText="No tasks for this lead yet."
               />
             </CardContent>
           </Card>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   LayoutDashboard,
+  CalendarCheck,
   Users,
   FileText,
   Image as ImageIcon,
@@ -22,6 +23,7 @@ export const metadata = {
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/today", label: "Today", icon: CalendarCheck, exact: true },
   { href: "/admin/leads", label: "Leads", icon: Users, exact: false },
   {
     href: "/admin/content/pages",

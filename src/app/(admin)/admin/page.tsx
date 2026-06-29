@@ -38,6 +38,7 @@ export default async function AdminDashboardPage() {
     total30,
     { count: dueCount },
     { count: unassignedNew },
+    { count: tasksDue },
     { count: pendingTestimonials },
     { count: draftLocationPages },
     { count: stalePages },
@@ -72,6 +73,13 @@ export default async function AdminDashboardPage() {
       .select("id", { count: "exact", head: true })
       .eq("status", "new")
       .is("assigned_to", null),
+    // Open tasks that are due now or overdue.
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("done", false)
+      .not("due_at", "is", null)
+      .lte("due_at", nowIso),
     // Testimonials awaiting attorney approval.
     supabase
       .from("testimonials")
@@ -139,6 +147,11 @@ export default async function AdminDashboardPage() {
   }
 
   const attention: Array<{ label: string; href: string; count: number }> = [
+    {
+      label: "task(s) due or overdue",
+      href: "/admin/today",
+      count: tasksDue ?? 0,
+    },
     {
       label: "follow-up(s) due",
       href: "/admin/leads?due=1",
