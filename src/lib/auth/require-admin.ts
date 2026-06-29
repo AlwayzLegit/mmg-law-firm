@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { getServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -26,7 +27,7 @@ export type AdminProfile = {
  * device checks but must NOT bounce the user back to onboarding (that would
  * loop). It passes this flag to skip only the password-set redirect.
  */
-export async function requireAdmin(opts?: {
+export const requireAdmin = cache(async function requireAdmin(opts?: {
   allowUnonboarded?: boolean;
 }): Promise<{
   user: { id: string; email: string | null };
@@ -74,4 +75,4 @@ export async function requireAdmin(opts?: {
     user: { id: user.id, email: user.email ?? null },
     profile: profile as AdminProfile,
   };
-}
+});

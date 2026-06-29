@@ -8,12 +8,14 @@ import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
 import DeleteButton from "./delete-button";
 import HeadshotUpload from "./headshot-upload";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 type Props = { params: Promise<{ id: string }> };
 
 const SELECT_COLS = `id, slug, full_name, display_name, job_title, bar_state, bar_number, bar_admission_date, headshot_url, headshot_alt, short_bio, bio_md, law_school, law_school_year, undergrad_school, undergrad_degree, undergrad_year, federal_court_admissions, bar_associations, honors_md, languages, avvo_url, justia_url, linkedin_url, super_lawyers_url, display_order, is_published, created_at, updated_at` as const;
 
 export default async function AttorneyProfileEditor({ params }: Props) {
+  await requireAdmin();
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data, error } = await supabase

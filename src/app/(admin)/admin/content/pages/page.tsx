@@ -6,11 +6,13 @@ import { getServerSupabase } from "@/lib/supabase/server";
 
 import BulkReviewButton from "./bulk-review-button";
 import ReviewRowButton from "./review-row-button";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 const STALE_AFTER_DAYS = 365;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function ContentPagesAdmin() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const [counties, cities, locationPages, practiceAreas, attorneys, legal] =
     await Promise.all([

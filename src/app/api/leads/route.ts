@@ -220,8 +220,9 @@ export async function POST(request: NextRequest) {
     }
   } else {
     if (process.env.NODE_ENV !== "production") {
-      console.info("[lead-stub] no Supabase configured — discarding:", {
-        name: parsed.data.full_name,
+      // No PII in logs (firm hard rule) — record only that a lead was
+      // discarded and whether it was flagged spam, never the name/contact.
+      console.info("[lead-stub] no Supabase configured — discarding lead", {
         spam: isSpam,
       });
     }

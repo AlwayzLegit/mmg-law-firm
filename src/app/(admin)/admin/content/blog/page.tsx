@@ -6,6 +6,7 @@ import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewPostForm from "./new-post-form";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 const PAGE_SIZE = 50;
 const STATUS_OPTIONS = ["all", "published", "draft"] as const;
@@ -16,6 +17,7 @@ export default async function ContentBlogAdmin({
 }: {
   searchParams: Promise<{ page?: string; q?: string; status?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const from = (page - 1) * PAGE_SIZE;

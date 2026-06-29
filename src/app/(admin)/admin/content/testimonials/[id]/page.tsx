@@ -7,10 +7,12 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import EditForm from "./edit-form";
 import ApproveControl from "./approve-control";
 import DeleteButton from "./delete-button";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function TestimonialEditorPage({ params }: Props) {
+  await requireAdmin();
   const { id } = await params;
   const supabase = await getServerSupabase();
 

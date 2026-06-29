@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewAttorneyForm from "./new-attorney-form";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export default async function ContentAttorneysAdmin() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data, error } = await supabase
     .from("attorney_profiles")

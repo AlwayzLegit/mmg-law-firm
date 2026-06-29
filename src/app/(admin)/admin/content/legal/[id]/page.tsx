@@ -11,12 +11,14 @@ import {
 import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
 import ReviewButton from "./review-button";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 type Props = { params: Promise<{ id: string }> };
 
 const SELECT_COLS = `id, slug, title, subtitle, body_md, meta_description, effective_date, last_reviewed_at, is_published, display_order, created_at, updated_at` as const;
 
 export default async function LegalPageEditor({ params }: Props) {
+  await requireAdmin();
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data, error } = await supabase

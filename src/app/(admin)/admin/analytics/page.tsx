@@ -12,6 +12,7 @@ import {
   STATUS_ORDER,
   type Ranked,
 } from "@/lib/data/lead-analytics";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 const RANGES = [7, 30, 90, 365] as const;
 type Range = (typeof RANGES)[number];
@@ -21,6 +22,7 @@ export default async function AdminAnalyticsPage({
 }: {
   searchParams: Promise<{ range?: string }>;
 }) {
+  await requireAdmin();
   const { range: rangeParam } = await searchParams;
   const parsedRange = Number.parseInt(rangeParam ?? "", 10);
   const range: Range = (RANGES as readonly number[]).includes(parsedRange)

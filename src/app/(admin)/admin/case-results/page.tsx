@@ -7,12 +7,14 @@ import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewCaseResultForm from "./new-case-result-form";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export default async function CaseResultsAdmin({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const rawQ = (params.q ?? "").trim();
   const q = sanitize(rawQ);

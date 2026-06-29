@@ -2,8 +2,10 @@ import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export default async function ContentPracticeAreasAdmin() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data, error } = await supabase
     .from("practice_areas")

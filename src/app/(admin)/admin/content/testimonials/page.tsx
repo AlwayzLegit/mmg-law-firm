@@ -7,12 +7,14 @@ import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewTestimonialForm from "./new-testimonial-form";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export default async function ContentTestimonialsAdmin({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const rawQ = (params.q ?? "").trim();
   const q = sanitize(rawQ);

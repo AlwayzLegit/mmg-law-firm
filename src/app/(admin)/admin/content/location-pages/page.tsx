@@ -5,6 +5,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 
 import CreateRow from "./create-row";
 import LocationPagesTable from "./location-pages-table";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 const STALE_AFTER_DAYS = 365;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -27,6 +28,7 @@ export default async function LocationPagesIndex({
 }: {
   searchParams: Promise<{ needs?: string }>;
 }) {
+  await requireAdmin();
   const { needs } = await searchParams;
   const needsAngle = needs === "angle";
   const supabase = await getServerSupabase();

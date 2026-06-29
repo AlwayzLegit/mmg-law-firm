@@ -3,11 +3,13 @@ import { AlertTriangle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 const STALE_AFTER_DAYS = 365;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function ContentLegalAdmin() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data, error } = await supabase
     .from("legal_pages")

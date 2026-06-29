@@ -6,6 +6,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 
 import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -27,6 +28,7 @@ type Row = {
 };
 
 export default async function LocationPageDetail({ params }: Props) {
+  await requireAdmin();
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data, error } = await supabase

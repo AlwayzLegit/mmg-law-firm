@@ -9,12 +9,14 @@ import type { FaqItem } from "@/lib/data/faqs";
 
 import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 type Props = { params: Promise<{ id: string }> };
 
 const SELECT_COLS = `id, slug, name, intro_md, body_md, subtopics_json, what_to_do_json, faq_json, meta_description, display_order, is_published, created_at, updated_at` as const;
 
 export default async function PracticeAreaEditor({ params }: Props) {
+  await requireAdmin();
   const { id } = await params;
   const supabase = await getServerSupabase();
   const { data, error } = await supabase

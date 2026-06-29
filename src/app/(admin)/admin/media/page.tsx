@@ -2,12 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
 import MediaManager, { type MediaItem } from "./media-manager";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export const dynamic = "force-dynamic";
 
 const BUCKET = "media";
 
 export default async function MediaPage() {
+  await requireAdmin();
   const supabase = getServiceSupabase();
   const { data, error } = await supabase.storage.from(BUCKET).list("", {
     limit: 200,

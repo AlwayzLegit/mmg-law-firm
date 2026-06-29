@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 type Row = {
   id: string;
@@ -14,6 +15,7 @@ type Row = {
 };
 
 export default async function CountiesIndex() {
+  await requireAdmin();
   const supabase = await getServerSupabase();
   const { data, error } = await supabase
     .from("counties")
