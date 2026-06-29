@@ -109,6 +109,8 @@ export default async function LeadsPage({
         count: "exact",
       },
     )
+    // Merged duplicates drop out of every list view.
+    .is("merged_into", null)
     .order("created_at", { ascending: false })
     .range(from, to);
 

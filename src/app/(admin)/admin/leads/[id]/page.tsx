@@ -22,6 +22,7 @@ import {
 
 import LeadActivity, { type ActivityEvent } from "./lead-activity";
 import LeadMessages, { type LeadMessage } from "./lead-messages";
+import MergeButton from "./merge-button";
 import NoteCompose from "./note-compose";
 import NoteItem from "./note-item";
 import QuickLog from "./quick-log";
@@ -83,6 +84,7 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
       .select("id, full_name, status, created_at, phone, email")
       .eq("phone", lead.phone)
       .neq("id", id)
+      .is("merged_into", null)
       .order("created_at", { ascending: false })
       .limit(10);
     for (const r of (data ?? []) as Related[]) relatedMap.set(r.id, r);
@@ -93,6 +95,7 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
       .select("id, full_name, status, created_at, phone, email")
       .eq("email", lead.email)
       .neq("id", id)
+      .is("merged_into", null)
       .order("created_at", { ascending: false })
       .limit(10);
     for (const r of (data ?? []) as Related[]) relatedMap.set(r.id, r);
@@ -307,26 +310,32 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
                     if (lead.email && r.email === lead.email)
                       matches.push("email");
                     return (
-                      <li key={r.id} className="py-2 first:pt-0 last:pb-0">
+                      <li
+                        key={r.id}
+                        className="flex items-center justify-between gap-3 py-2 text-sm first:pt-0 last:pb-0"
+                      >
                         <Link
                           href={`/admin/leads/${r.id}`}
-                          className="flex items-center justify-between gap-3 text-sm"
+                          className="min-w-0"
                         >
-                          <span className="min-w-0">
-                            <span className="hover:text-primary font-medium">
-                              {r.full_name}
-                            </span>
-                            <span className="text-muted-foreground block text-xs">
-                              {new Date(r.created_at).toLocaleDateString(
-                                "en-US",
-                              )}{" "}
-                              · matches {matches.join(" + ")}
-                            </span>
+                          <span className="hover:text-primary font-medium">
+                            {r.full_name}
                           </span>
-                          <span className="bg-secondary flex-none rounded-md px-2 py-0.5 text-xs font-medium capitalize">
-                            {r.status}
+                          <span className="text-muted-foreground block text-xs">
+                            {new Date(r.created_at).toLocaleDateString("en-US")}{" "}
+                            · matches {matches.join(" + ")}
                           </span>
                         </Link>
+                        <span className="flex flex-none items-center gap-2">
+                          <span className="bg-secondary rounded-md px-2 py-0.5 text-xs font-medium capitalize">
+                            {r.status}
+                          </span>
+                          <MergeButton
+                            primaryId={lead.id}
+                            duplicateId={r.id}
+                            duplicateName={r.full_name}
+                          />
+                        </span>
                       </li>
                     );
                   })}

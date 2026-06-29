@@ -356,6 +356,93 @@ export async function assignLead(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+const MergeInput = z.object({
+  primaryId: z.string().uuid(),
+  duplicateId: z.string().uuid(),
+});
+
+/**
+ * Merge a duplicate lead into a primary one. Reattaches the duplicate's notes,
+ * messages, tasks, and audit history to the primary, stamps the duplicate with
+ * merged_into (so it drops out of active views), and records a note on the
+ * primary. The duplicate row is kept — not deleted — for an audit trail.
+ */
+export async function mergeLead(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+
+  const parsed = MergeInput.safeParse({
+    primaryId: formData.get("primaryId"),
+    duplicateId: formData.get("duplicateId"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const { primaryId, duplicateId } = parsed.data;
+  if (primaryId === duplicateId) {
+    return { ok: false, error: "Can't merge a lead into itself." };
+  }
+
+  const supabase = await getServerSupabase();
+
+  // Confirm both exist and the duplicate isn't already merged.
+  const { data: dup } = await supabase
+    .from("leads")
+    .select("id, full_name, merged_into")
+    .eq("id", duplicateId)
+    .maybeSingle();
+  if (!dup) return { ok: false, error: "Duplicate lead not found." };
+  if (dup.merged_into) {
+    return { ok: false, error: "That lead is already merged." };
+  }
+
+  // Reattach child records to the primary.
+  await supabase
+    .from("lead_notes")
+    .update({ lead_id: primaryId })
+    .eq("lead_id", duplicateId);
+  await supabase
+    .from("lead_messages")
+    .update({ lead_id: primaryId })
+    .eq("lead_id", duplicateId);
+  await supabase
+    .from("tasks")
+    .update({ lead_id: primaryId })
+    .eq("lead_id", duplicateId);
+  await supabase
+    .from("audit_log")
+    .update({ entity_id: primaryId })
+    .eq("entity", "leads")
+    .eq("entity_id", duplicateId);
+
+  // Stamp the duplicate and take it out of the active pipeline.
+  const { error: stampErr } = await supabase
+    .from("leads")
+    .update({
+      merged_into: primaryId,
+      status: "rejected",
+      rejection_reason: "Merged into another lead (duplicate).",
+    })
+    .eq("id", duplicateId);
+  if (stampErr) return { ok: false, error: stampErr.message };
+
+  // Leave a trail on the primary.
+  await supabase.from("lead_notes").insert({
+    lead_id: primaryId,
+    author_id: user.id,
+    body: `🔗 Merged duplicate lead "${dup.full_name}" into this record.`,
+  });
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: primaryId,
+    action: "lead_merged",
+    diff: { merged_from: duplicateId },
+  });
+
+  revalidatePath(`/admin/leads/${primaryId}`);
+  revalidatePath("/admin/leads");
+  return { ok: true };
+}
+
 const FollowUpInput = z.object({
   leadId: z.string().uuid(),
   // datetime-local value ("YYYY-MM-DDTHH:MM") or empty to clear.
