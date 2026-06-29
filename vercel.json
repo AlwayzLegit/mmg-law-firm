@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/daily-agenda",
       "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/cron/publish-scheduled",
+      "schedule": "0 * * * *"
     }
   ]
 }
