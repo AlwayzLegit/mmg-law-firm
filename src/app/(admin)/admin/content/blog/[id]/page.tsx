@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import ContentHistory from "@/components/admin/content-history";
+
 import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
 import DeleteButton from "./delete-button";
@@ -137,6 +139,8 @@ export default async function BlogPostEditor({ params }: Props) {
               </p>
             </CardContent>
           </Card>
+
+          <ContentHistory entity="blog_posts" entityId={data.id} />
         </div>
       </div>
     </div>

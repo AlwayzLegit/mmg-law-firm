@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import ContentHistory from "@/components/admin/content-history";
+
 import EditForm from "./edit-form";
 import PublishToggle from "./publish-toggle";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -106,6 +108,8 @@ export default async function CountyEditorPage({ params }: Props) {
               <Pair label="Short name" value={data.short_name} />
             </CardContent>
           </Card>
+
+          <ContentHistory entity="counties" entityId={data.id} />
         </div>
       </div>
     </div>

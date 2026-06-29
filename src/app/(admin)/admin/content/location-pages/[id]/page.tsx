@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import ContentHistory from "@/components/admin/content-history";
+
 import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -148,6 +150,8 @@ export default async function LocationPageDetail({ params }: Props) {
               />
             </CardContent>
           </Card>
+
+          <ContentHistory entity="location_pages" entityId={row.id} />
         </div>
       </div>
     </div>

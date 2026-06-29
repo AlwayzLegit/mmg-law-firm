@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
+import ContentHistory from "@/components/admin/content-history";
+
 import EditForm from "./edit-form";
 import PublishToggle from "./publish-toggle";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -133,6 +135,8 @@ export default async function CityEditorPage({ params }: Props) {
               />
             </CardContent>
           </Card>
+
+          <ContentHistory entity="cities" entityId={row.id} />
         </div>
       </div>
     </div>

@@ -2,13 +2,23 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Eye, EyeOff, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarCheck,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { bulkSetLocationPagePublished } from "./actions";
+import {
+  bulkSetLocationPagePublished,
+  bulkTouchReviewed,
+} from "./actions";
 
 export type LpRow = {
   id: string;
@@ -60,6 +70,23 @@ export default function LocationPagesTable({ rows }: { rows: LpRow[] }) {
     });
   }
 
+  function runReview() {
+    if (selected.size === 0) return;
+    const fd = new FormData();
+    for (const id of selected) fd.append("ids", id);
+    startTransition(async () => {
+      const result = await bulkTouchReviewed(fd);
+      if (result.ok) {
+        toast.success(
+          `Marked ${result.updated} page${result.updated === 1 ? "" : "s"} reviewed.`,
+        );
+        setSelected(new Set());
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
+
   if (rows.length === 0) return null;
 
   return (
@@ -87,6 +114,16 @@ export default function LocationPagesTable({ rows }: { rows: LpRow[] }) {
             >
               <EyeOff className="h-3.5 w-3.5" aria-hidden />
               Unpublish
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runReview}
+              disabled={pending}
+              className="gap-1.5"
+            >
+              <CalendarCheck className="h-3.5 w-3.5" aria-hidden />
+              Mark reviewed
             </Button>
             <Button
               size="sm"

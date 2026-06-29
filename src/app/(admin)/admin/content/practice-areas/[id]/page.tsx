@@ -7,6 +7,8 @@ import { PRACTICE_AREA_CONTENT } from "@/lib/data/practice-area-content";
 import type { Subtopic } from "@/lib/data/practice-area-content";
 import type { FaqItem } from "@/lib/data/faqs";
 
+import ContentHistory from "@/components/admin/content-history";
+
 import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
 import { requireAdmin } from "@/lib/auth/require-admin";
@@ -162,6 +164,8 @@ export default async function PracticeAreaEditor({ params }: Props) {
               </p>
             </CardContent>
           </Card>
+
+          <ContentHistory entity="practice_areas" entityId={data.id} />
         </div>
       </div>
     </div>
