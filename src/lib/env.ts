@@ -94,8 +94,18 @@ function loadEnv() {
   if (!parsed.success) {
     const flat = parsed.error.flatten().fieldErrors;
     const msg = `Invalid environment configuration: ${JSON.stringify(flat, null, 2)}`;
-    if (isProd) throw new Error(msg);
-    console.warn(`[env] ${msg}`);
+    // Don't hard-throw in production — a typo in a single env value (e.g.
+    // pasting `us.i.posthog.com` into NEXT_PUBLIC_POSTHOG_HOST without the
+    // scheme, or a stray newline in RESEND_FROM_EMAIL) would otherwise crash
+    // the entire build. Surface the bad fields loudly and fall back to
+    // defaults so the rest of the site still ships; affected call sites still
+    // throw at point of use when their specific var is unusable.
+    console.error(`[env] ${msg}`);
+    if (isProd) {
+      console.error(
+        `[env] Above values were ignored for this build. Fix them in Vercel and redeploy.`,
+      );
+    }
     return ServerEnvSchema.parse({});
   }
 
