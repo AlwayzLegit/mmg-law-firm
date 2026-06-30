@@ -7,7 +7,9 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { CaseResultCard } from "@/components/marketing/case-result-card";
+import { CompensationSection } from "@/components/marketing/compensation-section";
 import { CtaBand } from "@/components/marketing/cta-band";
+import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
@@ -222,6 +224,11 @@ export default async function PracticeAreaPage({ params }: Props) {
               </section>
             ) : null}
 
+            <CompensationSection
+              nounSingular={area.nounSingular}
+              category={area.category}
+            />
+
             {content.process.length > 0 ? (
               <section className="mt-12">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
@@ -268,6 +275,8 @@ export default async function PracticeAreaPage({ params }: Props) {
                 </p>
               </section>
             ) : null}
+
+            <DeadlinesCallout category={area.category} />
 
             {inlineResults.length > 0 ? (
               <section className="mt-12">

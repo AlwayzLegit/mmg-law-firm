@@ -39,7 +39,7 @@
 |---|---|---|
 | 2.1 | Phone link in header on mobile | `tel:+1818…` opens dialer |
 | 2.2 | Click logo on a sub-page | Returns to `/` |
-| 2.3 | Header nav: hover Practice Areas / Locations | Dropdowns open; `Esc` closes |
+| 2.3 | Header nav: click "Practice Areas" / "Locations" | Each is a direct link to its index page (no hover dropdown — this design uses flat top-nav by spec) |
 | 2.4 | Footer | Contains firm name + Glendale address + phone + email + the 4 CRPC disclaimers (general, results, testimonial, advertising) |
 | 2.5 | Resize to mobile (375px) | Sticky mobile CTA bar appears at bottom with phone + "Free consult" buttons |
 | 2.6 | Tab through header | Visible focus rings; no keyboard trap |
