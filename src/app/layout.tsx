@@ -56,6 +56,17 @@ export const metadata: Metadata = {
     "Armenian-speaking attorney",
     FIRM.legalName,
   ],
+  // Google Search Console site-verification. When the token is set,
+  // Next.js emits <meta name="google-site-verification" …> in <head> on
+  // every page, satisfying GSC's "HTML tag" verification method.
+  ...(env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
+
   // No explicit `icons` — Next.js App Router auto-discovers
   // src/app/icon.png and generates favicons in every required size.
 };

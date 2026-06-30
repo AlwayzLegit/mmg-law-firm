@@ -29,6 +29,12 @@ const ServerEnvSchema = z.object({
 
   NEXT_PUBLIC_GA_ID: z.string().default(""),
 
+  // Google Search Console verification token. Get from GSC →
+  // Add property → URL prefix → "HTML tag" method → copy the value of
+  // content="…" (just the token, NOT the full meta tag). When set, the meta
+  // tag is emitted in <head> sitewide and GSC's verification check passes.
+  NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: z.string().default(""),
+
   // Sentry — error tracking. Public DSN is fine to expose; the auth token
   // is used at build time only by the Next.js plugin to upload source maps.
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().or(z.literal("")).default(""),
