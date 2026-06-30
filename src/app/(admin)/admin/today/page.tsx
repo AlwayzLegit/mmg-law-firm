@@ -36,11 +36,16 @@ export default async function TodayPage() {
     ]),
   );
 
-  // Open tasks, with their lead's name.
+  // Open tasks + tasks completed today, so the moment-of-completion strike-
+  // through stays visible until tomorrow instead of vanishing on toggle.
+  const sinceTodayIso = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
   const { data: taskRows } = await supabase
     .from("tasks")
-    .select("id, title, due_at, done, lead_id, assigned_to, leads(full_name)")
-    .eq("done", false)
+    .select(
+      "id, title, due_at, done, done_at, lead_id, assigned_to, leads(full_name)",
+    )
+    .or(`done.eq.false,done_at.gte.${sinceTodayIso}`)
+    .order("done", { ascending: true })
     .order("due_at", { ascending: true, nullsFirst: false })
     .limit(200);
 
@@ -48,7 +53,7 @@ export default async function TodayPage() {
     id: t.id as string,
     title: t.title as string,
     dueAt: (t.due_at as string | null) ?? null,
-    done: false,
+    done: Boolean(t.done),
     leadId: (t.lead_id as string | null) ?? null,
     leadName: leadFullName(t.leads),
     assigneeLabel: t.assigned_to
