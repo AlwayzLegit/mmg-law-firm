@@ -30,6 +30,48 @@
 > street address — only relative links to `/contact`. Do not paste contact details
 > into `body_md` when publishing.
 
+## Hero image
+
+`hero_image_url` is intentionally **null** until a real file is uploaded to the
+Supabase `media` bucket. `next.config.ts` only permits
+`https://*.supabase.co/storage/v1/object/public/**`, so an external URL would fail
+`next/image` at render. The blog listing falls back to gradient art meanwhile, so
+the post is publishable without it.
+
+Generated a candidate but could not persist it: this sandbox's egress policy denies
+`hf.space` (403 on CONNECT), so the bytes could not be downloaded here. Reproduce it
+with these exact parameters:
+
+| Field | Value |
+|---|---|
+| Model | Z-Image-Turbo (Hugging Face Space `mcp-tools/Z-Image-Turbo`) |
+| Resolution | `2048x1152 ( 16:9 )` |
+| Steps | 10 |
+| Shift | 3 (default) |
+| Seed | **568997** (set `random_seed: false` to reproduce) |
+
+Prompt:
+
+> Editorial photograph, a single modern motorcycle parked on the shoulder of an
+> empty curving canyon road in the hills above Los Angeles, golden hour, warm low
+> side lighting, long shadows across the asphalt, dry California hillsides and hazy
+> distant city skyline, shallow depth of field, cinematic muted color grade with
+> deep navy shadows, calm serious contemplative mood, no people, no text, no logos,
+> no license plate, high-end magazine photography, sharp detail
+
+Deliberate content choices, for CRPC 7.1 safety — keep these constraints if the
+image is re-sourced or replaced with stock:
+
+- **No crash, wreckage, injury, or emergency-response imagery.** A depicted crash
+  scene can read as documentation of an actual case.
+- **No people and no identifiable faces** — avoids implying a real client.
+- **No readable plates, badges, or brand logos.**
+- **Stationary motorcycle, not action riding** — avoids a recklessness read on a
+  page whose subject is rider fault.
+
+Alt text to set on upload: `Motorcycle parked on a canyon road above Los Angeles at
+golden hour` — descriptive, not keyword-stuffed.
+
 ---
 
 ## How a Beverly Hills Motorcycle Accident Lawyer Can Maximize Your Compensation
