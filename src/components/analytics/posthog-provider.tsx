@@ -59,7 +59,15 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   if (!POSTHOG_KEY) return <>{children}</>;
   return (
     <PHProvider client={posthog}>
-      <PageviewTracker />
+      {/* PageviewTracker calls useSearchParams(), which opts the calling tree
+       *  out of prerendering unless it sits under a Suspense boundary. This
+       *  provider wraps the root layout, so without this boundary EVERY static
+       *  page fails to prerender — but only once NEXT_PUBLIC_POSTHOG_KEY is
+       *  set, since the tracker isn't rendered at all without it. That's what
+       *  made the build fail on redeploy after the key was added in Vercel. */}
+      <React.Suspense fallback={null}>
+        <PageviewTracker />
+      </React.Suspense>
       {children}
     </PHProvider>
   );
