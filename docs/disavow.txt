@@ -1,89 +1,106 @@
 # Google Search Console disavow file — mmg-lawfirm.com
-# Generated from Semrush referring-domain audit (June 2026).
+# Regenerated 2026-08-23 from Semrush backlinks_refdomains (root_domain).
 #
-# WHAT THIS IS: a list of auto-generated scraper / spam directories pointing
-# at mmg-lawfirm.com. These are the "118.139.x.x" Singapore-hosted link-
-# farm cluster (linksnatcher.*, websiterace.com, getwebsiteworth.com, etc.)
-# plus assorted parked/junk domains. They pass no value and exist only to
-# scrape site stats.
+# Referring domains in profile : 225
+# Disavowed                    : 216
+# Retained                     : 9
 #
-# HOW TO USE: only upload this if Google Search Console flags a manual action
-# or unnatural-links warning. Google generally ignores junk links on its own,
-# so this is a LOW-PRIORITY, defensive file — not an emergency. Build real
-# citations first (see citation-outreach-targets.md).
+# Authority Score distribution: 214 of 225 referring domains score <= 6,
+# and 158 of those score exactly 2. Six domains score >= 20. The profile is
+# overwhelmingly scraper/PBN noise built on a handful of shared IPs.
+#
+# RETAINED (deliberately NOT disavowed):
+#   superlawyers.com               AS 60  legitimate legal directory
+#   expertise.com                  AS 44  legitimate local-business directory
+#   trustanalytica.org             AS 37  real review/directory site
+#   clearwaylaw.com                AS 27  real law firm
+#   losabogadoshispanos.us         AS 7   Spanish-language legal directory
+#   mmg-lawfirm.com                AS 7   self — never disavow
+#   top10accidentlawyers.com       AS 5   legal vertical directory
+#   motorcycleaccidentpros.com     AS 2   legal vertical directory
+#   toplawdog.com                  AS 2   legal vertical directory
 #
 # Upload at: https://search.google.com/search-console/disavow-links
-# Format: one "domain:<host>" per line disavows the entire domain.
-#
-# NOT disavowed (legitimate — left in place): superlawyers.com,
-# expertise.com, clearwaylaw.com, motorcycleaccidentpros.com,
-# top10accidentlawyers.com, toplawdog.com, losabogadoshispanos.us,
-# mmg-lawfirm.com (self), mmglawfirm.squarespace.com (old site).
-#
-# Re-audit before uploading: run the Semrush backlinks_refdomains report
-# again in case the list has grown or any entry has turned legitimate.
+# Disavow is a last resort; it does not remove links, it asks Google to
+# ignore them. It will NOT by itself raise Authority Score — earning real
+# referring domains is the only thing that does.
 
-domain:all-aged-domains.com
-domain:alljobs.info
-domain:alltopleveldomains.space
+# --- *accidentlawyer.com PBN cluster (17 domains) ---
+domain:bellfloweraccidentlawyer.com
+domain:bellflowercaraccidentlawyer.com
+domain:buenaparkaccidentlawyer.com
+domain:carsonaccidentlawyer.com
+domain:carsoncaraccidentlawyer.com
+domain:coronaaccidentlawyer.com
+domain:downeyaccidentlawyer.com
+domain:downeycaraccidentlawyer.com
+domain:huntingtonparkaccidentlawyer.com
+domain:huntingtonparkcaraccidentlawyer.com
+domain:lancastercaraccidentlawyer.com
+domain:lapuenteaccidentlawyer.com
+domain:lapuentecaraccidwntlawyer.com
+domain:montebelloaccidentlawyer.com
+domain:montebellocaraccidentlawyer.com
+domain:norwalkcaraccidentlawyer.com
+domain:torranceaccidentlawyer.com
+
+# --- GoDaddy directory farm (11 domains) ---
 domain:allwebsitesdirectory.com
-domain:australianwebdirectory.pro
 domain:australianwebdirectory.shop
 domain:bestwebstats.com
-domain:blacksonwhites.com
-domain:blinks.monster
-domain:bmwyng.com
-domain:booksreadr.org
-domain:carplz.com
+domain:directorylinkservice.com
 domain:domain.com.lc
 domain:domainanalysis.org
 domain:domains.com.bz
 domain:domainsc.com
-domain:domainwork.space
-domain:drjack.world
-domain:ecommercebenchmarking.com
 domain:egyptiandirectory.com
+domain:musweb.org
+domain:pudhe.com
+
+# --- Moldova link farm (bye.fyi et al, single IP) (8 domains) ---
+domain:atomizelink.icu
+domain:bye.fyi
+domain:byteshort.xyz
+domain:creativeposts.top
+domain:drjack.world
+domain:optimizeflow.top
+domain:quero.party
+domain:screenshots.wiki
+
+# --- Singapore link-farm (52 domains) ---
+domain:1000.co.in
+domain:2x9.co
+domain:5913231.cc
+domain:alljobs.info
+domain:alltopleveldomains.space
+domain:blacksonwhites.com
+domain:booksreadr.org
+domain:carplz.com
+domain:cheapsmmprovider.online
+domain:domainwork.space
+domain:ecommercebenchmarking.com
 domain:findinfo.in
 domain:gamerkun.com
-domain:gaswagenweser.blogspot.com
+domain:getonline.co.in
 domain:getwebsiteworth.com
-domain:global-ranks.pages.dev
 domain:globalecommerce.org
-domain:goooogla.com
 domain:hebagh.cv
 domain:homefinance.co.in
-domain:imagetou.com
 domain:indexaward.com
 domain:indians.cc
-domain:jikininki.pages.dev
-domain:jobsapp.info
-domain:knows.monster
-domain:knows.sbs
 domain:linksnatcher.art
 domain:linksnatcher.com
-domain:lydiaroyrealestate.com
-domain:marathiladies.com
-domain:marathilaws.com
 domain:mp3fresh.net
-domain:musweb.org
 domain:optimisedwebsites.com
 domain:pagesearch.net
 domain:prashikshan.in
 domain:preparation.co.in
 domain:procycling.org
-domain:pudhe.com
-domain:quero.party
 domain:queries.co.in
 domain:read.org.in
 domain:ready.pro
 domain:runningwebsites.net
-domain:screenshots.wiki
-domain:seoprobox.click
-domain:sergechel.info
 domain:simplewebdirectory.com
-domain:startupwebsolutions.com.au
-domain:takes.homes
-domain:takes.sbs
 domain:taxies.biz
 domain:theface.in
 domain:themumbai.in
@@ -94,7 +111,6 @@ domain:tyre.pro
 domain:tyres.pro
 domain:uaewebdirectory.info
 domain:wallpapers.pro
-domain:wants.cfd
 domain:way2check.art
 domain:way2check.cv
 domain:websiterace.com
@@ -104,6 +120,140 @@ domain:webworthchecker.cv
 domain:wonvision.com
 domain:ycm.info
 domain:youtoo.in
-domain:1000.co.in
-domain:2x9.co
-domain:5913231.cc
+
+# --- Singapore link-farm (backlink*.com cluster) (5 domains) ---
+domain:backlinkhouse.com
+domain:backlinkon.com
+domain:backlinksbank.com
+domain:backlinkshouse.com
+domain:backlinkstree.com
+
+# --- factmags/goooogla cluster (2 domains) ---
+domain:factmags.com
+domain:goooogla.com
+
+# --- seopxl-* / seo-growth-* paid-link shops (6 domains) ---
+domain:seo-growth-authority-boost-hub.shop
+domain:seo-growth-optimization-hub.shop
+domain:seopxl-organic-boost-lab.shop
+domain:seopxl-performance-authority-engine.shop
+domain:seopxl-ranking-boost-lab.shop
+domain:seopxl-traffic-growth-lab.shop
+
+# --- Unclustered low-authority / spam (115 domains) ---
+domain:8coint.com
+domain:adcreativevideo.com
+domain:advokatca.com
+domain:all-aged-domains.com
+domain:aloysionunes.com
+domain:archive-hu.com
+domain:bazerdaily.com
+domain:bestnz-poker-casinoslot.com
+domain:betulcrime.com
+domain:betwinnermirror.com
+domain:bisprofit.com
+domain:bizdir24.com
+domain:blinks.monster
+domain:blinks.sbs
+domain:blogerreviewers.com
+domain:breachviews.com
+domain:businessdirectorybd.com
+domain:canadapsilocybin.com
+domain:casinooftheking.com
+domain:cgpa2percentag.com
+domain:chordmp3.net
+domain:cindylaup.com
+domain:clifflisting.com
+domain:cmocheatsheets.com
+domain:coruzants.com
+domain:cvillico.com
+domain:daechul.co.com
+domain:digitalchatni.com
+domain:digitalseotool.com
+domain:domraider.eu.com
+domain:domraider.gb.net
+domain:domraider.it.com
+domain:dupurgeniefr.com
+domain:exotichealths.com
+domain:expresskitchendesigns.com
+domain:fashionclothingnews.com
+domain:fastlifesite.com
+domain:firstguestpost.com
+domain:fittyfoody.com
+domain:fiverr-cost-effective-seo.site
+domain:fiverr-quality-seo-at-affordable-rates.site
+domain:fiverr-seo-for-business-growth.site
+domain:fiverr-seo-for-small-businesses.site
+domain:fletcherrld.com
+domain:forbesstories.com
+domain:gaswagenweser.blogspot.com
+domain:ggmap.co.com
+domain:ggmap.us.com
+domain:gladeflowers.com
+domain:global-ranks.pages.dev
+domain:high-traffic-backlinks.site
+domain:homesforsaleoldgreenwichct.com
+domain:hostprinter.com
+domain:hotonlinegaming.com
+domain:imagetou.com
+domain:jikininki.pages.dev
+domain:jobsapp.info
+domain:juaralaundry.com
+domain:kkinsider.com
+domain:knows.monster
+domain:knows.sbs
+domain:laservices.org
+domain:lawyerinjeddah.com
+domain:leonlinks.org
+domain:libyanatravel.com
+domain:lydiaroyrealestate.com
+domain:m98ufa.com
+domain:marathiladies.com
+domain:marinasone.com
+domain:masihnyata.com
+domain:mediaboooster.com
+domain:missburrg.com
+domain:munterfeles.blogspot.com
+domain:mylisthero.com
+domain:mymarketpost.com
+domain:newblogerseo.com
+domain:nivira.shop
+domain:onlineshoppingidea.com
+domain:onlyhealthydeals.com
+domain:onvaxs.com
+domain:phanerosart.com
+domain:pidatahub.com
+domain:plastyconocom.blogspot.com
+domain:plrdownloadshub.com
+domain:plumeriamarketing.com
+domain:primenewsartical.com
+domain:quotesblom.com
+domain:qwenterprise.com
+domain:rdxextremez.com
+domain:rjcentinc.com
+domain:royaldb.us.com
+domain:sahammurah.com
+domain:sapphirevpn.net
+domain:seodomains.website
+domain:seol.store
+domain:seoprobox.click
+domain:sergechel.info
+domain:smartstimer.com
+domain:soulvocable.com
+domain:southfwb.com
+domain:spottedcow.media
+domain:startupwebsolutions.com.au
+domain:takes.homes
+domain:takes.sbs
+domain:techbumppy.com
+domain:thedocmag.com
+domain:theforbestimes.com
+domain:themicrodigits.com
+domain:theninthworld.com
+domain:toplikevideo.com
+domain:trendyhealthtimes.com
+domain:ufabettererm4.com
+domain:uncledspizza.com
+domain:wants.cfd
+domain:wecelebrities.com
+
