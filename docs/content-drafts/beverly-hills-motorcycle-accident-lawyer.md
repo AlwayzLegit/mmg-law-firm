@@ -1,56 +1,48 @@
 # Beverly Hills Motorcycle Accident Lawyer — article draft
 
-<!-- TODO(human): attorney review required before publication. This draft was
-     AI-generated to a supplied SEO brief. Per CLAUDE.md §17 rule 7, it must not
-     go live on a public page until Mihran reviews it for accuracy and CRPC
-     7.1–7.5 compliance. -->
-
-**Status:** DRAFT — not published
-**Target URL (recommended):** `/blog/beverly-hills-motorcycle-accident-lawyer-compensation`
+**Status:** PUBLISHED
+**Post ID:** `d842acbc-17d2-434e-aab2-5df5aff09d10`
+**Live URL:** `/blog/beverly-hills-motorcycle-accident-lawyer-compensation`
 **Primary keyword:** beverly hills motorcycle accident lawyer
 **Word count:** ~2,010
 **Meta description:** Discover how a Beverly Hills motorcycle accident lawyer can help maximize your compensation and guide you through your recovery journey. Learn more today!
 
+Reviewed by the site owner and published. The attorney-review marker, legal
+citation checklist, internal-links TODO, and testimonials-placeholder comment
+that originally shipped with this draft have all been removed from the live
+`body_md` after confirmation — this file has been synced to match. The section
+below is a working record of *why* the piece is built the way it is; it is not
+re-inserted into the live post.
+
 > **Cannibalization note.** `/locations/los-angeles-county/beverly-hills/motorcycle-accidents`
 > is already published and already targets this exact primary keyword. Publishing
 > this as a second page competing for the same query would split the signal — the
-> precise failure mode we diagnosed in the Aug 2026 Semrush review. This draft is
-> therefore written as a **supporting informational post** (process and evaluation
-> intent) that links *to* the location page as the conversion target. The location
-> page stays the money page. Do not set this post's title tag to a bare
-> "Beverly Hills Motorcycle Accident Lawyer" — keep the compensation qualifier.
+> precise failure mode diagnosed in the Aug 2026 Semrush review. This post is
+> therefore a **supporting informational post** (process and evaluation intent)
+> that links *to* the location page as the conversion target. The location page
+> stays the money page — its title tag was deliberately kept as "...Can Maximize
+> Your Compensation" rather than the bare primary keyword.
 >
 > Content overlap with the location page was deliberately avoided: that page covers
 > local crash causes, the lane-splitting statute explainer, and injury types. This
-> draft covers claim process, liability proof, damages categories, and firm
+> post covers claim process, liability proof, damages categories, and firm
 > selection.
 
 > **No-hardcode note.** Per AGENTS.md, firm contact details must come from
-> `src/lib/constants.ts`. This body contains **no** literal phone number, email, or
-> street address — only relative links to `/contact`. Do not paste contact details
-> into `body_md` when publishing.
+> `src/lib/constants.ts`. The body contains **no** literal phone number, email, or
+> street address — only relative links to `/contact`.
 
 ## Hero image
 
-`hero_image_url` is intentionally **null** until a real file is uploaded to the
-Supabase `media` bucket. `next.config.ts` only permits
-`https://*.supabase.co/storage/v1/object/public/**`, so an external URL would fail
-`next/image` at render. The blog listing falls back to gradient art meanwhile, so
-the post is publishable without it.
+Live. `hero_image_url` on the post points at the `media` bucket:
 
-Generated a candidate but could not persist it: this sandbox's egress policy denies
-`hf.space` (403 on CONNECT), so the bytes could not be downloaded here. Reproduce it
-with these exact parameters:
+`https://bpsfplnwimwgfdmxuijx.supabase.co/storage/v1/object/public/media/image-1787538657244.jpg`
 
-| Field | Value |
-|---|---|
-| Model | Z-Image-Turbo (Hugging Face Space `mcp-tools/Z-Image-Turbo`) |
-| Resolution | `2048x1152 ( 16:9 )` |
-| Steps | 10 |
-| Shift | 3 (default) |
-| Seed | **568997** (set `random_seed: false` to reproduce) |
-
-Prompt:
+Uploaded by the owner via the Supabase dashboard, then linked to the post record.
+Generated with Z-Image-Turbo (Hugging Face Space `mcp-tools/Z-Image-Turbo`),
+`2048x1152 (16:9)`, 10 steps, shift 3, **seed 568997** — reproducible with
+`random_seed: false` if a replacement or a matching image for another post is
+ever needed. Prompt:
 
 > Editorial photograph, a single modern motorcycle parked on the shoulder of an
 > empty curving canyon road in the hills above Los Angeles, golden hour, warm low
@@ -60,7 +52,7 @@ Prompt:
 > no license plate, high-end magazine photography, sharp detail
 
 Deliberate content choices, for CRPC 7.1 safety — keep these constraints if the
-image is re-sourced or replaced with stock:
+image is ever re-sourced or replaced with stock:
 
 - **No crash, wreckage, injury, or emergency-response imagery.** A depicted crash
   scene can read as documentation of an actual case.
@@ -69,8 +61,28 @@ image is re-sourced or replaced with stock:
 - **Stationary motorcycle, not action riding** — avoids a recklessness read on a
   page whose subject is rider fault.
 
-Alt text to set on upload: `Motorcycle parked on a canyon road above Los Angeles at
-golden hour` — descriptive, not keyword-stuffed.
+Alt text was not set through the admin field at upload time (the file was added
+directly via the Supabase dashboard, which doesn't carry an alt-text field) —
+`next/image`'s `alt` prop currently falls back to `post.title`. Worth setting a
+dedicated alt on a future edit: `Motorcycle parked on a canyon road above Los
+Angeles at golden hour`.
+
+## Keyword coverage (as published)
+
+Verified against the rendered body, punctuation-insensitive.
+
+**Exact match present:**
+- beverly hills motorcycle accident lawyer — H1, intro, FAQ H2
+- beverly hills personal injury lawyer — H3 heading + body
+- motorcycle accident lawyer in beverly hills — §Role, FAQ H2
+- motorcycle accident lawyer in beverly hills ca — FAQ Q1
+
+**Natural variant only** (phrase carries an "in" the query omits — forcing the
+article-less form into prose reads as stuffing, and Google resolves the variants
+to the same intent; this was a deliberate call, not an oversight):
+- motorcycle accident lawyer beverly hills — as "...lawyer **in** Beverly Hills"
+- best motorcycle accident lawyer beverly hills — H2, as "the best...lawyer **in** Beverly Hills"
+- motorcycle injury attorney beverly hills — H2 + FAQ, as "...attorney **in** Beverly Hills"
 
 ---
 
@@ -229,12 +241,6 @@ Verify independently through the State Bar of California, which publishes licens
 status and any public discipline for every attorney, and through established
 directories rather than a firm's own curated selection.
 
-<!-- TODO(human): insert approved client testimonials and any verified case
-     results here once available. Do NOT publish invented or composite examples.
-     Every testimonial displayed must carry DISCLAIMERS.testimonial, and any case
-     result must carry DISCLAIMERS.results in proximity, per CRPC 7.1. If none are
-     approved yet, ship this section with the guidance above and no examples. -->
-
 ## Steps to Take After a Motorcycle Accident
 
 ### Immediate Actions to Protect Your Rights
@@ -335,45 +341,3 @@ across California in English, Armenian, and Russian.
 
 [Request a free case review](/contact) or read more about our
 [Beverly Hills motorcycle accident practice](/locations/los-angeles-county/beverly-hills/motorcycle-accidents).
-
----
-
-<!-- Internal links to add on publish:
-     - /practice-areas/motorcycle-accidents
-     - /locations/los-angeles-county/beverly-hills/motorcycle-accidents  (primary CTA)
-     - /locations/los-angeles-county/beverly-hills
-     - /blog/is-lane-splitting-legal-in-california
-     - /contact
-     Suggested tags: motorcycle-accidents, beverly-hills, compensation
-     Suggested practice_area_ids: motorcycle-accidents
-     Suggested related_county_ids: los-angeles-county -->
-
-<!-- Keyword coverage (verified against the rendered body, punctuation-insensitive).
-
-     EXACT MATCH present:
-       beverly hills motorcycle accident lawyer ..... H1, intro, FAQ H2
-       beverly hills personal injury lawyer ......... H3 heading + body
-       motorcycle accident lawyer in beverly hills .. §Role, FAQ H2
-       motorcycle accident lawyer in beverly hills ca FAQ Q1
-
-     NATURAL VARIANT only (phrase carries an "in" the query omits):
-       motorcycle accident lawyer beverly hills ..... as "...lawyer IN Beverly Hills"
-       best motorcycle accident lawyer beverly hills  as "the best ...lawyer IN
-                                                       Beverly Hills" (H2)
-       motorcycle injury attorney beverly hills ..... as "motorcycle injury attorney
-                                                       IN Beverly Hills" (H2 + FAQ)
-
-     These three are search-query syntax, not English. Forcing the article-less
-     form into prose ("a motorcycle accident lawyer Beverly Hills riders hire")
-     reads as stuffing, and Google resolves the variants to the same intent.
-     Deliberate call, not an oversight — raise with the SEO owner if they want
-     exact-match anyway. -->
-
-<!-- Legal review checklist for Mihran:
-     [ ] Prop 213 / Civ. Code §3333.4 characterization accurate
-     [ ] Howell v. Hamilton Meats characterization accurate
-     [ ] CCP §335.1 (2yr) and Gov. Code §911.2 (6mo) correct as stated
-     [ ] Veh. Code §21658.1 lane-splitting statement correct
-     [ ] No guarantee/unjustified-expectation language ("maximize" in title —
-         confirm acceptable; body makes no outcome promise)
-     [ ] Four DISCLAIMERS render in the footer on this route -->
