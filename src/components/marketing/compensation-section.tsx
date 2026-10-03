@@ -14,7 +14,7 @@ import { SectionEyebrow } from "./section-eyebrow";
 
 // TODO(human): attorney review required — standard CA damages categories,
 // AI-drafted. Verify the framing before long-term use.
-const INJURY_CATEGORIES: { icon: LucideIcon; title: string; body: string }[] = [
+export const INJURY_CATEGORIES: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: BriefcaseMedical,
     title: "Medical expenses",

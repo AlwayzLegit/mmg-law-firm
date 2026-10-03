@@ -1,126 +1,130 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRight,
   Award,
   Clock,
   Globe2,
+  Languages,
   Phone,
   Scale,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
-import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM } from "@/lib/constants";
-import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
+
+import { Eyebrow } from "./primitives/eyebrow";
+import { GlassCard } from "./primitives/glass-card";
+import { Seal } from "./primitives/seal";
+import { Ticker } from "./primitives/ticker";
 
 type HeroProps = {
   className?: string;
 };
 
+/** Super Lawyers Rising Stars selection years (profile verified). */
+const RISING_STARS_YEARS = "2023 – 2026";
+
+// Facts repeated from the hero/recognition copy. Decorative marquee only.
+const TICKER_ITEMS = [
+  "No fee unless we win",
+  "Free consultation",
+  `Super Lawyers Rising Stars ${RISING_STARS_YEARS.replace(" – ", "–")}`,
+  `CA Bar #${FIRM.barNumber}`,
+  FIRM.languages.join(" · "),
+  "Statewide California",
+  `Established ${FIRM.founded}`,
+  "You talk to the attorney directly",
+];
+
+/**
+ * Homepage hero (redesign v2): ink surface, attorney portrait on the right
+ * with gradient fades, glass consultation card, rotated seal, marquee band.
+ * Copy is the verbatim indexed text from the previous hero.
+ */
 export function Hero({ className }: HeroProps) {
   return (
     <section
       className={cn(
-        "border-border relative isolate overflow-hidden border-b",
+        "surface-ink bg-background text-foreground under-header-lg relative isolate overflow-hidden",
         className,
       )}
     >
-      {/* Layered background: warm wash + ambient gradient orbs + grid */}
-      <div className="from-secondary/70 via-background to-background absolute inset-0 -z-10 bg-gradient-to-b" />
-      {/* Primary gradient orb — top right */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-32 -right-32 -z-10 h-[640px] w-[640px] rounded-full opacity-60 blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle, color-mix(in oklab, var(--color-primary) 22%, transparent) 0%, transparent 70%)",
-        }}
-      />
-      {/* Gold accent orb — left mid */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-1/3 -left-40 -z-10 h-[480px] w-[480px] rounded-full opacity-40 blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle, color-mix(in oklab, var(--color-gold-500) 28%, transparent) 0%, transparent 70%)",
-        }}
-      />
-      {/* Subtle grid — fades into the page */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:36px_36px]"
-        style={{
-          maskImage:
-            "radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7), transparent 70%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7), transparent 70%)",
-        }}
-      />
+      <div aria-hidden className="absolute inset-y-0 right-0 -z-10 w-[62%] max-lg:w-full">
+        <Image
+          src="/brand/attorney-portrait.webp"
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 62vw, 100vw"
+          className="object-cover"
+          style={{ objectPosition: "50% 18%" }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f1115_0%,rgba(15,17,21,.8)_24%,rgba(15,17,21,.06)_62%,rgba(15,17,21,.35)_100%)] max-lg:bg-[linear-gradient(to_bottom,rgba(15,17,21,.92)_0%,rgba(15,17,21,.7)_60%,rgba(15,17,21,.85)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-ink to-transparent" />
+      </div>
 
-      <div className="container-page py-14 md:py-20 lg:py-24">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:items-center lg:gap-16">
-          <div>
-            <SectionEyebrow>Attorney Advertising</SectionEyebrow>
+      <div className="container-page relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-end gap-10 pt-0">
+        <Seal
+          years={RISING_STARS_YEARS}
+          className="absolute top-[clamp(12px,2vw,24px)] right-[clamp(16px,3vw,40px)] max-md:hidden"
+        />
 
-            <h1 className="font-display text-foreground mt-5 max-w-[18ch] text-[2.6rem] leading-[1.04] font-medium tracking-tight sm:text-5xl md:text-6xl lg:text-[4.25rem]">
-              Focus on your recovery
-              <span className="text-primary block">
-                while we fight for you.
-              </span>
-            </h1>
+        <div className="pb-4">
+          <Eyebrow>Attorney Advertising</Eyebrow>
 
-            <p className="text-muted-foreground mt-7 max-w-xl text-lg leading-relaxed">
-              Have you been injured in an accident because someone else was
-              negligent or careless? You may be entitled to compensation.{" "}
-              {FIRM.attorneyName} at {FIRM.legalName} represents personal-injury
-              clients across California — and we will fight to help you get the
-              money you need and deserve.
-            </p>
+          <h1 className="text-display-xl text-cream mt-[18px] font-semibold">
+            Focus on your recovery{" "}
+            <em className="em-gold">while we fight for you.</em>
+          </h1>
 
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link
-                href="/contact"
-                className={cn(
-                  buttonVariants({ size: "marketing" }),
-                  "group/cta",
-                )}
-              >
-                <span>Request Free Consultation</span>
-                <ArrowRight
-                  className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
-                  aria-hidden
-                />
-              </Link>
-              <a
-                href={`tel:${FIRM.phoneTel}`}
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "marketing" }),
-                )}
-              >
-                <Phone className="text-primary h-4 w-4" aria-hidden />
-                <span>Call {FIRM.phone}</span>
-              </a>
-            </div>
+          <p className="text-cream/72 mt-[22px] max-w-[54ch] text-[16.5px] leading-[1.6]">
+            Have you been injured in an accident because someone else was
+            negligent or careless? You may be entitled to compensation.{" "}
+            {FIRM.attorneyName} at {FIRM.legalName} represents personal-injury
+            clients across California — and we will fight to help you get the
+            money you need and deserve.
+          </p>
 
-            <div className="text-muted-foreground mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm">
-              <InlineSignal icon={ShieldCheck}>
-                No fee unless we win
-              </InlineSignal>
-              <InlineSignal icon={Globe2}>
-                Counsel in {FIRM.languages.join(", ")}
-              </InlineSignal>
-              <InlineSignal icon={Award}>
-                {FIRM.attorneyName} handles your case directly
-              </InlineSignal>
-            </div>
+          <div className="mt-[30px] flex flex-wrap items-center gap-3">
+            <Link
+              href="/contact"
+              className={cn(buttonVariants({ variant: "gold", size: "pill" }), "group/cta")}
+            >
+              <span>Request Free Consultation</span>
+              <ArrowRight
+                className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
+                aria-hidden
+              />
+            </Link>
+            <a
+              href={`tel:${FIRM.phoneTel}`}
+              className={buttonVariants({ variant: "outline-cream", size: "pill" })}
+            >
+              <Phone className="h-[15px] w-[15px]" aria-hidden />
+              <span>Call {FIRM.phone}</span>
+            </a>
           </div>
 
-          <CredentialsCard />
+          <div className="text-cream/78 mt-[30px] flex flex-wrap gap-x-[22px] gap-y-2 text-[13.5px]">
+            <InlineSignal icon={ShieldCheck}>No fee unless we win</InlineSignal>
+            <InlineSignal icon={Globe2}>
+              Counsel in {FIRM.languages.join(", ")}
+            </InlineSignal>
+            <InlineSignal icon={Award}>
+              {FIRM.attorneyName} handles your case directly
+            </InlineSignal>
+          </div>
         </div>
+
+        <ConsultationCard />
+      </div>
+
+      <div className="border-cream/10 bg-ink/60 mt-9 border-t">
+        <Ticker items={TICKER_ITEMS} />
       </div>
     </section>
   );
@@ -135,121 +139,53 @@ function InlineSignal({
 }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="bg-primary/10 text-primary inline-flex h-6 w-6 flex-none items-center justify-center rounded-md">
-        <Icon className="h-3.5 w-3.5" aria-hidden />
-      </span>
-      <span className="text-foreground">{children}</span>
+      <Icon className="text-gold h-[15px] w-[15px] flex-none" aria-hidden />
+      <span>{children}</span>
     </span>
   );
 }
 
-/**
- * The "object" anchoring the hero: a layered consultation card with the
- * firm's identity, contact details, and credentials. Looks like something
- * pinned to a leather-bound dossier — confident, plate-style.
- */
-function CredentialsCard() {
+/** Glass card anchoring the hero: who you'll talk to, and how to call. */
+function ConsultationCard() {
   return (
-    <div className="relative">
-      {/* Offset gold "plate" sibling — the signature card object. */}
-      <div
-        aria-hidden
-        className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/25"
-      />
-      <article className="border-border bg-card relative overflow-hidden rounded-2xl border shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur">
-        <div className="bg-secondary relative aspect-[5/4] w-full overflow-hidden">
-          <Image
-            src={mediaUrl(ATTORNEY_IMAGES.homepageHero)}
-            alt={`${FIRM.attorneyName}, founder and managing attorney of ${FIRM.legalName}`}
-            fill
-            priority
-            quality={65}
-            sizes="(min-width: 1024px) 480px, (min-width: 768px) 60vw, 100vw"
-            className="object-cover object-top"
-          />
-          <div
-            aria-hidden
-            className="from-card via-card/70 absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t to-transparent"
-          />
-        </div>
+    <GlassCard className="w-full max-w-[320px] px-[22px] py-5 justify-self-end max-lg:justify-self-start">
+      <div className="flex items-center justify-between text-[11px] font-semibold tracking-[0.12em] uppercase">
+        <span className="text-[#7ed09a]">● Free consultation</span>
+        <span className="text-cream/55">CA Bar #{FIRM.barNumber}</span>
+      </div>
+      <p className="text-cream/50 mt-4 text-[11px] tracking-[0.14em] uppercase">Speak directly with</p>
+      <p className="font-display text-cream mt-1 text-2xl leading-[1.1] font-semibold tracking-[-0.02em]">
+        {FIRM.attorneyName}
+      </p>
+      <p className="text-cream/60 mt-1 text-[13px]">Founder · Personal-injury counsel · California</p>
 
-        <div className="px-7 pt-2 pb-7 md:px-8 md:pb-8">
-          <div className="flex items-center justify-between">
-            <span className="bg-success/10 text-success rounded-full px-3 py-1 text-[11px] font-semibold tracking-wider uppercase">
-              Free consultation
-            </span>
-            <span className="text-muted-foreground text-[11px] font-medium tracking-wider uppercase">
-              CA Bar #{FIRM.barNumber}
-            </span>
-          </div>
+      <a
+        href={`tel:${FIRM.phoneTel}`}
+        className="bg-gold/14 hover:bg-gold/26 text-cream mt-3.5 flex items-center gap-3 rounded-[10px] px-3 py-2.5 no-underline transition-colors"
+      >
+        <span className="bg-gold text-ink inline-flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg">
+          <Phone className="h-4 w-4" aria-hidden />
+        </span>
+        <span>
+          <span className="text-cream/55 block text-[10px] tracking-[0.14em] uppercase">Call directly</span>
+          <span className="block text-[17px] font-semibold">{FIRM.phone}</span>
+        </span>
+      </a>
 
-          <p className="text-muted-foreground mt-6 text-xs font-medium tracking-[0.18em] uppercase">
-            Speak directly with
-          </p>
-          <p className="font-display text-foreground mt-1 text-2xl font-medium tracking-tight">
-            {FIRM.attorneyName}
-          </p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Founder · Personal-injury counsel · California
-          </p>
-
-          <a
-            href={`tel:${FIRM.phoneTel}`}
-            className="border-border bg-background hover:border-primary/40 hover:bg-secondary/40 mt-6 flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors"
-          >
-            <span className="flex items-center gap-3">
-              <span className="bg-primary text-primary-foreground inline-flex h-9 w-9 items-center justify-center rounded-lg">
-                <Phone className="h-4 w-4" aria-hidden />
-              </span>
-              <span>
-                <span className="text-muted-foreground block text-[11px] font-medium tracking-[0.18em] uppercase">
-                  Call directly
-                </span>
-                <span className="font-display block text-lg font-semibold tracking-tight">
-                  {FIRM.phone}
-                </span>
-              </span>
-            </span>
-            <ArrowRight className="text-muted-foreground h-4 w-4" aria-hidden />
-          </a>
-
-          <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
-            <Pill icon={Clock}>{FIRM.hours}</Pill>
-            <Pill icon={Scale}>Statewide CA</Pill>
-          </div>
-
-          <div className="border-border mt-5 border-t border-dashed pt-4">
-            <p className="text-muted-foreground text-[11px] font-medium tracking-[0.18em] uppercase">
-              Languages
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {FIRM.languages.map((lang) => (
-                <span
-                  key={lang}
-                  className="border-border bg-secondary/40 text-foreground rounded-md border px-2 py-0.5 text-xs font-medium"
-                >
-                  {lang}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </article>
-    </div>
+      <div className="text-cream/70 mt-3 flex flex-wrap gap-1.5 text-xs">
+        <Chip icon={Clock}>{FIRM.hours}</Chip>
+        <Chip icon={Scale}>Statewide CA</Chip>
+        <Chip icon={Languages}>{FIRM.languages.join(" · ")}</Chip>
+      </div>
+    </GlassCard>
   );
 }
 
-function Pill({
-  icon: Icon,
-  children,
-}: {
-  icon: LucideIcon;
-  children: React.ReactNode;
-}) {
+function Chip({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <span className="border-border bg-secondary/40 text-foreground inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5">
-      <Icon className="text-primary h-3.5 w-3.5 flex-none" aria-hidden />
-      <span className="truncate">{children}</span>
+    <span className="border-cream/14 inline-flex items-center gap-1.5 rounded-full border px-[9px] py-1">
+      <Icon className="text-gold h-3 w-3" aria-hidden />
+      {children}
     </span>
   );
 }

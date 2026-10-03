@@ -15,6 +15,7 @@ export function DetailsAccordion({
   name,
   defaultOpen = 0,
   variant = "cards",
+  titleAs: TitleTag = "span",
   className,
 }: {
   items: DetailsItem[];
@@ -22,6 +23,8 @@ export function DetailsAccordion({
   name: string;
   defaultOpen?: number | null;
   variant?: "cards" | "rows";
+  /** Render question titles as headings (FAQ sections keep their h3s). */
+  titleAs?: "span" | "h3";
   className?: string;
 }) {
   return (
@@ -44,9 +47,9 @@ export function DetailsAccordion({
               variant === "rows" && "py-[18px]",
             )}
           >
-            <span className="font-display text-foreground text-lg leading-[1.3] font-semibold tracking-[-0.01em]">
+            <TitleTag className="font-display text-foreground m-0 text-lg leading-[1.3] font-semibold tracking-[-0.01em]">
               {it.title}
-            </span>
+            </TitleTag>
             <span
               aria-hidden
               className="bg-foreground/6 text-foreground group-open:bg-foreground group-open:text-background inline-flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full transition-colors"

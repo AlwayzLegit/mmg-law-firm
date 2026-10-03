@@ -1,107 +1,90 @@
 import Link from "next/link";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 import { REGIONS } from "@/lib/data/locations";
-import { FIRM } from "@/lib/constants";
+import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
+import { MAP_CITIES } from "@/lib/geo/cities";
 import { cn } from "@/lib/utils";
 
-import { SectionEyebrow } from "./section-eyebrow";
+import { CaliforniaMap } from "./primitives/california-map";
+import { Eyebrow } from "./primitives/eyebrow";
+import { RegionHover } from "./primitives/region-hover";
+import { Reveal } from "./primitives/reveal";
 
 type Props = { className?: string };
 
+/**
+ * "California, end to end" (redesign v2): server-rendered SVG map on the
+ * left, HQ chip and six region rows with city links on the right. Hovering a
+ * region row highlights its dots (RegionHover toggles classes; CSS does the
+ * rest). Region h3s and every city link are unchanged from v1.
+ */
 export function LocationsList({ className }: Props) {
   return (
-    <section
-      className={cn(
-        "relative border-y border-border/50 bg-secondary/30 py-20 md:py-28",
-        className,
-      )}
-    >
-      <div className="container-page">
-        <div className="grid gap-12 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-16">
-          <div className="max-w-2xl">
-            <SectionEyebrow>Statewide</SectionEyebrow>
-            <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
-              California, end to end.
-            </h2>
-            <p className="mt-4 text-muted-foreground">
+    <section id="locations" className={cn("surface-ink bg-background text-foreground", className)}>
+      <RegionHover className="container-page section-pad grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-center gap-12">
+        <Reveal className="border-cream/8 relative rounded-[18px] border bg-[radial-gradient(ellipse_at_50%_40%,rgba(201,163,90,.08),transparent_70%)] p-4">
+          <CaliforniaMap cities={MAP_CITIES} title={`Map of California cities served by ${FIRM.legalName}`} />
+        </Reveal>
+
+        <div>
+          <Reveal>
+            <Eyebrow>Statewide</Eyebrow>
+          </Reveal>
+          <Reveal delay={60}>
+            <h2 className="text-display text-cream mt-3.5 font-semibold">California, end to end.</h2>
+          </Reveal>
+          <Reveal delay={120}>
+            <p className="text-cream/70 mt-3.5 max-w-[56ch] text-base">
               Headquartered in Glendale, we represent clients across the state.
               Below are the cities we work most actively in — but if you don&apos;t
               see yours, we likely cover it too. Call us to confirm.
             </p>
-          </div>
-
-          {/* Glendale HQ pill — visually anchors the section right side */}
-          <div className="hidden lg:block">
-            <div className="relative overflow-hidden rounded-2xl border border-[var(--color-gold-500)]/30 bg-card p-5 shadow-sm">
-              <span
-                aria-hidden
-                className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[var(--color-gold-500)]/12 blur-3xl"
-              />
-              <div className="relative flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-gold-500)]/15 text-[var(--color-gold-700,#a98442)] ring-1 ring-inset ring-[var(--color-gold-500)]/30">
-                  <MapPin className="h-5 w-5" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-gold-700,#a98442)]">
-                    Headquarters
-                  </p>
-                  <p className="mt-0.5 font-display text-lg font-medium tracking-tight">
-                    Glendale office
-                  </p>
-                </div>
+          </Reveal>
+          <Reveal delay={160}>
+            <div className="bg-gold/10 border-gold/30 mt-6 flex items-center gap-3.5 rounded-xl border px-4 py-3.5">
+              <span className="bg-gold text-ink inline-flex h-10 w-10 flex-none items-center justify-center rounded-full">
+                <MapPin className="h-[18px] w-[18px]" aria-hidden />
+              </span>
+              <div>
+                <p className="text-gold m-0 text-[10px] font-semibold tracking-[0.16em] uppercase">
+                  Headquarters · Glendale office
+                </p>
+                <p className="text-cream m-0 mt-0.5 text-[14.5px]">{FIRM_FULL_ADDRESS}</p>
               </div>
-              <p className="relative mt-3 text-xs leading-relaxed text-muted-foreground">
-                {FIRM.address.street}
-                <br />
-                {FIRM.address.city}, {FIRM.address.state} {FIRM.address.zip}
-              </p>
             </div>
-          </div>
-        </div>
-
-        <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {REGIONS.map((region, idx) => (
-            <article
-              key={region.region}
-              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_18px_40px_-22px_rgba(20,30,80,0.2)]"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-inset ring-primary/15 transition-all duration-300 group-hover:from-primary group-hover:to-[var(--color-brand-700,#18298c)] group-hover:text-primary-foreground">
-                    <MapPin className="h-4 w-4" aria-hidden />
-                  </span>
-                  <h3 className="font-display text-base font-medium tracking-tight">
-                    {region.region}
-                  </h3>
-                </div>
-                <span
-                  className="font-display text-2xl font-medium tracking-tight text-muted-foreground/25"
-                  aria-hidden
+          </Reveal>
+          <Reveal delay={200}>
+            <ul className="border-cream/12 m-0 mt-5 list-none border-t p-0" data-region-source>
+              {REGIONS.map((region, idx) => (
+                <li
+                  key={region.region}
+                  data-region={region.region}
+                  className="region-row border-cream/12 -mx-2.5 grid grid-cols-[36px_1fr] items-baseline gap-3 rounded-lg border-b px-2.5 py-[13px] transition-colors"
                 >
-                  {String(idx + 1).padStart(2, "0")}
-                </span>
-              </div>
-              <ul className="mt-5 divide-y divide-border/50">
-                {region.cities.map((city) => (
-                  <li key={city.citySlug}>
-                    <Link
-                      href={`/locations/${city.countySlug}/${city.citySlug}`}
-                      className="group/city flex items-center justify-between py-2 text-sm text-muted-foreground transition-colors hover:text-primary"
-                    >
-                      <span>{city.cityName}</span>
-                      <ArrowUpRight
-                        className="h-3 w-3 opacity-0 transition-all duration-200 group-hover/city:opacity-100 group-hover/city:-translate-y-0.5 group-hover/city:translate-x-0.5"
-                        aria-hidden
-                      />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ))}
+                  <span className="text-gold text-[11px] tracking-[0.1em] tabular-nums">
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
+                    <h3 className="font-display text-cream m-0 text-xl font-semibold">{region.region}</h3>
+                    <span className="text-cream/60 flex flex-wrap gap-x-2.5 gap-y-1 text-[13px]">
+                      {region.cities.map((city) => (
+                        <Link
+                          key={city.citySlug}
+                          href={`/locations/${city.countySlug}/${city.citySlug}`}
+                          className="hover:text-cream text-inherit no-underline transition-colors"
+                        >
+                          {city.cityName}
+                        </Link>
+                      ))}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </div>
-      </div>
+      </RegionHover>
     </section>
   );
 }

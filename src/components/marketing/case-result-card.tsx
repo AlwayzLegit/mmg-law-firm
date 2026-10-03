@@ -3,7 +3,8 @@ import Link from "next/link";
 import { DISCLAIMERS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-import { SectionEyebrow } from "./section-eyebrow";
+import { Eyebrow } from "./primitives/eyebrow";
+import { Reveal } from "./primitives/reveal";
 
 export type CaseResult = {
   id: string;
@@ -17,47 +18,31 @@ export type CaseResult = {
 
 type Props = { result: CaseResult; className?: string };
 
+/** White result card: micro-label, Newsreader amount, summary, footer meta. */
 export function CaseResultCard({ result, className }: Props) {
   return (
     <article
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card p-7 transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_48px_-24px_rgba(20,30,80,0.2)]",
+        "bg-card border-line relative flex h-full flex-col rounded-2xl border p-[22px] transition-shadow hover:shadow-hover",
         className,
       )}
     >
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-transparent opacity-60"
-      />
+      <p className="micro-label text-stone m-0">Settlement / verdict</p>
       {result.amountDisplay ? (
-        <p className="font-display text-[2.75rem] font-medium leading-[1] tracking-tight text-primary">
+        <p className="font-display text-foreground mt-1.5 text-[44px] leading-none font-semibold tracking-[-0.03em]">
           {result.amountDisplay}
         </p>
       ) : null}
-      <h3 className="mt-4 font-display text-lg font-medium tracking-tight">
+      <h3 className="font-display mt-4 text-lg leading-[1.25] font-semibold tracking-[-0.01em]">
         {result.headline}
       </h3>
-      <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-muted-foreground">
-        {result.summary}
+      <p className="text-stone mt-3 line-clamp-4 text-sm leading-relaxed">{result.summary}</p>
+      <p className="text-stone mt-auto flex flex-wrap justify-between gap-2 pt-4 text-xs">
+        <span>
+          {[result.practiceArea, result.county].filter(Boolean).join(" · ") || "Case type"}
+        </span>
+        {result.year ? <span>{result.year}</span> : null}
       </p>
-
-      <div className="mt-auto flex flex-wrap gap-1.5 pt-5 text-xs">
-        {result.practiceArea ? (
-          <span className="rounded-md border border-border bg-secondary/50 px-2 py-1 font-medium text-foreground">
-            {result.practiceArea}
-          </span>
-        ) : null}
-        {result.county ? (
-          <span className="rounded-md border border-border bg-secondary/50 px-2 py-1 text-muted-foreground">
-            {result.county}
-          </span>
-        ) : null}
-        {result.year ? (
-          <span className="rounded-md border border-border bg-secondary/50 px-2 py-1 text-muted-foreground">
-            {result.year}
-          </span>
-        ) : null}
-      </div>
     </article>
   );
 }
@@ -65,46 +50,48 @@ export function CaseResultCard({ result, className }: Props) {
 type SectionProps = {
   results: CaseResult[];
   className?: string;
+  /** Rendered without its own section wrapper (inside the trust block). */
+  embedded?: boolean;
 };
 
 /**
- * Selected results section. Hidden entirely when there are no published
- * results — we never show an empty placeholder on the public site. Per
- * spec §17, we never invent case results.
+ * Selected results. Hidden entirely when there are no published results — we
+ * never show an empty placeholder on the public site. Per spec §17, we never
+ * invent case results.
  */
-export function CaseResultsSection({ results, className }: SectionProps) {
+export function CaseResultsSection({ results, className, embedded = false }: SectionProps) {
   if (results.length === 0) return null;
-  return (
-    <section className={cn("container-page py-20 md:py-28", className)}>
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-2xl">
-          <SectionEyebrow>Selected results</SectionEyebrow>
-          <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
-            Recent recoveries
-          </h2>
+  const body = (
+    <>
+      <Reveal className="flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <Eyebrow>Results &amp; reviews</Eyebrow>
+          <h2 className="text-display mt-3.5 font-semibold">Recent results</h2>
         </div>
         <Link
           href="/case-results"
-          className="group/link inline-flex items-center gap-1.5 text-sm font-medium text-primary"
+          className="text-foreground group/link inline-flex items-center gap-1.5 text-sm font-semibold no-underline"
         >
-          <span className="underline-offset-4 group-hover/link:underline">
-            View all results
-          </span>
-          <span className="transition-transform group-hover/link:translate-x-0.5">
-            &rarr;
-          </span>
+          <span className="underline-offset-4 group-hover/link:underline">View all results</span>
+          <span className="transition-transform group-hover/link:translate-x-0.5">&rarr;</span>
         </Link>
-      </div>
-
-      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {results.map((r) => (
-          <CaseResultCard key={r.id} result={r} />
-        ))}
-      </div>
-
-      <p className="mt-10 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-        {DISCLAIMERS.results}
-      </p>
+      </Reveal>
+      <Reveal delay={60}>
+        <ul className="m-0 mt-7 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,240px),1fr))] gap-3.5 p-0">
+          {results.map((r) => (
+            <li key={r.id}>
+              <CaseResultCard result={r} />
+            </li>
+          ))}
+        </ul>
+      </Reveal>
+      <p className="text-stone mt-3 max-w-3xl text-xs leading-relaxed">{DISCLAIMERS.results}</p>
+    </>
+  );
+  if (embedded) return <div className={className}>{body}</div>;
+  return (
+    <section className={cn("bg-background text-foreground border-line border-t", className)}>
+      <div className="container-page section-pad-sm">{body}</div>
     </section>
   );
 }

@@ -130,3 +130,29 @@ export function hasAnyFirmStat(s: FirmStats): boolean {
       s.consultations_display,
   );
 }
+
+export type FirmBadge = { src: string; alt: string; href?: string };
+
+/**
+ * Award badges / press logos (firm_settings.badges_json, migration 0032).
+ * Tolerates a missing column (pre-migration) and malformed rows — the panel
+ * simply stays hidden. Nothing is invented: an empty list renders nothing.
+ */
+export async function getFirmBadges(): Promise<FirmBadge[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getStaticSupabase();
+  const { data, error } = await supabase
+    .from("firm_settings")
+    .select("badges_json")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error || !data) return [];
+  const raw = (data as { badges_json?: unknown }).badges_json;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((b) => {
+    if (!b || typeof b !== "object") return [];
+    const o = b as Record<string, unknown>;
+    if (typeof o.src !== "string" || !o.src || typeof o.alt !== "string") return [];
+    return [{ src: o.src, alt: o.alt, href: typeof o.href === "string" ? o.href : undefined }];
+  });
+}

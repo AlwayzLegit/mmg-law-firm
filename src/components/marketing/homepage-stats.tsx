@@ -8,10 +8,12 @@ import {
 } from "@/lib/data/firm-settings";
 import { cn } from "@/lib/utils";
 
+import { IconTile } from "./primitives/icon-tile";
+
 /**
- * "By the numbers" band rendered between the hero and the practice-area
- * grid on the homepage. Pure trust signal — only renders if the attorney
- * has populated firm_settings via /admin/settings/firm.
+ * "By the numbers" band between the hero and the recognition block. Pure
+ * trust signal — only renders if the attorney has populated firm_settings via
+ * /admin/settings/firm.
  *
  * Per spec hard rule #6, nothing is invented. If no stats are populated,
  * the band returns null entirely (no skeleton, no "TBD" placeholders).
@@ -25,16 +27,13 @@ export async function HomepageStats({ className }: { className?: string }) {
 
   return (
     <section
-      className={cn(
-        "container-page py-12 md:py-16",
-        className,
-      )}
+      className={cn("bg-background text-foreground", className)}
       aria-label="By the numbers"
     >
-      <div className="rounded-2xl border border-border bg-[var(--color-brand-900)] px-6 py-8 text-primary-foreground md:px-10 md:py-10">
+      <div className="container-page pb-[clamp(40px,6vw,64px)]">
         <ul
           className={cn(
-            "grid gap-x-8 gap-y-6",
+            "surface-ink bg-background text-foreground m-0 grid list-none gap-x-8 gap-y-6 rounded-[18px] px-6 py-8 md:px-10 md:py-10",
             items.length === 1 && "sm:grid-cols-1",
             items.length === 2 && "sm:grid-cols-2",
             items.length === 3 && "sm:grid-cols-3",
@@ -42,19 +41,14 @@ export async function HomepageStats({ className }: { className?: string }) {
           )}
         >
           {items.map((it) => (
-            <li
-              key={it.label}
-              className="flex flex-col gap-1.5"
-            >
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary-foreground/10 text-[var(--color-gold-300)]">
-                <it.icon className="h-3.5 w-3.5" aria-hidden />
-              </span>
-              <p className="mt-2 font-display text-3xl font-medium tracking-tight md:text-4xl">
+            <li key={it.label} className="flex flex-col gap-1.5">
+              <IconTile size="sm" tone="gold">
+                <it.icon aria-hidden />
+              </IconTile>
+              <p className="font-display text-cream mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
                 {it.value}
               </p>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground/60">
-                {it.label}
-              </p>
+              <p className="text-cream/60 text-xs font-semibold tracking-[0.18em] uppercase">{it.label}</p>
             </li>
           ))}
         </ul>
@@ -73,32 +67,16 @@ function buildItems(stats: FirmStats): Item[] {
   const items: Item[] = [];
 
   if (stats.years_practicing) {
-    items.push({
-      label: "Years practicing",
-      value: `${stats.years_practicing}+`,
-      icon: Scale,
-    });
+    items.push({ label: "Years practicing", value: `${stats.years_practicing}+`, icon: Scale });
   }
   if (stats.settlements_total_display) {
-    items.push({
-      label: "Recovered for clients",
-      value: stats.settlements_total_display,
-      icon: Award,
-    });
+    items.push({ label: "Recovered for clients", value: stats.settlements_total_display, icon: Award });
   }
   if (stats.cases_handled_display) {
-    items.push({
-      label: "Cases handled",
-      value: stats.cases_handled_display,
-      icon: Award,
-    });
+    items.push({ label: "Cases handled", value: stats.cases_handled_display, icon: Award });
   }
   if (stats.consultations_display) {
-    items.push({
-      label: "Consultations",
-      value: stats.consultations_display,
-      icon: Phone,
-    });
+    items.push({ label: "Consultations", value: stats.consultations_display, icon: Phone });
   }
 
   // Languages always shown when the band is rendered — it's a true firm
@@ -106,11 +84,7 @@ function buildItems(stats: FirmStats): Item[] {
   // "attorney verifies" requirement (it's the attorney's own languages
   // already declared in the seed). Skipped only if FIRM.languages is empty.
   if (items.length > 0 && FIRM.languages.length > 0) {
-    items.push({
-      label: "Counsel offered in",
-      value: FIRM.languages.join(", "),
-      icon: Languages,
-    });
+    items.push({ label: "Counsel offered in", value: FIRM.languages.join(", "), icon: Languages });
   }
 
   return items;

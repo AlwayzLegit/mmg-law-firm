@@ -27,7 +27,8 @@ export type PracticeAreaContent = {
   faqs: FaqItem[];
 };
 
-const COMMON_PROCESS: ProcessStep[] = [
+/** Shared personal-injury process (also drives the homepage stepper). */
+export const COMMON_PROCESS: ProcessStep[] = [
   {
     title: "Free, no-pressure consultation",
     body: "We listen first. We answer your questions. There is no fee for the initial conversation — and you decide whether to engage us at the end of it.",

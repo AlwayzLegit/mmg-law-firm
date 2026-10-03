@@ -1,14 +1,10 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
 import type { FaqItem } from "@/lib/data/faqs";
 
-import { SectionEyebrow } from "./section-eyebrow";
+import { DetailsAccordion } from "./primitives/details-accordion";
+import { Eyebrow } from "./primitives/eyebrow";
+import { Reveal } from "./primitives/reveal";
 
 type Props = {
   items: FaqItem[];
@@ -17,42 +13,27 @@ type Props = {
   className?: string;
 };
 
-export function Faq({
-  items,
-  heading = "Frequently asked",
-  subheading,
-  className,
-}: Props) {
+/**
+ * FAQ (redesign v2): centred 860px column of white <details> cards. Every
+ * answer is in the HTML; the first item is open by default.
+ */
+export function Faq({ items, heading = "Frequently asked", subheading, className }: Props) {
   if (items.length === 0) return null;
   return (
-    <section
-      className={cn(
-        "relative border-y border-border/50 bg-secondary/30 py-20 md:py-28",
-        className,
-      )}
-    >
-      <div className="container-page grid gap-12 lg:grid-cols-[1fr_2fr] lg:gap-20">
-        <div>
-          <SectionEyebrow>FAQ</SectionEyebrow>
-          <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
-            {heading}
-          </h2>
-          {subheading ? (
-            <p className="mt-4 text-muted-foreground">{subheading}</p>
-          ) : null}
-        </div>
-        <Accordion className="w-full">
-          {items.map((item, i) => (
-            <AccordionItem key={i} value={`item-${i}`}>
-              <AccordionTrigger className="py-5 text-left text-base font-medium">
-                {item.question}
-              </AccordionTrigger>
-              <AccordionContent className="pb-5 leading-relaxed text-muted-foreground">
-                {item.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+    <section className={cn("surface-paper-2 bg-background text-foreground border-line border-t", className)}>
+      <div className="section-pad-sm mx-auto max-w-[860px] px-[clamp(16px,4vw,28px)]">
+        <Reveal className="text-center">
+          <Eyebrow centered>FAQ</Eyebrow>
+          <h2 className="text-display mt-3.5 font-semibold">{heading}</h2>
+          {subheading ? <p className="text-stone mx-auto mt-4 max-w-[60ch]">{subheading}</p> : null}
+        </Reveal>
+        <Reveal delay={80} className="mt-9">
+          <DetailsAccordion
+            name={`faq-${heading.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+            titleAs="h3"
+            items={items.map((it) => ({ title: it.question, body: it.answer }))}
+          />
+        </Reveal>
       </div>
     </section>
   );

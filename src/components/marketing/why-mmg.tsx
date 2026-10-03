@@ -1,6 +1,9 @@
+import Image from "next/image";
 import {
   HandCoins,
   MessageSquareHeart,
+  Minus,
+  Plus,
   Scale,
   ShieldCheck,
   type LucideIcon,
@@ -8,12 +11,18 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { SectionEyebrow } from "./section-eyebrow";
+import { Eyebrow } from "./primitives/eyebrow";
+import { GlassCard } from "./primitives/glass-card";
+import { Reveal } from "./primitives/reveal";
 
 // Pillars mirror the live mmg-lawfirm.com hero — those three are the
 // brand promises the firm has been making for years. The fourth is the
 // firm's stated "client priority" positioning from its About page,
 // written for the new site's solo-attorney framing.
+//
+// TODO(human): attorney review required — the design handoff proposes a
+// tightened variant of these four bodies (same facts, fewer words). The
+// verbatim v1 copy below stays as the indexed text until that review.
 const POINTS: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: MessageSquareHeart,
@@ -37,76 +46,76 @@ const POINTS: { icon: LucideIcon; title: string; body: string }[] = [
   },
 ];
 
+/**
+ * Why MMG (redesign v2): ink section with the "working the file" photo in a
+ * gold offset frame and a four-row native-<details> accordion. All bodies are
+ * in the HTML; `name` makes the rows exclusive; the first is open by default.
+ */
 export function WhyMmg({ className }: { className?: string }) {
   return (
-    <section
-      className={cn(
-        "relative isolate overflow-hidden border-y border-border bg-[var(--color-brand-900)] text-primary-foreground",
-        className,
-      )}
-    >
-      {/* gold accent rail */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-transparent"
-      />
-      {/* faint grid in background */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 opacity-60"
-        style={{
-          backgroundImage:
-            "radial-gradient(60% 50% at 100% 0%, color-mix(in oklab, var(--color-primary) 50%, transparent) 0%, transparent 60%)",
-        }}
-      />
+    <section className={cn("surface-ink bg-background text-foreground", className)}>
+      <div className="container-page section-pad grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-center gap-12">
+        <Reveal className="relative pr-[18px] pb-[18px]">
+          <div aria-hidden className="border-gold absolute inset-0 top-[18px] left-[18px] rounded-2xl border" />
+          <div className="bg-ink-soft relative aspect-[4/5] overflow-hidden rounded-2xl">
+            <Image
+              src="/brand/working-the-file.webp"
+              alt="Mihran M. Ghazaryan working a client file"
+              fill
+              sizes="(min-width: 1024px) 560px, 100vw"
+              className="object-cover"
+            />
+          </div>
+          <GlassCard strength="strong" className="absolute bottom-[42px] left-6 rounded-xl px-4 py-3.5">
+            <p className="text-gold m-0 text-[10px] tracking-[0.16em] uppercase">Solo plaintiff&apos;s firm</p>
+            <p className="font-display text-cream m-0 mt-1 text-xl leading-[1.1] font-semibold">One attorney. Every case.</p>
+          </GlassCard>
+        </Reveal>
 
-      <div className="container-page py-20 md:py-28">
-        <div className="max-w-2xl">
-          <SectionEyebrow inverted>Why MMG</SectionEyebrow>
-          <h2 className="mt-4 font-display text-3xl font-medium tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
-            Why injured Californians choose MMG.
-          </h2>
-          <p className="mt-4 text-primary-foreground/75">
-            Solo practice means a real attorney handles every case. Bilingual.
-            Direct. No layered handoffs.
-          </p>
+        <div>
+          <Reveal>
+            <Eyebrow>Why MMG</Eyebrow>
+          </Reveal>
+          <Reveal delay={60}>
+            <h2 className="text-display text-cream mt-3.5 max-w-[18ch] font-semibold">
+              Why injured Californians choose MMG.
+            </h2>
+          </Reveal>
+          <Reveal delay={120}>
+            <p className="text-cream/70 mt-3.5 text-base">
+              Solo practice means a real attorney handles every case. Bilingual.
+              Direct. No layered handoffs.
+            </p>
+          </Reveal>
+          <Reveal delay={180}>
+            <ul className="border-cream/12 m-0 mt-8 list-none border-t p-0">
+              {POINTS.map((p, i) => (
+                <li key={p.title} className="border-cream/12 border-b">
+                  <details name="why-mmg" open={i === 0 || undefined} className="v2-details group">
+                    <summary className="grid grid-cols-[44px_40px_1fr_20px] items-center gap-3.5 py-[18px] text-left max-sm:grid-cols-[32px_1fr_20px]">
+                      <span className="font-display text-gold text-[26px] leading-none font-medium">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="bg-cream/7 text-gold inline-flex h-10 w-10 items-center justify-center rounded-[10px] max-sm:hidden">
+                        <p.icon className="h-[18px] w-[18px]" aria-hidden />
+                      </span>
+                      <h3 className="font-display text-cream m-0 text-[22px] leading-[1.15] font-semibold tracking-[-0.01em]">
+                        {p.title}
+                      </h3>
+                      <span aria-hidden className="text-cream/70 inline-flex justify-end">
+                        <Plus className="details-plus h-4 w-4" />
+                        <Minus className="details-minus h-4 w-4" />
+                      </span>
+                    </summary>
+                    <p className="text-cream/74 m-0 pb-[22px] pl-[112px] text-[15.5px] leading-[1.65] max-sm:pl-[46px]">
+                      {p.body}
+                    </p>
+                  </details>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </div>
-
-        <ul className="mt-14 grid gap-x-12 gap-y-12 md:grid-cols-2">
-          {POINTS.map((p, i) => (
-            <li
-              key={p.title}
-              className="relative flex items-start gap-6 border-l border-primary-foreground/15 pl-6"
-            >
-              <span
-                aria-hidden
-                className="select-none font-display text-5xl font-medium leading-none tracking-tight text-[var(--color-gold-500)] md:text-6xl"
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-foreground/10 text-primary-foreground ring-1 ring-inset ring-primary-foreground/20">
-                    <p.icon className="h-4 w-4" aria-hidden />
-                  </span>
-                  <h3 className="font-display text-lg font-medium tracking-tight md:text-xl">
-                    {p.title}
-                  </h3>
-                </div>
-                <p className="mt-3 text-primary-foreground/85">{p.body}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );
