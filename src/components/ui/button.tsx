@@ -8,7 +8,20 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-brand-700 shadow-sm hover:shadow-md",
+        default: "bg-primary text-primary-foreground hover:bg-ink-hover shadow-sm hover:shadow-md",
+        /** Gold pill — the primary marketing CTA (ink text). */
+        gold: "bg-gold text-ink hover:bg-gold-light shadow-sm",
+        /** Ink pill — secondary dark CTA on paper. */
+        ink: "bg-ink text-cream hover:bg-ink-hover",
+        /** Outline pill on dark surfaces (cream text, translucent border). */
+        "outline-cream":
+          "border-cream/28 bg-transparent text-cream hover:border-cream hover:bg-transparent hover:text-cream",
+        /** Outline pill on paper (ink text). */
+        "outline-ink":
+          "border-ink/20 bg-transparent text-ink hover:border-ink hover:bg-paper hover:text-ink",
+        /** Gold-outlined ghost pill (header CTA). */
+        "outline-gold":
+          "border-gold/55 bg-transparent text-cream hover:border-gold hover:bg-gold/16 hover:text-cream",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
@@ -28,8 +41,13 @@ const buttonVariants = cva(
         // Marketing-scale CTA: substantially bigger than `lg`. Used in the
         // hero, the CTA band, and any "Free consultation" surface where the
         // button has to carry the page on its own.
+        /** Design-spec pills: h52 / h44 / h40, 14px/600, radius 999. */
+        pill: "h-13 gap-2.5 rounded-full px-6 text-sm font-semibold [&_svg:not([class*='size-'])]:size-4",
+        "pill-sm": "h-11 gap-2 rounded-full px-[18px] text-[13px] font-semibold [&_svg:not([class*='size-'])]:size-3.5",
+        "pill-xs": "h-10 gap-2 rounded-full px-4 text-[13px] font-semibold [&_svg:not([class*='size-'])]:size-3.5",
+        /** Legacy alias kept for existing call sites — same as `pill`. */
         marketing:
-          "h-12 gap-2 px-6 text-[15px] font-semibold tracking-tight rounded-xl [&_svg:not([class*='size-'])]:size-4",
+          "h-13 gap-2.5 rounded-full px-6 text-sm font-semibold [&_svg:not([class*='size-'])]:size-4",
         icon: "size-8",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",

@@ -6,7 +6,6 @@ import { Phone, RotateCcw } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FIRM } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 
 export default function GlobalError({
   error,
@@ -26,40 +25,31 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <section className="relative isolate flex min-h-[60vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
-      <div className="from-secondary/60 via-background to-background absolute inset-0 -z-10 bg-gradient-to-b" />
+    <section className="surface-ink bg-background text-foreground relative isolate flex min-h-[60vh] flex-col items-center justify-center overflow-hidden px-4 py-20 text-center">
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "radial-gradient(60% 50% at 50% 0%, color-mix(in oklab, var(--color-primary) 18%, transparent) 0%, transparent 60%)",
-        }}
+        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_100%,rgba(201,163,90,.18),transparent_60%)]"
       />
 
-      <p className="text-primary inline-flex items-center gap-2 text-xs font-semibold tracking-[0.22em] uppercase">
-        <span className="block h-px w-8 bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-[var(--color-gold-500)]" />
+      <p className="text-gold inline-flex items-center gap-3 text-xs font-semibold tracking-[0.16em] uppercase">
+        <span aria-hidden className="bg-gold block h-px w-6" />
         Something went wrong
+        <span aria-hidden className="bg-gold block h-px w-6" />
       </p>
-      <h1 className="font-display mt-5 max-w-2xl text-3xl leading-tight font-medium tracking-tight md:text-4xl">
+      <h1 className="text-cream mt-5 max-w-2xl text-[clamp(30px,4vw,48px)] leading-[1.05] font-semibold tracking-[-0.02em]">
         We hit a problem loading this page.
       </h1>
-      <p className="text-muted-foreground mt-4 max-w-md">
+      <p className="text-cream/72 mt-4 max-w-md text-[16.5px]">
         Please try again. If the issue persists, call our office directly and
         we&apos;ll help you right away.
       </p>
       {error.digest ? (
-        <p className="text-muted-foreground mt-3 text-xs">
-          Reference:{" "}
-          <code className="text-foreground font-mono">{error.digest}</code>
+        <p className="text-cream/55 mt-3 text-xs">
+          Reference: <code className="text-cream font-mono">{error.digest}</code>
         </p>
       ) : null}
       <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-        <Button
-          onClick={() => reset()}
-          size="marketing"
-          className="group/cta gap-2"
-        >
+        <Button onClick={() => reset()} variant="gold" size="pill" className="group/cta gap-2">
           <RotateCcw
             className="h-4 w-4 transition-transform group-hover/cta:-rotate-12"
             aria-hidden
@@ -68,11 +58,9 @@ export default function GlobalError({
         </Button>
         <a
           href={`tel:${FIRM.phoneTel}`}
-          className={cn(
-            buttonVariants({ variant: "outline", size: "marketing" }),
-          )}
+          className={buttonVariants({ variant: "outline-cream", size: "pill" })}
         >
-          <Phone className="text-primary h-4 w-4" aria-hidden />
+          <Phone className="h-[15px] w-[15px]" aria-hidden />
           <span>Call {FIRM.phone}</span>
         </a>
       </div>

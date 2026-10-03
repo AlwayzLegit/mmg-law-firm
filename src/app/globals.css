@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -8,10 +9,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, ui-serif, serif;
+  --font-heading: var(--font-newsreader), Georgia, ui-serif, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-heading: var(--font-fraunces), ui-serif, Georgia, serif;
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -48,7 +49,31 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
-  /* Brand scale — confident navy. Primary = brand-500. */
+  /* Surface-aware helpers (flip inside .surface-ink). */
+  --color-eyebrow: var(--eyebrow);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text-soft: var(--text-soft);
+  --color-text-faint: var(--text-faint);
+  --color-tile: var(--tile);
+  --color-gold-tint: var(--gold-tint);
+
+  /* ---- Redesign v2 palette ------------------------------------------- */
+  --color-ink: #0f1115;
+  --color-ink-soft: #171a21;
+  --color-ink-hover: #2a2e38;
+  --color-ink-deep: #0b0c0f;
+  --color-paper: #f4f1ea;
+  --color-paper-2: #ebe6dc;
+  --color-cream: #f5f2ea;
+  --color-gold: #c9a35a;
+  --color-gold-light: #e0bd74;
+  --color-gold-deep: #8a6d2f;
+  --color-gold-pale: #efd9a4;
+  --color-stone: #5e5a53;
+  --color-status-new: #2b46d8;
+
+  /* Legacy navy scale — admin status colours and the transition period. */
   --color-brand-50: #f0f4ff;
   --color-brand-100: #dde4ff;
   --color-brand-200: #b8c5ff;
@@ -60,13 +85,14 @@
   --color-brand-800: #131f6b;
   --color-brand-900: #0e1750;
 
-  /* Warm gold accent — hover/divider only. */
+  /* Gold scale (kept; 500 = brand gold). */
   --color-gold-50: #fbf7ed;
   --color-gold-300: #e3c489;
   --color-gold-500: #c9a35a;
   --color-gold-600: #a98442;
+  --color-gold-700: #8a6d2f;
 
-  /* Ink scale for body copy. */
+  /* Ink scale for body copy (legacy names). */
   --color-ink-50: #f7f7f6;
   --color-ink-100: #ececea;
   --color-ink-300: #b8b8b3;
@@ -81,101 +107,145 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-lift: 0 40px 80px -50px rgba(15, 17, 21, 0.35);
+  --shadow-hover: 0 24px 40px -28px rgba(15, 17, 21, 0.5);
+  --shadow-seal: 0 24px 40px -20px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  --shadow-float: 0 20px 50px -30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(245, 242, 234, 0.06);
+
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  --animate-marquee: mmg-marquee 34s linear infinite;
+  --animate-pulse-ring: mmg-pulse 2.4s ease-out infinite;
+
+  @keyframes mmg-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes mmg-pulse {
+    0% { transform: scale(0.4); opacity: 0.9; }
+    100% { transform: scale(2.6); opacity: 0; }
+  }
 }
 
+/* ---------------------------------------------------------------------- */
+/* Paper surface (default): light sections, admin main area.               */
+/* ---------------------------------------------------------------------- */
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
-  --background: #ffffff;
-  --foreground: #0e1012;
+  --background: #f4f1ea;
+  --foreground: #0f1115;
 
   --card: #ffffff;
-  --card-foreground: #0e1012;
+  --card-foreground: #0f1115;
 
   --popover: #ffffff;
-  --popover-foreground: #0e1012;
+  --popover-foreground: #0f1115;
 
-  /* Primary = brand-500 navy. */
-  --primary: #2b46d8;
-  --primary-foreground: #ffffff;
+  /* Primary = ink. Gold is the accent / CTA fill (`gold` button variant). */
+  --primary: #0f1115;
+  --primary-foreground: #f5f2ea;
 
-  --secondary: #f0f4ff;
-  --secondary-foreground: #18298c;
+  --secondary: #ebe6dc;
+  --secondary-foreground: #0f1115;
 
-  --muted: #f5f5f4;
-  --muted-foreground: #6b6b66;
+  --muted: #ebe6dc;
+  --muted-foreground: #5e5a53;
 
-  --accent: #fbf7ed;
-  --accent-foreground: #18298c;
+  --accent: rgba(201, 163, 90, 0.16);
+  --accent-foreground: #8a6d2f;
 
-  --destructive: #dc2626;
-  --success: #16a34a;
+  --destructive: #b91c1c;
+  --success: #15803d;
   --warning: #b45309;
 
-  --border: #e5e5e3;
-  --input: #e5e5e3;
-  --ring: #2b46d8;
+  --border: rgba(15, 17, 21, 0.1);
+  --input: rgba(15, 17, 21, 0.18);
+  --ring: #c9a35a;
 
-  --chart-1: #2b46d8;
-  --chart-2: #5d77f0;
-  --chart-3: #c9a35a;
-  --chart-4: #16a34a;
-  --chart-5: #6b6b66;
+  --eyebrow: #8a6d2f;
+  --line: rgba(15, 17, 21, 0.1);
+  --line-strong: rgba(15, 17, 21, 0.18);
+  --text-soft: #5e5a53;
+  --text-faint: rgba(15, 17, 21, 0.45);
+  --tile: rgba(201, 163, 90, 0.16);
+  --gold-tint: rgba(201, 163, 90, 0.14);
 
-  --sidebar: #f7f7f6;
-  --sidebar-foreground: #0e1012;
-  --sidebar-primary: #2b46d8;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0f4ff;
-  --sidebar-accent-foreground: #18298c;
-  --sidebar-border: #e5e5e3;
-  --sidebar-ring: #2b46d8;
+  --chart-1: #0f1115;
+  --chart-2: #c9a35a;
+  --chart-3: #2b46d8;
+  --chart-4: #15803d;
+  --chart-5: #5e5a53;
+
+  --sidebar: #0f1115;
+  --sidebar-foreground: #f5f2ea;
+  --sidebar-primary: #c9a35a;
+  --sidebar-primary-foreground: #0f1115;
+  --sidebar-accent: rgba(245, 242, 234, 0.1);
+  --sidebar-accent-foreground: #f5f2ea;
+  --sidebar-border: rgba(245, 242, 234, 0.12);
+  --sidebar-ring: #c9a35a;
 }
 
+/* ---------------------------------------------------------------------- */
+/* Ink surface: dark sections. Same semantic tokens, flipped, so Button,   */
+/* Card, borders and text utilities just work inside <section class=      */
+/* "surface-ink">.                                                         */
+/* ---------------------------------------------------------------------- */
+.surface-ink,
 .dark {
-  --background: #0a0c10;
-  --foreground: #f7f7f6;
+  color-scheme: dark;
 
-  --card: #14171d;
-  --card-foreground: #f7f7f6;
+  --background: #0f1115;
+  --foreground: #f5f2ea;
 
-  --popover: #14171d;
-  --popover-foreground: #f7f7f6;
+  --card: #171a21;
+  --card-foreground: #f5f2ea;
 
-  --primary: #5d77f0;
-  --primary-foreground: #0e1750;
+  --popover: #171a21;
+  --popover-foreground: #f5f2ea;
 
-  --secondary: #1a1f2e;
-  --secondary-foreground: #dde4ff;
+  --primary: #c9a35a;
+  --primary-foreground: #0f1115;
 
-  --muted: #1a1d23;
-  --muted-foreground: #b8b8b3;
+  --secondary: rgba(245, 242, 234, 0.06);
+  --secondary-foreground: #f5f2ea;
 
-  --accent: #1f1a12;
-  --accent-foreground: #e3c489;
+  --muted: rgba(245, 242, 234, 0.07);
+  --muted-foreground: rgba(245, 242, 234, 0.7);
 
-  --destructive: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
+  --accent: rgba(201, 163, 90, 0.14);
+  --accent-foreground: #c9a35a;
 
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: #5d77f0;
+  --destructive: #f87171;
+  --success: #7ed09a;
+  --warning: #e0bd74;
 
-  --chart-1: #5d77f0;
-  --chart-2: #b8c5ff;
-  --chart-3: #e3c489;
-  --chart-4: #22c55e;
-  --chart-5: #b8b8b3;
+  --border: rgba(245, 242, 234, 0.12);
+  --input: rgba(245, 242, 234, 0.18);
+  --ring: #c9a35a;
 
-  --sidebar: #14171d;
-  --sidebar-foreground: #f7f7f6;
-  --sidebar-primary: #5d77f0;
-  --sidebar-primary-foreground: #0e1750;
-  --sidebar-accent: #1a1f2e;
-  --sidebar-accent-foreground: #dde4ff;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #5d77f0;
+  --eyebrow: #c9a35a;
+  --line: rgba(245, 242, 234, 0.12);
+  --line-strong: rgba(245, 242, 234, 0.28);
+  --text-soft: rgba(245, 242, 234, 0.72);
+  --text-faint: rgba(245, 242, 234, 0.5);
+  --tile: rgba(245, 242, 234, 0.07);
+  --gold-tint: rgba(201, 163, 90, 0.14);
+
+  --chart-1: #c9a35a;
+  --chart-2: #f5f2ea;
+  --chart-3: #5d77f0;
+  --chart-4: #7ed09a;
+  --chart-5: rgba(245, 242, 234, 0.5);
+}
+
+/* Alternate light surface (paper-2) — same tokens as paper, darker bg. */
+.surface-paper-2 {
+  --background: #ebe6dc;
+  --secondary: #f4f1ea;
+  --muted: #f4f1ea;
 }
 
 @layer base {
@@ -187,11 +257,12 @@
     @apply font-sans antialiased;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground;
-    line-height: 1.65;
+    line-height: 1.6;
   }
 
   h1,
@@ -199,22 +270,26 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    text-wrap: balance;
   }
 
   ::selection {
-    background: var(--color-brand-100);
-    color: var(--color-brand-900);
+    background: var(--color-gold);
+    color: var(--color-ink);
   }
 
   /* Skip-to-content link, hidden until focused. */
   .skip-link {
-    @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg;
+    @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-cream focus:shadow-lg;
   }
 
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
     *,
     *::before,
     *::after {
@@ -230,7 +305,170 @@
   .container-prose {
     @apply mx-auto max-w-[720px] px-4;
   }
+  /* Marketing container: 1280 with a fluid gutter (design spec). */
   .container-page {
-    @apply mx-auto max-w-[1200px] px-4 sm:px-6;
+    margin-inline: auto;
+    max-width: 1280px;
+    padding-inline: clamp(16px, 4vw, 28px);
+  }
+  /* Section rhythm (design spec: clamp(56px, 8vw, 88px)). */
+  .section-pad {
+    padding-block: clamp(56px, 8vw, 88px);
+  }
+  .section-pad-sm {
+    padding-block: clamp(56px, 8vw, 80px);
+  }
+  /* First section under the floating header: add the 82px header height. */
+  /* Hero sections opt in to flowing beneath the sticky 82px header: pull the
+     section up by the header height and pad the content back down. */
+  .under-header {
+    margin-top: calc(-1 * var(--header-h, 82px));
+    padding-top: calc(var(--header-h, 82px) + clamp(16px, 2.5vw, 32px));
+  }
+  .under-header-lg {
+    margin-top: calc(-1 * var(--header-h, 82px));
+    padding-top: calc(var(--header-h, 82px) + clamp(24px, 4vw, 48px));
+  }
+  /* Display type scale from the design spec. */
+  .text-display-xl {
+    font-size: clamp(44px, 6.2vw, 76px);
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+  }
+  .text-display-hero {
+    font-size: clamp(42px, 5.8vw, 72px);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .text-display-lg {
+    font-size: clamp(40px, 5.4vw, 64px);
+  }
+  .text-display {
+    font-size: clamp(34px, 4.2vw, 50px);
+  }
+  .text-display-sm {
+    font-size: clamp(28px, 3.2vw, 40px);
+  }
+  .text-display-xs {
+    font-size: clamp(26px, 3vw, 34px);
+  }
+  /* Gold italic emphasis inside display headings. */
+  .em-gold {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--color-eyebrow);
+  }
+  /* Micro label: 11px/600 uppercase tracked. */
+  .micro-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  /* Hairline gold rule used above the CTA band. */
+  .gold-hairline {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--color-gold) 30%, var(--color-gold) 70%, transparent);
+  }
+  /* Radial gold medallion / seal background. */
+  .bg-seal {
+    background: radial-gradient(circle at 35% 30%, #efd9a4, #c9a35a 55%, #8a6d2f);
+  }
+  /* Gradient panel used when a practice area has no photo. */
+  .bg-ink-panel {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(201, 163, 90, 0.24), transparent 60%),
+      linear-gradient(160deg, #1c2029, #0f1115);
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Reveal-on-scroll (see primitives/reveal.tsx). Content is always in the
+     HTML; the class only adds a transition once JS has confirmed IO works. */
+  .reveal-pending {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  .reveal-in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.6s var(--ease-out-soft),
+      transform 0.6s var(--ease-out-soft);
+  }
+  /* Native <details> accordions: hide marker, animate chevron/plus. */
+  details.v2-details > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  details.v2-details > summary::-webkit-details-marker {
+    display: none;
+  }
+  details.v2-details[open] .details-plus {
+    display: none;
+  }
+  details.v2-details:not([open]) .details-minus {
+    display: none;
+  }
+  /* Markdown bodies (typography plugin) tuned to the palette. */
+  .prose-v2 {
+    @apply prose max-w-none;
+    --tw-prose-body: var(--text-soft);
+    --tw-prose-headings: var(--foreground);
+    --tw-prose-links: var(--color-eyebrow);
+    --tw-prose-bold: var(--foreground);
+    --tw-prose-quotes: var(--foreground);
+    --tw-prose-quote-borders: var(--color-gold);
+    --tw-prose-bullets: var(--color-gold);
+    --tw-prose-counters: var(--color-gold-deep);
+    --tw-prose-hr: var(--line);
+    --tw-prose-th-borders: var(--line-strong);
+    --tw-prose-td-borders: var(--line);
+    --tw-prose-captions: var(--text-faint);
+    --tw-prose-code: var(--foreground);
+  }
+  .prose-v2 :where(h2, h3, h4) {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    scroll-margin-top: 130px;
+  }
+  .prose-v2 :where(blockquote) {
+    background: var(--gold-tint);
+    border-radius: 14px;
+    padding: 18px 22px;
+    font-style: italic;
+  }
+  .prose-v2 :where(blockquote p:first-of-type)::before,
+  .prose-v2 :where(blockquote p:last-of-type)::after {
+    content: none;
+  }
+  .prose-v2 :where(a) {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+}
+
+/* Region hover states for the California map (see RegionHover). */
+@layer utilities {
+  .ca-city.is-dim .ca-dot {
+    fill: rgba(201, 163, 90, 0.35);
+  }
+  .ca-city.is-dim .ca-label {
+    opacity: 0.2;
+  }
+  .ca-city.is-hot .ca-dot {
+    fill: #f5f2ea;
+    r: 5.5;
+  }
+  .ca-city.is-hot .ca-label {
+    opacity: 1;
+    fill: #f5f2ea;
+  }
+  .region-row.is-hot {
+    background: rgba(201, 163, 90, 0.1);
   }
 }

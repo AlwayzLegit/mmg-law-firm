@@ -1,51 +1,38 @@
 "use client";
 
 import * as React from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm, type Resolver, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowRight,
+  Bike,
+  Briefcase,
+  Car,
   CheckCircle2,
-  Mail,
+  Dog,
+  PersonStanding,
   Phone,
+  Plus,
   ShieldCheck,
-  User,
+  Smartphone,
+  TriangleAlert,
+  Truck,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
 import { cn } from "@/lib/utils";
-import {
-  LeadSchema,
-  leadFormDefaults,
-  type LeadFormValues,
-} from "@/lib/validation/lead";
+import { LeadSchema, leadFormDefaults, type LeadFormValues } from "@/lib/validation/lead";
 
+import { resolveIcon } from "./primitives/resolve-icon";
 import { Turnstile } from "./turnstile";
 
 type LeadFormProps = {
+  /** Kept for call-site compatibility — both variants render all three steps. */
   variant?: "compact" | "full";
   defaultPracticeArea?: string;
   defaultCitySlug?: string;
@@ -53,14 +40,36 @@ type LeadFormProps = {
   headline?: string;
   description?: string;
   className?: string;
-  /** Autofocus the first field. Only use where the form is the primary
-   *  above-the-fold content (e.g. the dedicated /contact page) — never on
-   *  embeds where it would yank the viewport down on load. */
+  /** Ignored by the stepper (no field to focus on step 1); kept for compatibility. */
   autoFocus?: boolean;
 };
 
 const DESCRIPTION_MAX = 500;
+const OTHER = "__other__";
 
+/** Step-1 matter tiles → practice-area slugs. "Something else" sends no area. */
+const MATTERS: Array<{ id: string; label: string; icon: LucideIcon }> = [
+  { id: "car-accidents", label: "Car accident", icon: Car },
+  { id: "truck-accidents", label: "Truck accident", icon: Truck },
+  { id: "motorcycle-accidents", label: "Motorcycle", icon: Bike },
+  { id: "pedestrian-accidents", label: "Pedestrian", icon: PersonStanding },
+  { id: "slip-and-fall", label: "Slip and fall", icon: TriangleAlert },
+  { id: "dog-bites", label: "Dog bite", icon: Dog },
+  { id: "rideshare-accidents", label: "Uber / Lyft", icon: Smartphone },
+  { id: "employment-law", label: "Workplace matter", icon: Briefcase },
+  { id: OTHER, label: "Something else", icon: Plus },
+];
+
+const inputCls =
+  "block h-[46px] w-full rounded-[10px] border border-input bg-card px-3 text-[15px] text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-text-faint focus:border-gold focus:shadow-[0_0_0_3px_rgba(201,163,90,.25)]";
+const labelCls = "micro-label text-text-soft block tracking-[0.12em]";
+
+/**
+ * Lead intake (redesign v2): a three-step card over the existing LeadSchema
+ * and /api/leads contract. Step 1 picks the matter, step 2 the details,
+ * step 3 contact + TCPA consent + Turnstile. Honeypot, UTM capture and the
+ * PostHog funnel events are unchanged.
+ */
 export function LeadForm({
   variant = "compact",
   defaultPracticeArea,
@@ -69,20 +78,11 @@ export function LeadForm({
   headline = "Request a free consultation",
   description = "Tell us briefly what happened. We'll call you back within one business hour during office hours.",
   className,
-  autoFocus = false,
 }: LeadFormProps) {
-  const isFull = variant === "full";
-
-  // LeadSchema uses .preprocess() / .transform(), so zodResolver's inferred
-  // input type collapses to `unknown` and conflicts with LeadFormValues used
-  // by Controller. The cast narrows the resolver to the form's value shape
-  // — types are still checked at the call sites that read field.value.
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
-    resolver: zodResolver(LeadSchema) as unknown as Resolver<
-      LeadFormValues,
-      unknown,
-      LeadFormValues
-    >,
+    // LeadSchema uses preprocess/transform, so zodResolver's inferred input type
+    // collapses to `unknown`; the cast narrows it to the form's value shape.
+    resolver: zodResolver(LeadSchema) as unknown as Resolver<LeadFormValues, unknown, LeadFormValues>,
     mode: "onBlur",
     defaultValues: {
       ...leadFormDefaults,
@@ -92,10 +92,21 @@ export function LeadForm({
     },
   });
 
+  const [step, setStep] = React.useState<0 | 1 | 2>(0);
+  const [matter, setMatter] = React.useState<string>(defaultPracticeArea ?? "");
   const [submitted, setSubmitted] = React.useState(false);
 
-  // Funnel: fire once when the visitor first interacts, so we can measure
-  // started → submitted (abandonment). No PII.
+  // If the page's practice area isn't one of the nine tiles, add it so the
+  // preselection is visible (e.g. bicycle accidents, wrongful termination).
+  const tiles = React.useMemo(() => {
+    if (!defaultPracticeArea || MATTERS.some((m) => m.id === defaultPracticeArea)) return MATTERS;
+    const area = PRACTICE_AREAS.find((p) => p.slug === defaultPracticeArea);
+    if (!area) return MATTERS;
+    const extra = { id: area.slug, label: area.shortName, icon: resolveIcon(area.icon) };
+    return [...MATTERS.slice(0, -1), extra, MATTERS[MATTERS.length - 1]];
+  }, [defaultPracticeArea]);
+
+  // Funnel: fire once when the visitor first interacts.
   const startedRef = React.useRef(false);
   const markStarted = React.useCallback(() => {
     if (startedRef.current) return;
@@ -104,9 +115,7 @@ export function LeadForm({
   }, [variant]);
 
   const handleTurnstileToken = React.useCallback(
-    (token: string) => {
-      form.setValue("turnstileToken", token);
-    },
+    (token: string) => form.setValue("turnstileToken", token),
     [form],
   );
 
@@ -115,24 +124,12 @@ export function LeadForm({
     const sp = new URLSearchParams(window.location.search);
     form.setValue("source_url", window.location.href);
     form.setValue("referrer", document.referrer || undefined);
-    const utmSource = sp.get("utm_source");
-    if (utmSource) form.setValue("utm_source", utmSource);
-    const utmMedium = sp.get("utm_medium");
-    if (utmMedium) form.setValue("utm_medium", utmMedium);
-    const utmCampaign = sp.get("utm_campaign");
-    if (utmCampaign) form.setValue("utm_campaign", utmCampaign);
-    const utmTerm = sp.get("utm_term");
-    if (utmTerm) form.setValue("utm_term", utmTerm);
-    const utmContent = sp.get("utm_content");
-    if (utmContent) form.setValue("utm_content", utmContent);
-    const gclid = sp.get("gclid");
-    if (gclid) form.setValue("gclid", gclid);
+    for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid"] as const) {
+      const v = sp.get(k);
+      if (v) form.setValue(k, v);
+    }
   }, [form]);
 
-  // Funnel step 2: the form was rendered (an impression). Combined with
-  // $pageview (step 1), lead_form_started (step 3) and lead_submitted (step 4)
-  // this gives a full visit → form-view → start → submit funnel. Fired once
-  // per mount; no PII, just the variant + matter/location context.
   React.useEffect(() => {
     captureEvent("lead_form_viewed", {
       variant,
@@ -142,8 +139,13 @@ export function LeadForm({
     });
   }, [variant, defaultPracticeArea, defaultCitySlug, defaultCountySlug]);
 
+  function pickMatter(id: string) {
+    markStarted();
+    setMatter(id);
+    form.setValue("practice_area", id === OTHER ? undefined : id, { shouldValidate: false });
+  }
+
   async function onSubmit(values: LeadFormValues) {
-    // Abort a hung request rather than leaving the user spinning indefinitely.
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
     try {
@@ -153,45 +155,30 @@ export function LeadForm({
         body: JSON.stringify(values),
         signal: controller.signal,
       });
-
       if (res.status === 429) {
-        toast.error(
-          "You've sent several requests recently. Please wait a moment and try again — or call us directly.",
-        );
+        toast.error("You've sent several requests recently. Please wait a moment and try again — or call us directly.");
         return;
       }
-
       if (!res.ok) {
         const data = await safeJson(res);
         if (data?.error === "validation-failed" && data.issues) {
           const issues = data.issues as Record<string, string[]>;
           for (const [field, messages] of Object.entries(issues)) {
-            if (messages?.[0]) {
-              form.setError(field as keyof LeadFormValues, {
-                message: messages[0],
-              });
-            }
+            if (messages?.[0]) form.setError(field as keyof LeadFormValues, { message: messages[0] });
           }
           toast.error("Please check the highlighted fields.");
           return;
         }
         if (data?.error === "turnstile-failed") {
-          toast.error(
-            `Bot-protection failed to load. Please call us at ${FIRM.phone} or email ${FIRM.intakeEmail}.`,
-          );
+          toast.error(`Bot-protection failed to load. Please call us at ${FIRM.phone} or email ${FIRM.intakeEmail}.`);
           return;
         }
-        toast.error(
-          "We couldn't submit your request. Please try again, or call us directly.",
-        );
+        toast.error("We couldn't submit your request. Please try again, or call us directly.");
         return;
       }
-
       setSubmitted(true);
       toast.success("We received your request — we'll be in touch shortly.");
-      // PostHog conversion event. No PII — we never send name, phone, email,
-      // or the incident description. Just the routing/attribution dimensions
-      // marketing actually needs (which page, which practice area, source).
+      // PostHog conversion event. No PII.
       captureEvent("lead_submitted", {
         variant,
         practice_area: values.practice_area || undefined,
@@ -213,277 +200,155 @@ export function LeadForm({
     }
   }
 
-  if (submitted) {
-    return (
-      <div
-        className={cn(
-          "border-success/30 bg-card ring-success/10 relative overflow-hidden rounded-3xl border p-7 shadow-[0_40px_80px_-40px_rgba(34,179,128,0.35)] ring-1 md:p-9",
-          className,
-        )}
-      >
-        <div
-          aria-hidden
-          className="from-success/25 via-success/10 pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br to-transparent blur-3xl"
-        />
-        <span
-          aria-hidden
-          className="via-success absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent to-transparent"
-        />
-        <div className="relative flex items-center gap-2.5">
-          <span className="bg-success/15 text-success ring-success/5 inline-flex h-9 w-9 items-center justify-center rounded-full ring-4">
-            <CheckCircle2 className="h-5 w-5" aria-hidden />
-          </span>
-          <p className="text-success text-[11px] font-semibold tracking-[0.22em] uppercase">
-            Received
-          </p>
-        </div>
-        <h3 className="font-display relative mt-5 text-2xl leading-tight font-medium tracking-tight md:text-3xl">
-          Your request is in.
-        </h3>
-        <p className="text-muted-foreground relative mt-3 leading-relaxed">
-          We&apos;ll call you back within one business hour during office hours.
-          If your matter is urgent, please call us directly.
-        </p>
-        <div className="relative mt-7 flex flex-wrap gap-3">
-          <a
-            href={`tel:${FIRM.phoneTel}`}
-            className={cn(
-              buttonVariants({ size: "marketing" }),
-              "gap-2 py-3.5",
-            )}
-          >
-            <Phone className="h-4 w-4" aria-hidden />
-            Call {FIRM.phone}
-          </a>
-          <button
-            type="button"
-            onClick={() => setSubmitted(false)}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "marketing" }),
-              "py-3.5",
-            )}
-          >
-            Submit another
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const stepN = submitted ? 3 : step + 1;
+  const progress = submitted ? 100 : ((step + 1) / 3) * 100;
+  const descLen = (useWatch({ control: form.control, name: "description" }) ?? "").length;
 
   return (
     <div
       className={cn(
-        "border-border/80 bg-card ring-border/30 relative overflow-hidden rounded-3xl border p-7 shadow-[0_40px_80px_-40px_rgba(20,30,80,0.28)] ring-1 md:p-9",
+        "border-ink/10 shadow-lift text-ink relative rounded-[18px] border bg-white p-7 font-sans leading-[1.6] md:p-8",
         className,
       )}
     >
-      {/* Decorative gradient corner — subtle premium-feeling */}
-      <div
-        aria-hidden
-        className="via-primary/10 pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br from-[var(--color-gold-500)]/20 to-transparent blur-3xl"
-      />
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--color-gold-500)] to-transparent"
-      />
-
-      <div className="relative mb-7 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-primary inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] uppercase">
-            <span className="bg-success inline-flex h-1.5 w-1.5 animate-pulse rounded-full" />
-            Free consultation
-          </p>
-          <h3 className="font-display mt-3 text-2xl leading-tight font-medium tracking-tight md:text-3xl">
-            {headline}
-          </h3>
-          <p className="text-muted-foreground mt-2.5 text-sm leading-relaxed">
-            {description}
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-gold-deep m-0 inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] uppercase">
+          <span aria-hidden className="bg-success inline-block h-1.5 w-1.5 rounded-full" />
+          Free consultation
+        </p>
+        <p className="text-stone m-0 text-xs" aria-live="polite">
+          Step {stepN} of 3
+        </p>
       </div>
+      <div className="bg-ink/8 mt-3 h-[3px] overflow-hidden rounded-sm" aria-hidden>
+        <div className="bg-gold h-full transition-[width] duration-[400ms] ease-out" style={{ width: `${progress}%` }} />
+      </div>
+      <h3 className="font-display mt-5 text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] text-ink">{headline}</h3>
+      <p className="text-stone mt-2 text-sm">{description}</p>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          noValidate
-          className="relative grid gap-6"
-        >
-          {/* Honeypot — hidden from users, catches naive bots. Real visitors
-              never focus or fill this; a non-empty value is flagged as spam
-              server-side. aria-hidden + tabIndex -1 keep it out of the AT and
-              tab order. */}
-          <div
-            aria-hidden
-            className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
-          >
-            <label htmlFor="lead-company">Company (leave blank)</label>
-            <input
-              id="lead-company"
-              type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              {...form.register("company")}
-            />
+      {submitted ? (
+        <div className="bg-paper mt-[22px] rounded-[14px] p-[22px]">
+          <p className="text-success m-0 text-[11px] font-semibold tracking-[0.16em] uppercase">Received</p>
+          <h3 className="font-display mt-2.5 text-[30px] leading-[1.1] font-semibold">Your request is in.</h3>
+          <p className="text-stone mt-2 text-[15px]">
+            We&apos;ll call you back within one business hour during office hours. If your matter is urgent, please call
+            us directly.
+          </p>
+          <div className="mt-[18px] flex flex-wrap gap-2.5">
+            <a href={`tel:${FIRM.phoneTel}`} className="bg-ink text-cream inline-flex h-11 items-center gap-2 rounded-full px-[18px] text-[13px] font-semibold no-underline">
+              <Phone className="h-3.5 w-3.5" aria-hidden /> Call {FIRM.phone}
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                setSubmitted(false);
+                setStep(0);
+                setMatter(defaultPracticeArea ?? "");
+              }}
+              className="border-ink/20 hover:bg-paper h-11 rounded-full border bg-white px-[18px] text-[13px] font-semibold"
+            >
+              Submit another
+            </button>
           </div>
+        </div>
+      ) : (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="relative">
+            {/* Honeypot — hidden from users, catches naive bots. */}
+            <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+              <label htmlFor="lead-company">Company (leave blank)</label>
+              <input id="lead-company" type="text" tabIndex={-1} autoComplete="off" {...form.register("company")} />
+            </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
-                    Full name
-                  </FormLabel>
-                  <div className="relative mt-1.5">
-                    <User
-                      className="text-muted-foreground/60 group-focus-within:text-primary pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transition-colors"
-                      aria-hidden
-                    />
-                    <FormControl
-                      as={Input}
-                      autoComplete="name"
-                      autoFocus={autoFocus}
-                      placeholder="Jane Doe"
-                      className="h-12 pl-10 text-base shadow-sm"
-                      {...field}
-                      onFocus={markStarted}
-                    />
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
-                    Phone
-                  </FormLabel>
-                  <div className="relative mt-1.5">
-                    <Phone
-                      className="text-muted-foreground/60 pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2"
-                      aria-hidden
-                    />
-                    <FormControl
-                      as={Input}
-                      type="tel"
-                      autoComplete="tel"
-                      placeholder="(555) 555-1234"
-                      className="h-12 pl-10 text-base shadow-sm"
-                      {...field}
-                    />
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+            {/* ---- Step 1: matter ------------------------------------------------ */}
+            <fieldset className={cn("m-0 border-0 p-0", step !== 0 && "hidden")}>
+              <legend className={cn(labelCls, "mt-[22px]")}>What happened?</legend>
+              <div className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5" role="radiogroup" aria-label="Type of matter">
+                {tiles.map((m) => {
+                  const on = matter === m.id;
+                  const Icon = m.icon;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => pickMatter(m.id)}
+                      className={cn(
+                        "flex flex-col items-start gap-2.5 rounded-xl border p-3 text-left text-[13px] font-semibold transition-colors",
+                        on ? "border-ink bg-ink text-cream" : "border-ink/10 bg-paper text-ink hover:border-ink/30",
+                      )}
+                    >
+                      <Icon className={cn("h-5 w-5", on ? "text-gold" : "text-gold-deep")} aria-hidden />
+                      <span>{m.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                disabled={!matter}
+                onClick={() => setStep(1)}
+                className={cn(
+                  "text-cream mt-5 flex h-[50px] w-full items-center justify-between rounded-full px-5 text-sm font-semibold transition-colors",
+                  matter ? "bg-ink hover:bg-ink-hover" : "bg-ink/35 cursor-not-allowed",
+                )}
+              >
+                <span>Continue</span>
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </button>
+            </fieldset>
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
-                  Email{" "}
-                  <span className="text-muted-foreground/70 font-normal normal-case">
-                    (optional)
-                  </span>
-                </FormLabel>
-                <div className="relative mt-1.5">
-                  <Mail
-                    className="text-muted-foreground/60 pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2"
-                    aria-hidden
-                  />
-                  <FormControl
-                    as={Input}
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    className="h-12 pl-10 text-base shadow-sm"
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                  />
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {isFull ? (
-            <>
-              <div className="grid gap-6 sm:grid-cols-2">
+            {/* ---- Step 2: details ----------------------------------------------- */}
+            <div className={cn(step !== 1 && "hidden")}>
+              <div className="mt-[22px] grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3.5">
                 <FormField
                   control={form.control}
-                  name="practice_area"
+                  name="city_slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
-                        Type of matter
-                      </FormLabel>
-                      <Select
+                      <FormLabel className={labelCls}>Where did it happen?</FormLabel>
+                      <FormControl
+                        as="select"
+                        className={cn(inputCls, "mt-1.5")}
                         value={field.value ?? ""}
-                        onValueChange={(v) => field.onChange(v || undefined)}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          const v = e.currentTarget.value;
+                          field.onChange(v || undefined);
+                          const match = TIER_1_LOCATIONS.find((l) => l.citySlug === v);
+                          if (match) form.setValue("county_slug", match.countySlug);
+                        }}
+                        onBlur={field.onBlur}
+                        name={field.name}
                       >
-                        <FormControl
-                          as={SelectTrigger}
-                          aria-label="Type of matter"
-                          className="mt-1.5 h-12 text-base shadow-sm"
-                        >
-                          <SelectValue placeholder="Select an option" />
-                        </FormControl>
-                        <SelectContent>
-                          {PRACTICE_AREAS.map((p) => (
-                            <SelectItem key={p.slug} value={p.slug}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <option value="">Pick a city</option>
+                        {TIER_1_LOCATIONS.map((l) => (
+                          <option key={l.citySlug} value={l.citySlug}>
+                            {l.cityName}
+                          </option>
+                        ))}
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="city_slug"
+                  name="incident_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
-                        Where did it happen?
+                      <FormLabel className={labelCls}>
+                        Date of incident <span className="font-normal tracking-normal normal-case">(if known)</span>
                       </FormLabel>
-                      <Select
+                      <FormControl
+                        as="input"
+                        type="date"
+                        className={cn(inputCls, "mt-1.5")}
                         value={field.value ?? ""}
-                        onValueChange={(v) => {
-                          field.onChange(v || undefined);
-                          const match = TIER_1_LOCATIONS.find(
-                            (l) => l.citySlug === v,
-                          );
-                          if (match) {
-                            form.setValue("county_slug", match.countySlug);
-                          }
-                        }}
-                      >
-                        <FormControl
-                          as={SelectTrigger}
-                          aria-label="Where did it happen"
-                          className="mt-1.5 h-12 text-base shadow-sm"
-                        >
-                          <SelectValue placeholder="Pick a city" />
-                        </FormControl>
-                        <SelectContent>
-                          {TIER_1_LOCATIONS.map((l) => (
-                            <SelectItem key={l.citySlug} value={l.citySlug}>
-                              {l.cityName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -491,19 +356,83 @@ export function LeadForm({
               </div>
               <FormField
                 control={form.control}
-                name="incident_date"
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="mt-3.5">
+                    <FormLabel className={labelCls}>What happened?</FormLabel>
+                    <FormControl
+                      as="textarea"
+                      rows={4}
+                      maxLength={DESCRIPTION_MAX}
+                      placeholder="In a few sentences — type of incident, where, and how you're doing now."
+                      className={cn(inputCls, "mt-1.5 h-auto min-h-[110px] resize-none py-3 leading-[1.6]")}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      onFocus={markStarted}
+                      name={field.name}
+                    />
+                    <div className="text-stone mt-1.5 flex justify-between gap-3 text-xs">
+                      <span>Do not include sensitive medical details — we&apos;ll discuss those securely after we connect.</span>
+                      <span className={cn("tabular-nums", descLen >= DESCRIPTION_MAX && "text-destructive")} aria-hidden>
+                        {descLen}/{DESCRIPTION_MAX}
+                      </span>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="mt-[18px] flex gap-2.5">
+                <button type="button" onClick={() => setStep(0)} className="border-ink/20 hover:bg-paper h-[50px] rounded-full border bg-white px-[18px] text-sm font-semibold">
+                  Back
+                </button>
+                <button type="button" onClick={() => setStep(2)} className="bg-ink text-cream hover:bg-ink-hover flex h-[50px] flex-1 items-center justify-between rounded-full px-5 text-sm font-semibold">
+                  <span>Continue</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+            </div>
+
+            {/* ---- Step 3: contact ----------------------------------------------- */}
+            <div className={cn("mt-[22px] grid gap-3.5", step !== 2 && "hidden")}>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3.5">
+                <FormField
+                  control={form.control}
+                  name="full_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={labelCls}>Full name</FormLabel>
+                      <FormControl as="input" autoComplete="name" placeholder="Jane Doe" className={cn(inputCls, "mt-1.5")} {...field} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={labelCls}>Phone</FormLabel>
+                      <FormControl as="input" type="tel" autoComplete="tel" placeholder="(555) 555-1234" className={cn(inputCls, "mt-1.5")} {...field} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
-                      Date of incident{" "}
-                      <span className="text-muted-foreground/70 font-normal normal-case">
-                        (if known)
-                      </span>
+                    <FormLabel className={labelCls}>
+                      Email <span className="font-normal tracking-normal normal-case">(optional)</span>
                     </FormLabel>
                     <FormControl
-                      as={Input}
-                      type="date"
-                      className="mt-1.5 h-12 text-base shadow-sm"
+                      as="input"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      className={cn(inputCls, "mt-1.5")}
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
@@ -513,178 +442,93 @@ export function LeadForm({
                   </FormItem>
                 )}
               />
-            </>
-          ) : null}
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
-                  What happened?
-                </FormLabel>
-                <FormControl
-                  as={Textarea}
-                  rows={4}
-                  maxLength={DESCRIPTION_MAX}
-                  placeholder="In a few sentences — type of incident, where, and how you're doing now."
-                  className="mt-1.5 min-h-32 resize-none text-base leading-relaxed shadow-sm"
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  onFocus={markStarted}
-                  name={field.name}
-                />
-                <div className="flex items-start justify-between gap-3">
-                  <FormDescription className="text-xs">
-                    Do not include sensitive medical details — we&apos;ll
-                    discuss those securely after we connect.
-                  </FormDescription>
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "mt-1 flex-none text-xs tabular-nums",
-                      (field.value ?? "").length >= DESCRIPTION_MAX
-                        ? "text-destructive"
-                        : "text-muted-foreground/70",
-                    )}
-                  >
-                    {(field.value ?? "").length}/{DESCRIPTION_MAX}
-                  </span>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="consent_contact"
-            render={({ field }) => (
-              <FormItem className="group/consent border-border/80 bg-secondary/40 hover:border-primary/30 has-aria-checked-true:border-success/40 has-aria-checked-true:bg-success/5 relative flex flex-row items-start gap-3.5 rounded-2xl border p-4 transition-colors md:p-5">
-                <span
-                  aria-hidden
-                  className="absolute top-4 bottom-4 left-0 w-1 rounded-r-full bg-[var(--color-gold-500)]/60 opacity-0 transition-opacity group-has-aria-checked-true/consent:opacity-100"
-                />
-                <FormControl
-                  as={Checkbox}
-                  checked={field.value === true}
-                  onCheckedChange={(v: boolean | "indeterminate") =>
-                    field.onChange(v === true)
-                  }
-                  className="mt-0.5 size-5 shrink-0"
-                />
-                <div className="grid gap-1">
-                  <FormLabel className="text-foreground/85 text-xs leading-relaxed font-normal">
-                    {TCPA_CONSENT_TEXT}
-                  </FormLabel>
-                  <FormMessage />
-                </div>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="turnstileToken"
-            render={({ field }) => (
-              <FormItem>
-                <Turnstile
-                  // Read process.env directly (NOT via the @/lib/env object):
-                  // Next.js only inlines NEXT_PUBLIC_* into the CLIENT bundle
-                  // for literal `process.env.NEXT_PUBLIC_X` references. Going
-                  // through the aggregated env object (safeParse(process.env))
-                  // left this empty in the browser, so the widget always fell
-                  // back to "unavailable" even with the key set in Vercel.
-                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
-                  onToken={handleTurnstileToken}
-                  action="lead-form"
-                />
-                <input type="hidden" {...field} value={field.value ?? ""} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button
-            type="submit"
-            size="marketing"
-            disabled={form.formState.isSubmitting}
-            className="group/cta from-primary via-primary relative w-full justify-between overflow-hidden bg-gradient-to-r to-[var(--color-brand-700,#18298c)] py-4 text-base shadow-[0_10px_30px_-10px_rgba(43,70,216,0.55)] transition-all hover:translate-y-[-1px] hover:shadow-[0_18px_40px_-12px_rgba(43,70,216,0.65)]"
-          >
-            <span className="relative z-10 flex items-center gap-2 text-base font-medium">
-              {form.formState.isSubmitting ? (
-                <>
-                  <span className="border-primary-foreground/30 border-t-primary-foreground inline-block h-4 w-4 animate-spin rounded-full border-2" />
-                  Sending…
-                </>
-              ) : (
-                <>Request Free Consultation</>
-              )}
-            </span>
-            <ArrowRight
-              className="relative z-10 h-5 w-5 transition-transform group-hover/cta:translate-x-1"
-              aria-hidden
-            />
-            <span
-              aria-hidden
-              className="absolute inset-y-0 left-[-30%] w-1/3 -skew-x-12 bg-white/15 opacity-0 transition-all duration-700 group-hover/cta:left-[120%] group-hover/cta:opacity-100"
-            />
-          </Button>
-
-          {/* Trust strip below the CTA — three short, scannable proofs */}
-          <div className="border-border/60 text-muted-foreground grid grid-cols-3 gap-2 border-t pt-5 text-[11px] leading-snug sm:gap-3">
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
-              <ShieldCheck
-                className="text-primary h-4 w-4 flex-none"
-                aria-hidden
+              <FormField
+                control={form.control}
+                name="consent_contact"
+                render={({ field }) => (
+                  <FormItem className="bg-paper flex flex-row items-start gap-3 rounded-xl p-3.5">
+                    <FormControl
+                      as="input"
+                      type="checkbox"
+                      className="accent-ink mt-0.5 h-[18px] w-[18px] flex-none"
+                      checked={field.value === true}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.currentTarget.checked)}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                    <div className="grid gap-1">
+                      <FormLabel className="text-stone text-xs leading-[1.55] font-normal">{TCPA_CONSENT_TEXT}</FormLabel>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
               />
-              <span>No fee unless we win</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
-              <CheckCircle2
-                className="text-primary h-4 w-4 flex-none"
-                aria-hidden
+              <FormField
+                control={form.control}
+                name="turnstileToken"
+                render={({ field }) => (
+                  <FormItem>
+                    {step === 2 ? (
+                      <Turnstile
+                        // Read process.env directly: Next only inlines NEXT_PUBLIC_*
+                        // into the client bundle for literal references.
+                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
+                        onToken={handleTurnstileToken}
+                        action="lead-form"
+                      />
+                    ) : null}
+                    <input type="hidden" {...field} value={field.value ?? ""} />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <span>Reply in 1 business hr</span>
+              <div className="flex gap-2.5">
+                <button type="button" onClick={() => setStep(1)} className="border-ink/20 hover:bg-paper h-[50px] rounded-full border bg-white px-[18px] text-sm font-semibold">
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  className="bg-gold text-ink hover:bg-gold-light flex h-[50px] flex-1 items-center justify-between rounded-full px-5 text-sm font-semibold transition-colors disabled:opacity-60"
+                >
+                  <span>{form.formState.isSubmitting ? "Sending…" : "Request Free Consultation"}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+              <p className="text-stone m-0 text-xs">
+                By submitting, you confirm you have read and agreed to our{" "}
+                <a href="/legal/privacy" className="text-stone hover:text-ink underline underline-offset-2">
+                  Privacy Policy
+                </a>
+                . Submitting this form does not create an attorney-client relationship.
+              </p>
             </div>
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
-              <Phone className="text-primary h-4 w-4 flex-none" aria-hidden />
-              <span>Confidential intake</span>
-            </div>
-          </div>
+          </form>
+        </Form>
+      )}
 
-          <p className="text-muted-foreground text-xs">
-            By submitting, you confirm you have read and agreed to our{" "}
-            <a
-              href="/legal/privacy"
-              className="hover:text-primary underline underline-offset-2"
-            >
-              Privacy Policy
-            </a>
-            . Submitting this form does not create an attorney-client
-            relationship.
-          </p>
-        </form>
-      </Form>
+      <div className="border-ink/8 text-stone mt-5 flex flex-wrap gap-x-[18px] gap-y-2 border-t pt-4 text-xs">
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldCheck className="text-gold-deep h-3.5 w-3.5" aria-hidden /> No fee unless we win
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <CheckCircle2 className="text-gold-deep h-3.5 w-3.5" aria-hidden /> Reply in 1 business hr
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Phone className="text-gold-deep h-3.5 w-3.5" aria-hidden /> Confidential intake
+        </span>
+      </div>
     </div>
   );
 }
 
-function safeJson(
-  res: Response,
-): Promise<{ error?: string; issues?: unknown }> {
+function safeJson(res: Response): Promise<{ error?: string; issues?: unknown }> {
   return res.json().catch(() => ({}));
 }
 
 /** Fire a PostHog event if the SDK is loaded. Never sends PII. */
 function captureEvent(event: string, props?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
-  const posthog = (
-    window as unknown as {
-      posthog?: { capture: (e: string, p?: Record<string, unknown>) => void };
-    }
-  ).posthog;
+  const posthog = (window as unknown as { posthog?: { capture: (e: string, p?: Record<string, unknown>) => void } }).posthog;
   posthog?.capture(event, props);
 }

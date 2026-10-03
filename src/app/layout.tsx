@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import Script from "next/script";
-import { Inter, Fraunces } from "next/font/google";
+import { Instrument_Sans, Newsreader } from "next/font/google";
 
 import { SchemaGraph } from "@/components/seo/schema-graph";
 import { FIRM, SITE } from "@/lib/constants";
@@ -25,19 +25,25 @@ const PostHogProvider = dynamic(() =>
   ),
 );
 
-const inter = Inter({
+// Redesign v2 type: Instrument Sans for UI/body, Newsreader (optical-size
+// axis) for display. Weights/styles limited to what the design uses so the
+// font payload stays within the Lighthouse budget.
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-instrument-sans",
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const newsreader = Newsreader({
   subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-  // Only opsz is actually referenced from CSS. SOFT added a second
-  // preload woff2 with no visual effect — dropped.
+  // Variable font (wght + opsz axes): one file per style instead of one per
+  // weight; the design uses 500/600 plus the optical-size axis.
+  weight: "variable",
+  style: ["normal", "italic"],
   axes: ["opsz"],
+  variable: "--font-newsreader",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -76,8 +82,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0c10" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f1ea" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1115" },
   ],
 };
 
@@ -89,7 +95,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${instrumentSans.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <a href="#main-content" className="skip-link">
