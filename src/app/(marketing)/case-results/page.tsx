@@ -1,12 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CaseResultsFilterable } from "@/components/marketing/case-results-filterable";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { DISCLAIMERS, FIRM } from "@/lib/constants";
-import { pickLocationImage } from "@/lib/media";
 import { getPublishedCaseResults } from "@/lib/data/public-content";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -33,25 +31,19 @@ export default async function CaseResultsPage() {
       />
 
       <PageHero
+        eyebrow="Results"
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Case Results" }]}
-        title="California Personal Injury Case Results"
-        description={
-          <>Anonymized to protect client privacy. {DISCLAIMERS.results}</>
+        title={
+          <>
+            California Personal Injury <em className="em-gold">Case Results</em>
+          </>
         }
-        aside={
-          <AttorneyHeroAside
-            image={pickLocationImage("case-results").name}
-            alt={pickLocationImage("case-results").alt}
-            priority
-          />
-        }
+        description={<>Anonymized to protect client privacy. {DISCLAIMERS.results}</>}
       />
 
       <CaseResultsFilterable results={results} />
 
-      <p className="container-page text-muted-foreground pb-12 text-xs leading-relaxed">
-        {DISCLAIMERS.results}
-      </p>
+      <p className="container-page text-stone pb-12 text-[12.5px] leading-relaxed">{DISCLAIMERS.results}</p>
 
       <CtaBand />
     </>

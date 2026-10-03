@@ -42,7 +42,7 @@ export function BlogShare({
           target="_blank"
           rel="noopener"
           aria-label={label}
-          className="border-border text-muted-foreground hover:border-primary/40 hover:text-primary inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
+          className="border-line-strong text-stone hover:border-ink hover:text-foreground bg-card inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border transition-colors"
         >
           <Icon className="h-3.5 w-3.5" aria-hidden />
         </a>

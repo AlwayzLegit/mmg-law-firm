@@ -419,6 +419,38 @@
   details.v2-details:not([open]) .details-minus {
     display: none;
   }
+  /* Long-form bodies (blog post, legal pages): Newsreader h2, tinted quote. */
+  .blog-body h2,
+  .legal-body h2 {
+    scroll-margin-top: 96px;
+  }
+  .blog-body h2 {
+    font-size: 30px;
+    margin-top: 40px;
+    margin-bottom: 12px;
+  }
+  .legal-body h2 {
+    font-size: 26px;
+    margin-top: 36px;
+    margin-bottom: 10px;
+  }
+  .blog-body blockquote {
+    margin: 24px 0;
+    padding: 22px 26px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--color-paper-2);
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 500;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--color-ink);
+  }
+  .blog-body blockquote p:first-of-type::before,
+  .blog-body blockquote p:last-of-type::after {
+    content: none;
+  }
   /* Markdown bodies (typography plugin) tuned to the palette. */
   .prose-v2 {
     @apply prose max-w-none;

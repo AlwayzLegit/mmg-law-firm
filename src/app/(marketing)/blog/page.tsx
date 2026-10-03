@@ -3,12 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 
-import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { type BlogPostSummary, getPublishedPosts } from "@/lib/data/blog";
-import { pickLocationImage } from "@/lib/media";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
@@ -43,27 +41,16 @@ export default async function BlogIndexPage() {
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Blog" }]}
         title={
           <>
-            Personal-injury law,{" "}
-            <span className="text-primary">in plain English.</span>
+            Personal-injury law, <em className="em-gold">in plain English.</em>
           </>
         }
         description="Practical articles on what to do after an accident, how the claim process actually works, and California-specific legal context."
-        aside={
-          <AttorneyHeroAside
-            image={pickLocationImage("blog").name}
-            alt={pickLocationImage("blog").alt}
-            priority
-          />
-        }
       />
 
-      <section className="container-page py-16 md:py-20">
-        {/* Featured post — full-width card with hero image. */}
+      <section className="container-page section-pad-sm">
         <FeaturedCard post={featured} />
-
-        {/* Remaining posts — image-led grid. */}
         {rest.length > 0 ? (
-          <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="m-0 mt-7 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3.5 p-0">
             {rest.map((p) => (
               <li key={p.slug}>
                 <PostCard post={p} />
@@ -82,9 +69,9 @@ function FeaturedCard({ post: p }: { post: BlogPostSummary }) {
   return (
     <Link
       href={`/blog/${p.slug}`}
-      className="group border-border bg-card hover:border-primary/30 grid overflow-hidden rounded-3xl border transition-all duration-200 hover:shadow-[0_24px_60px_-28px_rgba(20,30,80,0.25)] md:grid-cols-2"
+      className="group bg-card border-line text-foreground grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] overflow-hidden rounded-[20px] border no-underline transition-shadow duration-200 hover:shadow-lift"
     >
-      <div className="bg-secondary relative aspect-[16/10] md:aspect-auto md:min-h-[22rem]">
+      <span className="bg-ink-soft relative block min-h-[320px]">
         {p.hero_image_url ? (
           <Image
             src={p.hero_image_url}
@@ -97,40 +84,27 @@ function FeaturedCard({ post: p }: { post: BlogPostSummary }) {
         ) : (
           <FallbackArt />
         )}
-      </div>
-      <div className="flex flex-col p-8 md:p-10">
-        <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
-          Featured · {p.tags[0] ?? "Article"}
-        </p>
-        <h2 className="font-display group-hover:text-primary mt-3 text-2xl leading-tight font-medium tracking-tight transition-colors md:text-3xl">
-          {p.title}
-        </h2>
-        {p.excerpt ? (
-          <p className="text-muted-foreground mt-4 line-clamp-3 leading-relaxed">
-            {p.excerpt}
-          </p>
-        ) : null}
-        <div className="text-muted-foreground mt-auto flex items-center justify-between gap-3 pt-8 text-xs">
+      </span>
+      <span className="flex flex-col p-[clamp(24px,3vw,40px)]">
+        <span className="micro-label text-gold-deep tracking-[0.16em]">Featured · {p.tags[0] ?? "Article"}</span>
+        <h2 className="font-display mt-3 text-[clamp(26px,3vw,38px)] leading-[1.1] font-semibold tracking-[-0.02em]">{p.title}</h2>
+        {p.excerpt ? <span className="text-stone mt-3.5 text-[15.5px] leading-[1.6]">{p.excerpt}</span> : null}
+        <span className="text-stone mt-auto flex flex-wrap justify-between gap-3 pt-6 text-[12.5px]">
           <span>
             {p.author_name}
             {p.published_at ? (
               <>
                 {" · "}
-                <time dateTime={p.published_at}>
-                  {formatDate(p.published_at)}
-                </time>
+                <time dateTime={p.published_at}>{formatDate(p.published_at)}</time>
               </>
             ) : null}
           </span>
-          <span className="text-primary inline-flex items-center gap-1 text-sm font-medium">
+          <span className="text-gold-deep inline-flex items-center gap-1.5 font-semibold">
             Read article
-            <ArrowUpRight
-              className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-              aria-hidden
-            />
+            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
           </span>
-        </div>
-      </div>
+        </span>
+      </span>
     </Link>
   );
 }
@@ -139,9 +113,9 @@ function PostCard({ post: p }: { post: BlogPostSummary }) {
   return (
     <Link
       href={`/blog/${p.slug}`}
-      className="group border-border bg-card hover:border-primary/30 relative flex h-full flex-col overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_20px_40px_-24px_rgba(20,30,80,0.2)]"
+      className="group bg-card border-line text-foreground hover:shadow-hover flex h-full flex-col overflow-hidden rounded-2xl border no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-1"
     >
-      <div className="bg-secondary relative aspect-[16/9] overflow-hidden">
+      <span className="bg-ink-soft relative block aspect-video overflow-hidden">
         {p.hero_image_url ? (
           <Image
             src={p.hero_image_url}
@@ -153,37 +127,18 @@ function PostCard({ post: p }: { post: BlogPostSummary }) {
         ) : (
           <FallbackArt />
         )}
-      </div>
-      <div className="flex flex-1 flex-col p-6">
+      </span>
+      <span className="flex flex-1 flex-col px-5 pt-[18px] pb-5">
         {p.tags.length ? (
-          <p className="text-primary text-[11px] font-semibold tracking-[0.16em] uppercase">
-            {p.tags.slice(0, 2).join(" · ")}
-          </p>
+          <span className="micro-label text-gold-deep tracking-[0.16em]">{p.tags.slice(0, 2).join(" · ")}</span>
         ) : null}
-        <h3 className="font-display group-hover:text-primary mt-2.5 text-lg leading-snug font-medium tracking-tight transition-colors">
-          {p.title}
-        </h3>
-        {p.excerpt ? (
-          <p className="text-muted-foreground mt-2.5 line-clamp-3 text-sm leading-relaxed">
-            {p.excerpt}
-          </p>
-        ) : null}
-        <div className="text-muted-foreground mt-auto flex items-center justify-between gap-3 pt-5 text-xs">
-          <span>
-            {p.published_at ? (
-              <time dateTime={p.published_at}>
-                {formatDate(p.published_at)}
-              </time>
-            ) : (
-              p.author_name
-            )}
-          </span>
-          <ArrowUpRight
-            className="text-muted-foreground group-hover:text-primary h-3.5 w-3.5 transition-colors"
-            aria-hidden
-          />
-        </div>
-      </div>
+        <h3 className="font-display mt-2 text-[21px] leading-[1.2] font-semibold tracking-[-0.01em]">{p.title}</h3>
+        {p.excerpt ? <span className="text-stone mt-2 line-clamp-3 text-sm leading-[1.55]">{p.excerpt}</span> : null}
+        <span className="text-stone mt-auto flex items-center justify-between gap-3 pt-3.5 text-[12.5px]">
+          <span>{p.published_at ? <time dateTime={p.published_at}>{formatDate(p.published_at)}</time> : p.author_name}</span>
+          <ArrowUpRight className="text-stone group-hover:text-gold-deep h-3.5 w-3.5 transition-colors" aria-hidden />
+        </span>
+      </span>
     </Link>
   );
 }
@@ -192,23 +147,12 @@ function PostCard({ post: p }: { post: BlogPostSummary }) {
  *  geometry consistent and adds a subtle brand mark. */
 function FallbackArt() {
   return (
-    <div
-      aria-hidden
-      className="from-primary/20 via-primary/10 to-secondary absolute inset-0 bg-gradient-to-br"
-    >
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="font-display text-primary/30 text-5xl font-medium tracking-tight">
-          MMG
-        </span>
-      </div>
-    </div>
+    <span aria-hidden className="bg-ink-panel absolute inset-0 grid place-items-center">
+      <span className="font-display text-cream/15 text-5xl font-semibold tracking-tight">MMG</span>
+    </span>
   );
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
