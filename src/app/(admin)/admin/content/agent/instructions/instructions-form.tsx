@@ -63,7 +63,7 @@ export default function InstructionsForm({ version, body_md, settings }: Props) 
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Settings</CardTitle>
+            <CardTitle>Settings</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm">
             <Field label="Cadence">
@@ -130,7 +130,7 @@ export default function InstructionsForm({ version, body_md, settings }: Props) 
 
         <Card className="border-warning/40">
           <CardHeader>
-            <CardTitle className="text-base">Publishing</CardTitle>
+            <CardTitle>Publishing</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm">
             <label className="flex items-start gap-2">
@@ -162,7 +162,7 @@ export default function InstructionsForm({ version, body_md, settings }: Props) 
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Publish new version</CardTitle>
+            <CardTitle>Publish new version</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-muted-foreground text-xs">

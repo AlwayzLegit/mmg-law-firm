@@ -5,8 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Check, Plus, Trash2, User2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { adminBtn, adminInput } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 import { createTask, toggleTask, deleteTask } from "./actions";
@@ -66,11 +65,11 @@ export function TaskList({
   }
 
   if (tasks.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+    return <p className="text-stone m-0 text-[13px]">{emptyText}</p>;
   }
 
   return (
-    <ul className="divide-y divide-border">
+    <ul className="divide-line m-0 list-none divide-y p-0">
       {tasks.map((t) => {
         const { label, overdue } = dueMeta(t.dueAt, t.done);
         return (
@@ -81,10 +80,10 @@ export function TaskList({
               disabled={pending}
               aria-label={t.done ? "Mark not done" : "Mark done"}
               className={cn(
-                "mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-md border transition-colors",
+                "mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-[6px] border transition-colors",
                 t.done
-                  ? "border-success bg-success text-success-foreground"
-                  : "border-input hover:border-ring",
+                  ? "border-ink bg-ink text-gold"
+                  : "border-ink/25 hover:border-gold",
               )}
             >
               {t.done ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
@@ -93,15 +92,15 @@ export function TaskList({
             <div className="min-w-0 flex-1">
               <p
                 className={cn(
-                  "text-sm",
-                  t.done && "text-muted-foreground line-through",
+                  "m-0 text-[13px] font-medium",
+                  t.done && "text-stone font-normal line-through",
                 )}
               >
                 {t.title}
               </p>
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+              <div className="text-stone mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
                 {label ? (
-                  <span className={cn(overdue && "font-medium text-destructive")}>
+                  <span className={cn(overdue && "font-semibold text-[#b91c1c]")}>
                     {overdue ? "Overdue · " : "Due "}
                     {label}
                   </span>
@@ -109,7 +108,7 @@ export function TaskList({
                 {showLead && t.leadId && t.leadName ? (
                   <Link
                     href={`/admin/leads/${t.leadId}`}
-                    className="hover:text-primary underline-offset-2 hover:underline"
+                    className="text-stone hover:text-gold-deep no-underline hover:underline"
                   >
                     {t.leadName}
                   </Link>
@@ -128,7 +127,7 @@ export function TaskList({
               onClick={() => remove(t.id)}
               disabled={pending}
               aria-label="Delete task"
-              className="mt-0.5 flex-none text-muted-foreground hover:text-destructive"
+              className="text-stone mt-0.5 flex-none hover:text-[#b91c1c]"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
             </button>
@@ -162,14 +161,15 @@ export function AddTaskForm({ leadId }: { leadId?: string }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
       {leadId ? <input type="hidden" name="lead_id" value={leadId} /> : null}
-      <Input
+      <input
+        type="text"
         name="title"
         value={title}
         onChange={(e) => setTitle(e.currentTarget.value)}
         placeholder="Add a task…"
         maxLength={300}
         required
-        className="min-w-[12rem] flex-1"
+        className={cn(adminInput, "min-w-[12rem] flex-1")}
       />
       <input
         type="datetime-local"
@@ -177,16 +177,16 @@ export function AddTaskForm({ leadId }: { leadId?: string }) {
         value={due}
         onChange={(e) => setDue(e.currentTarget.value)}
         aria-label="Due date"
-        className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+        className={cn(adminInput, "text-stone w-auto")}
       />
-      <Button
+      <button
         type="submit"
-        size="sm"
         disabled={pending || title.trim().length === 0}
+        className={adminBtn.ink}
       >
         <Plus className="h-4 w-4" aria-hidden />
         Add
-      </Button>
+      </button>
     </form>
   );
 }

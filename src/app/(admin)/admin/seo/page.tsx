@@ -1,13 +1,16 @@
 import Link from "next/link";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ExternalLink,
-  FileSearch,
-  Search,
-} from "lucide-react";
+import { CheckCircle2, ExternalLink, FileSearch, Search } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AdminPageHeader,
+  EmptyNote,
+  GridHead,
+  GridRow,
+  Panel,
+  StatCard,
+  TonePill,
+  adminCode,
+} from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getContentHealth, type Severity } from "@/lib/data/content-health";
@@ -16,261 +19,152 @@ import { getWebAnalytics } from "@/lib/data/web-analytics";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "SEO" };
 
-const SEV_LABEL: Record<Severity, string> = {
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-};
-const SEV_TONE: Record<Severity, string> = {
-  high: "text-destructive",
-  medium: "text-warning",
-  low: "text-muted-foreground",
-};
+const SEV_LABEL: Record<Severity, string> = { high: "High", medium: "Medium", low: "Low" };
+const SEV_TONE: Record<Severity, "bad" | "warn" | "muted"> = { high: "bad", medium: "warn", low: "muted" };
+
+const ISSUE_COLS = "md:grid-cols-[88px_minmax(0,1.2fr)_minmax(0,1.6fr)_60px]";
 
 export default async function SeoPage() {
   await requireAdmin();
   const supabase = await getServerSupabase();
-  const [health, web] = await Promise.all([
-    getContentHealth(supabase),
-    getWebAnalytics(),
-  ]);
+  const [health, web] = await Promise.all([getContentHealth(supabase), getWebAnalytics()]);
 
   const totalPages =
-    health.published.locationPages +
-    health.published.counties +
-    health.published.practiceAreas +
-    health.published.blog;
+    health.published.locationPages + health.published.counties + health.published.practiceAreas + health.published.blog;
 
   const groups: Severity[] = ["high", "medium", "low"];
+  const ordered = groups.flatMap((sev) => health.issues.filter((i) => i.severity === sev));
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-medium tracking-tight">
-        SEO command center
-      </h1>
-      <p className="text-muted-foreground mt-1 text-sm">
-        Content health across every published page, plus your marketing data
-        sources. The on-page checks run live against the database.
-      </p>
+      <AdminPageHeader
+        eyebrow="Search"
+        title="SEO command center"
+        description="Content health across every published page, plus your marketing data sources. The on-page checks run live against the database."
+      />
 
       {/* KPIs */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Published pages" value={totalPages} hint="indexed content" />
-        <Kpi
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Published pages" value={totalPages} sub="indexed content" />
+        <StatCard
           label="Content issues"
           value={health.counts.total}
-          hint={health.counts.total === 0 ? "all clear" : "need attention"}
+          sub={health.counts.total === 0 ? "all clear" : "need attention"}
+          tone={health.counts.total === 0 ? "good" : "warn"}
         />
-        <Kpi
+        <StatCard
           label="High priority"
-          value={health.counts.high}
-          tone={health.counts.high > 0 ? "destructive" : undefined}
+          value={<span className={health.counts.high > 0 ? "text-[#b91c1c]" : undefined}>{health.counts.high}</span>}
+          sub={health.counts.high > 0 ? "fix first" : "none open"}
         />
-        <Kpi
+        <StatCard
           label="Visitors (30d)"
           value={web.configured && web.hasData ? web.visitors30 : "—"}
-          hint={web.configured ? "from PostHog" : "PostHog not connected"}
+          sub={web.configured ? "from PostHog" : "PostHog not connected"}
         />
       </div>
 
       {/* Content health */}
-      <h2 className="font-display mt-10 text-xl font-medium tracking-tight">
-        Content health
-      </h2>
-      <p className="text-muted-foreground mt-1 text-sm">
-        {health.published.locationPages} city × practice pages ·{" "}
-        {health.published.counties} counties · {health.published.practiceAreas}{" "}
-        practice areas · {health.published.blog} blog posts.
-      </p>
-
-      {health.counts.total === 0 ? (
-        <Card className="border-success/40 bg-success/5 mt-4">
-          <CardContent className="flex items-center gap-3 pt-6">
-            <CheckCircle2 className="text-success h-5 w-5" aria-hidden />
-            <p className="text-sm">
-              All published content passes the on-page checks — no missing or
-              over-length metas, no thin copy, no drafts awaiting a local angle,
-              nothing overdue for review.
+      <Panel
+        className="mt-6"
+        title="Content health"
+        action={
+          <span className="text-stone text-xs">
+            {health.published.locationPages} city × practice · {health.published.counties} counties ·{" "}
+            {health.published.practiceAreas} practice areas · {health.published.blog} blog posts
+          </span>
+        }
+      >
+        {health.counts.total === 0 ? (
+          <div className="flex items-start gap-3 rounded-[10px] bg-[rgba(22,163,74,.08)] p-4 text-[13px]">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#15803d]" aria-hidden />
+            <p className="m-0">
+              All published content passes the on-page checks — no missing or over-length metas, no thin copy, no drafts
+              awaiting a local angle, nothing overdue for review.
             </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="mt-4 space-y-6">
-          {groups.map((sev) => {
-            const rows = health.issues.filter((i) => i.severity === sev);
-            if (rows.length === 0) return null;
-            return (
-              <Card key={sev}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <AlertTriangle
-                      className={`h-4 w-4 ${SEV_TONE[sev]}`}
-                      aria-hidden
-                    />
-                    {SEV_LABEL[sev]} priority ({rows.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="divide-border divide-y">
-                    {rows.map((i) => (
-                      <li
-                        key={`${i.entityId}-${i.issue}`}
-                        className="flex items-center justify-between gap-3 py-2 text-sm"
-                      >
-                        <span className="min-w-0">
-                          <Link
-                            href={i.editHref}
-                            className="hover:text-primary font-medium underline-offset-4 hover:underline"
-                          >
-                            {i.label}
-                          </Link>
-                          <span className="text-muted-foreground block text-xs">
-                            {i.issue}
-                          </span>
-                        </span>
-                        <Link
-                          href={i.editHref}
-                          className="text-muted-foreground hover:text-primary flex-none text-xs"
-                        >
-                          Fix →
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="-mx-4">
+            <GridHead cols={ISSUE_COLS}>
+              <span>Priority</span>
+              <span>Page</span>
+              <span>Issue</span>
+              <span />
+            </GridHead>
+            {ordered.map((i) => (
+              <GridRow key={`${i.entityId}-${i.issue}`} cols={ISSUE_COLS} href={i.editHref}>
+                <span>
+                  <TonePill tone={SEV_TONE[i.severity]}>{SEV_LABEL[i.severity]}</TonePill>
+                </span>
+                <span className="min-w-0 truncate font-semibold">{i.label}</span>
+                <span className="text-stone min-w-0">{i.issue}</span>
+                <span className="text-gold-deep text-right text-xs font-semibold">Fix →</span>
+              </GridRow>
+            ))}
+          </div>
+        )}
+      </Panel>
 
       {/* Data sources */}
-      <h2 className="font-display mt-10 text-xl font-medium tracking-tight">
-        Marketing data sources
-      </h2>
+      <h2 className="font-display mt-10 text-[22px] leading-tight font-semibold tracking-[-0.02em]">Marketing data sources</h2>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <SourceCard
-          icon={<Search className="h-4 w-4 text-primary" aria-hidden />}
+        <SourcePanel
+          icon={<Search className="h-4 w-4" aria-hidden />}
           title="PostHog — site traffic"
-          status={
-            web.configured
-              ? web.hasData
-                ? "Connected"
-                : "Connected · no pageviews yet"
-              : "Not connected"
-          }
+          status={web.configured ? (web.hasData ? "Connected" : "Connected · no pageviews yet") : "Not connected"}
           ok={web.configured}
         >
           {web.configured ? (
-            <Link href="/admin/analytics" className="text-primary text-sm hover:underline">
+            <Link href="/admin/analytics" className="text-gold-deep text-[13px] font-semibold no-underline hover:underline">
               View traffic, funnel &amp; events in Analytics →
             </Link>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              Set <Code>POSTHOG_PERSONAL_API_KEY</Code> and{" "}
-              <Code>POSTHOG_PROJECT_ID</Code> to surface traffic here.
-            </p>
+            <EmptyNote>
+              Set <code className={adminCode}>POSTHOG_PERSONAL_API_KEY</code> and <code className={adminCode}>POSTHOG_PROJECT_ID</code>{" "}
+              to surface traffic here.
+            </EmptyNote>
           )}
-        </SourceCard>
+        </SourcePanel>
 
-        <SourceCard
-          icon={<FileSearch className="h-4 w-4 text-primary" aria-hidden />}
-          title="Google Search Console"
-          status="Not connected"
-          ok={false}
-        >
-          <p className="text-muted-foreground text-sm">
-            Connect a GSC service account to show clicks, impressions, and
-            average position per page. Add the property in{" "}
+        <SourcePanel icon={<FileSearch className="h-4 w-4" aria-hidden />} title="Google Search Console" status="Not connected" ok={false}>
+          <EmptyNote>
+            Connect a GSC service account to show clicks, impressions, and average position per page. Add the property in{" "}
             <a
               href="https://search.google.com/search-console"
               target="_blank"
               rel="noopener"
-              className="text-primary inline-flex items-center gap-0.5 hover:underline"
+              className="text-gold-deep inline-flex items-center gap-0.5 font-semibold no-underline hover:underline"
             >
               Search Console <ExternalLink className="h-3 w-3" aria-hidden />
             </a>{" "}
-            and submit the sitemap at <Code>/sitemap.xml</Code> first.
-          </p>
-        </SourceCard>
+            and submit the sitemap at <code className={adminCode}>/sitemap.xml</code> first.
+          </EmptyNote>
+        </SourcePanel>
 
-        <SourceCard
-          icon={<Search className="h-4 w-4 text-primary" aria-hidden />}
-          title="Semrush — rankings & authority"
-          status="Manual"
-          ok={false}
-        >
-          <p className="text-muted-foreground text-sm">
-            Authority is the current ceiling — Semrush puts the firm at
-            Authority Score ~7 vs. local competitors at 27. The link-building
-            playbook lives in <Code>docs/citation-outreach-targets.md</Code> and{" "}
-            <Code>docs/outreach-templates.md</Code>.
-          </p>
-        </SourceCard>
+        <SourcePanel icon={<Search className="h-4 w-4" aria-hidden />} title="Semrush — rankings & authority" status="Manual" ok={false}>
+          <EmptyNote>
+            Authority is the current ceiling — Semrush puts the firm at Authority Score ~7 vs. local competitors at 27. The
+            link-building playbook lives in <code className={adminCode}>docs/citation-outreach-targets.md</code> and{" "}
+            <code className={adminCode}>docs/outreach-templates.md</code>.
+          </EmptyNote>
+        </SourcePanel>
 
-        <SourceCard
-          icon={<ExternalLink className="h-4 w-4 text-primary" aria-hidden />}
-          title="Sitemap & robots"
-          status="Live"
-          ok
-        >
-          <div className="flex flex-col gap-1 text-sm">
-            <a
-              href="/sitemap.xml"
-              target="_blank"
-              rel="noopener"
-              className="text-primary inline-flex items-center gap-0.5 hover:underline"
-            >
+        <SourcePanel icon={<ExternalLink className="h-4 w-4" aria-hidden />} title="Sitemap & robots" status="Live" ok>
+          <div className="flex flex-col gap-1 text-[13px]">
+            <a href="/sitemap.xml" target="_blank" rel="noopener" className="text-gold-deep inline-flex items-center gap-1 font-semibold no-underline hover:underline">
               /sitemap.xml <ExternalLink className="h-3 w-3" aria-hidden />
             </a>
-            <a
-              href="/robots.txt"
-              target="_blank"
-              rel="noopener"
-              className="text-primary inline-flex items-center gap-0.5 hover:underline"
-            >
+            <a href="/robots.txt" target="_blank" rel="noopener" className="text-gold-deep inline-flex items-center gap-1 font-semibold no-underline hover:underline">
               /robots.txt <ExternalLink className="h-3 w-3" aria-hidden />
             </a>
           </div>
-        </SourceCard>
+        </SourcePanel>
       </div>
     </div>
   );
 }
 
-function Kpi({
-  label,
-  value,
-  hint,
-  tone,
-}: {
-  label: string;
-  value: number | string;
-  hint?: string;
-  tone?: "destructive";
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-          {label}
-        </p>
-        <span
-          className={`font-display mt-1 block text-3xl font-medium tracking-tight ${
-            tone === "destructive" ? "text-destructive" : ""
-          }`}
-        >
-          {value}
-        </span>
-        {hint ? (
-          <p className="text-muted-foreground mt-1 text-xs">{hint}</p>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-function SourceCard({
+function SourcePanel({
   icon,
   title,
   status,
@@ -284,29 +178,16 @@ function SourceCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2 text-base">
-          <span className="flex items-center gap-2">
-            {icon}
-            {title}
-          </span>
-          <span
-            className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-              ok ? "bg-success/10 text-success" : "bg-secondary text-muted-foreground"
-            }`}
-          >
-            {status}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-function Code({ children }: { children: React.ReactNode }) {
-  return (
-    <code className="bg-secondary rounded px-1 py-0.5 text-xs">{children}</code>
+    <Panel
+      title={
+        <span className="inline-flex items-center gap-2">
+          <span className="bg-ink text-gold inline-flex h-7 w-7 items-center justify-center rounded-[8px]">{icon}</span>
+          {title}
+        </span>
+      }
+      action={<TonePill tone={ok ? "good" : "muted"}>{status}</TonePill>}
+    >
+      {children}
+    </Panel>
   );
 }

@@ -93,7 +93,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Hero copy</CardTitle>
+          <CardTitle>Hero copy</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field
@@ -134,7 +134,7 @@ export default function EditForm(props: Props) {
       {props.fallbackBody ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">In-code fallback (reference)</CardTitle>
+            <CardTitle>In-code fallback (reference)</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-line text-sm text-muted-foreground">
@@ -156,7 +156,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-baseline justify-between text-base">
+          <CardTitle className="flex items-baseline justify-between">
             <span>Subtopics</span>
             <span className="text-xs font-normal text-muted-foreground">
               {subtopics.length} / 20
@@ -240,7 +240,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-baseline justify-between text-base">
+          <CardTitle className="flex items-baseline justify-between">
             <span>What to do right away</span>
             <span className="text-xs font-normal text-muted-foreground">
               {whatToDo.length} / 20
@@ -296,7 +296,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-baseline justify-between text-base">
+          <CardTitle className="flex items-baseline justify-between">
             <span>FAQs</span>
             <span className="text-xs font-normal text-muted-foreground">
               {faqs.length} / 30
@@ -375,7 +375,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Listing fields</CardTitle>
+          <CardTitle>Listing fields</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field

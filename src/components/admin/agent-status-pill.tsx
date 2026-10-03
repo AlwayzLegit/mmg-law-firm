@@ -1,23 +1,29 @@
 import { cn } from "@/lib/utils";
 
+const GOOD = "bg-[rgba(22,163,74,.12)] text-[#15803d]";
+const WARN = "bg-gold/18 text-gold-deep";
+const BAD = "bg-[rgba(220,38,38,.1)] text-[#b91c1c]";
+const MUTED = "bg-ink/8 text-stone";
+const ACTIVE = "bg-[rgba(43,70,216,.1)] text-status-new";
+
 const RUN: Record<string, string> = {
-  running: "bg-brand-50 text-brand-600",
-  succeeded: "bg-success/10 text-success",
-  failed: "bg-destructive/10 text-destructive",
-  needs_human: "bg-warning/10 text-warning",
+  running: ACTIVE,
+  succeeded: GOOD,
+  failed: BAD,
+  needs_human: WARN,
 };
 const TOPIC: Record<string, string> = {
-  queued: "bg-secondary text-muted-foreground",
-  claimed: "bg-brand-50 text-brand-600",
-  drafted: "bg-warning/10 text-warning",
-  published: "bg-success/10 text-success",
-  skipped: "bg-secondary text-muted-foreground",
-  rejected: "bg-destructive/10 text-destructive",
+  queued: MUTED,
+  claimed: ACTIVE,
+  drafted: WARN,
+  published: GOOD,
+  skipped: MUTED,
+  rejected: BAD,
 };
 const QUESTION: Record<string, string> = {
-  open: "bg-warning/10 text-warning",
-  answered: "bg-success/10 text-success",
-  dismissed: "bg-secondary text-muted-foreground",
+  open: WARN,
+  answered: GOOD,
+  dismissed: MUTED,
 };
 
 export function StatusPill({
@@ -33,8 +39,8 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-        map[value] ?? "bg-secondary text-muted-foreground",
+        "inline-flex items-center rounded-full px-[9px] py-[3px] text-[11px] font-semibold whitespace-nowrap",
+        map[value] ?? MUTED,
         className,
       )}
     >

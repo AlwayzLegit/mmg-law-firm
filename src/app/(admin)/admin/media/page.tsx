@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, Panel } from "@/components/admin/ui";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
 import MediaManager, { type MediaItem } from "./media-manager";
@@ -25,27 +25,15 @@ export default async function MediaPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-medium tracking-tight">
-        Media
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Upload images and copy their URLs for hero images and post artwork.
-      </p>
+      <AdminPageHeader
+        eyebrow="Library"
+        title="Media"
+        description="Upload images and copy their URLs for hero images and post artwork."
+      />
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">
-            {items.length} {items.length === 1 ? "image" : "images"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <p className="text-sm text-destructive">{error.message}</p>
-          ) : (
-            <MediaManager items={items} />
-          )}
-        </CardContent>
-      </Card>
+      <Panel className="mt-6" title={`${items.length} ${items.length === 1 ? "image" : "images"}`}>
+        {error ? <p className="text-[13px] text-[#b91c1c]">{error.message}</p> : <MediaManager items={items} />}
+      </Panel>
     </div>
   );
 }

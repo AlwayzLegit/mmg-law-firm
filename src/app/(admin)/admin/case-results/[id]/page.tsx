@@ -82,9 +82,9 @@ export default async function CaseResultEditorPage({ params }: Props) {
         />
 
         <div className="space-y-6">
-          <Card>
+          <Card className="surface-ink bg-ink text-cream ring-0">
             <CardHeader>
-              <CardTitle className="text-base">Publish</CardTitle>
+              <CardTitle className="micro-label text-gold">Publish</CardTitle>
             </CardHeader>
             <CardContent>
               <PublishToggle id={row.id} isPublished={row.is_published} />
@@ -98,7 +98,7 @@ export default async function CaseResultEditorPage({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Danger zone</CardTitle>
+              <CardTitle>Danger zone</CardTitle>
             </CardHeader>
             <CardContent>
               <DeleteButton id={row.id} headline={row.headline} />

@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, Panel, adminCode } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { HOMEPAGE_FAQS } from "@/lib/data/faqs";
@@ -17,23 +15,11 @@ export default async function FirmSettingsPage() {
 
   return (
     <div>
-      <Link
-        href="/admin/settings"
-        className="text-sm text-muted-foreground hover:text-primary"
-      >
-        ← Settings
-      </Link>
-
-      <div className="mt-3">
-        <h1 className="font-display text-2xl font-medium tracking-tight">
-          Firm settings
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Editable firm-level facts. The footer&apos;s &quot;Established YYYY&quot;
-          line and the LegalService JSON-LD&apos;s sameAs URLs read from these
-          values.
-        </p>
-      </div>
+      <AdminPageHeader
+        eyebrow="Settings"
+        title="Firm settings"
+        description="Editable firm-level facts. The footer's “Established YYYY” line and the LegalService JSON-LD's sameAs URLs read from these values."
+      />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
         <EditForm
@@ -52,26 +38,19 @@ export default async function FirmSettingsPage() {
           consultations_display={stats.consultations_display ?? ""}
         />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Read-only firm data</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2 text-sm">
+        <Panel title="Read-only firm data" className="self-start">
+          <div className="grid gap-2 text-[13px]">
             <Row label="Legal name" value={FIRM.legalName} />
             <Row label="Phone" value={FIRM.phone} />
             <Row label="Email" value={FIRM.email} />
             <Row label="Address" value={FIRM_FULL_ADDRESS} />
             <Row label="Hours" value={FIRM.hours} />
-            <p className="mt-3 text-xs text-muted-foreground">
-              These are managed in{" "}
-              <code className="rounded bg-secondary px-1 py-0.5 text-[11px]">
-                src/lib/constants.ts
-              </code>{" "}
-              — they&apos;re consumed synchronously by many surfaces (header,
-              OG image, JSON-LD). Reach out to engineering to change them.
+            <p className="text-stone m-0 mt-3 text-xs">
+              These are managed in <code className={adminCode}>src/lib/constants.ts</code> — they&apos;re consumed synchronously by
+              many surfaces (header, OG image, JSON-LD). Reach out to engineering to change them.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
     </div>
   );
@@ -80,9 +59,7 @@ export default async function FirmSettingsPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid grid-cols-[110px_1fr] items-baseline gap-2">
-      <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-        {label}
-      </span>
+      <span className="micro-label text-stone">{label}</span>
       <span className="break-words">{value}</span>
     </div>
   );

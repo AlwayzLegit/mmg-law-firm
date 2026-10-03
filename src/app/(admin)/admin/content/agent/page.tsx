@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import { Bot, HelpCircle, ListTodo, ScrollText } from "lucide-react";
 
 import { StatusPill, duration, timeAgo } from "@/components/admin/agent-status-pill";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, EmptyNote, Panel, StatCard, adminBtn, adminCode } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -65,62 +65,65 @@ export default async function ContentAgentPage() {
 
   return (
     <div>
-      <Link href="/admin/content/pages" className="text-muted-foreground hover:text-primary text-sm">
-        ← Content
-      </Link>
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display flex items-center gap-2 text-2xl font-medium tracking-tight">
-            <Bot className="h-5 w-5" aria-hidden /> Content agent
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Runs, reports and questions from the daily blog-writing agent. Every
-            post it writes lands as a draft awaiting your review.
-          </p>
-        </div>
-        <nav className="flex flex-wrap gap-2 text-sm">
-          <Link href="/admin/content/agent/topics" className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-medium">
-            <ListTodo className="h-3.5 w-3.5" aria-hidden /> Topic queue
-          </Link>
-          <Link href="/admin/content/agent/instructions" className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-medium">
-            <ScrollText className="h-3.5 w-3.5" aria-hidden /> Instructions {inst ? `v${inst.version}` : ""}
-          </Link>
-          {profile.role === "owner" ? (
-            <Link href="/admin/settings/api-keys" className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-medium">
-              API keys ({(keys as { count: number | null }).count ?? 0})
+      <AdminPageHeader
+        eyebrow="Content"
+        title={
+          <span className="inline-flex items-center gap-3">
+            <span className="bg-ink text-gold inline-flex h-9 w-9 items-center justify-center rounded-[10px]">
+              <Bot className="h-5 w-5" aria-hidden />
+            </span>
+            Content agent
+          </span>
+        }
+        description="Runs, reports and questions from the daily blog-writing agent. Every post it writes lands as a draft awaiting your review."
+        actions={
+          <>
+            <Link href="/admin/content/agent/topics" className={adminBtn.outline}>
+              <ListTodo className="h-3.5 w-3.5" aria-hidden /> Topic queue
             </Link>
-          ) : null}
-        </nav>
-      </div>
+            <Link href="/admin/content/agent/instructions" className={adminBtn.outline}>
+              <ScrollText className="h-3.5 w-3.5" aria-hidden /> Instructions {inst ? `v${inst.version}` : ""}
+            </Link>
+            {profile.role === "owner" ? (
+              <Link href="/admin/settings/api-keys" className={adminBtn.outline}>
+                API keys ({(keys as { count: number | null }).count ?? 0})
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Open questions" value={questions.length} href="#questions" tone={questions.length > 0 ? "warn" : undefined} />
-        <Stat label="Drafts awaiting review" value={review.length} href="/admin/content/blog?status=needs_review" tone={review.length > 0 ? "warn" : undefined} />
-        <Stat label="Topics queued" value={topicCounts.queued ?? 0} href="/admin/content/agent/topics?status=queued" />
-        <Stat label="Posts published by agent" value={topicCounts.published ?? 0} href="/admin/content/blog?status=published" />
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Open questions" value={questions.length} href="#questions" sub={questions.length > 0 ? "need an answer" : "none open"} tone={questions.length > 0 ? "warn" : "default"} />
+        <StatCard label="Drafts awaiting review" value={review.length} href="/admin/content/blog?status=needs_review" sub={review.length > 0 ? "open the queue" : "all reviewed"} tone={review.length > 0 ? "warn" : "default"} />
+        <StatCard label="Topics queued" value={topicCounts.queued ?? 0} href="/admin/content/agent/topics?status=queued" sub="next to write" />
+        <StatCard label="Posts published by agent" value={topicCounts.published ?? 0} href="/admin/content/blog?status=published" sub="topics completed" />
       </div>
 
       {questions.length > 0 ? (
-        <Card id="questions" className="border-warning/40 bg-warning/5 mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <HelpCircle className="text-warning h-4 w-4" aria-hidden />
+        <Panel
+          id="questions"
+          className="mt-6 ring-gold/50"
+          title={
+            <span className="inline-flex items-center gap-2">
+              <HelpCircle className="text-gold-deep h-4 w-4" aria-hidden />
               The agent needs your input ({questions.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
+            </span>
+          }
+        >
+          <div className="grid gap-4">
             {questions.map((q) => (
-              <div key={q.id} className="border-border bg-card rounded-md border p-4 text-sm">
+              <div key={q.id} className="bg-ink/3 rounded-[10px] p-4 text-[13px]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-muted-foreground text-xs tracking-[0.14em] uppercase">
+                  <span className="micro-label text-stone">
                     {q.kind.replace(/_/g, " ")} · asked {timeAgo(q.created_at)} ·{" "}
-                    <Link href={`/admin/content/agent/runs/${q.run_id}`} className="hover:text-primary underline-offset-4 hover:underline">
+                    <Link href={`/admin/content/agent/runs/${q.run_id}`} className="text-stone hover:text-gold-deep no-underline hover:underline">
                       run
                     </Link>
                     {q.post_id ? (
                       <>
                         {" · "}
-                        <Link href={`/admin/content/blog/${q.post_id}`} className="hover:text-primary underline-offset-4 hover:underline">
+                        <Link href={`/admin/content/blog/${q.post_id}`} className="text-stone hover:text-gold-deep no-underline hover:underline">
                           post
                         </Link>
                       </>
@@ -132,30 +135,26 @@ export default async function ContentAgentPage() {
                 <AnswerForm id={q.id} />
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       ) : null}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Runs</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Panel title="Runs">
             {runs.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
+              <EmptyNote>
                 No runs yet. Create an API key under Settings → API keys, then
-                follow <code className="bg-secondary rounded px-1 py-0.5 text-xs">docs/content-agent-runbook.md</code>.
-              </p>
+                follow <code className={adminCode}>docs/content-agent-runbook.md</code>.
+              </EmptyNote>
             ) : (
-              <ul className="divide-border divide-y text-sm">
+              <ul className="divide-line m-0 list-none divide-y p-0 text-[13px]">
                 {runs.map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-3 py-3">
                     <div className="min-w-0">
-                      <Link href={`/admin/content/agent/runs/${r.id}`} className="hover:text-primary font-medium">
+                      <Link href={`/admin/content/agent/runs/${r.id}`} className="text-foreground hover:text-gold-deep font-semibold no-underline">
                         {r.agent_name}
                       </Link>
-                      <p className="text-muted-foreground truncate text-xs">
+                      <p className="text-stone m-0 truncate text-xs">
                         {new Date(r.started_at).toLocaleString("en-US")} · {duration(r.started_at, r.finished_at)} ·{" "}
                         {r.posts_created.length} post{r.posts_created.length === 1 ? "" : "s"} · {r.topics_claimed.length} topic
                         {r.topics_claimed.length === 1 ? "" : "s"}
@@ -170,66 +169,42 @@ export default async function ContentAgentPage() {
                 ))}
               </ul>
             )}
-          </CardContent>
-        </Card>
+        </Panel>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Latest report</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              {latest?.summary_md ? (
-                <div className="prose prose-sm max-w-none [&_h1]:text-base [&_h2]:text-sm [&_p]:text-muted-foreground">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{latest.summary_md}</ReactMarkdown>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No report yet.</p>
-              )}
-              {latest ? (
-                <Link href={`/admin/content/agent/runs/${latest.id}`} className="text-primary mt-3 inline-block text-xs font-medium hover:underline">
-                  Full run detail →
-                </Link>
-              ) : null}
-            </CardContent>
-          </Card>
+          <Panel title="Latest report">
+            {latest?.summary_md ? (
+              <div className="prose prose-sm max-w-none text-[13px] [&_h1]:text-[15px] [&_h2]:text-[13px] [&_p]:text-stone">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{latest.summary_md}</ReactMarkdown>
+              </div>
+            ) : (
+              <EmptyNote>No report yet.</EmptyNote>
+            )}
+            {latest ? (
+              <Link href={`/admin/content/agent/runs/${latest.id}`} className="text-gold-deep mt-3 inline-block text-xs font-semibold no-underline hover:underline">
+                Full run detail →
+              </Link>
+            ) : null}
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Awaiting your review</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              {review.length === 0 ? (
-                <p className="text-muted-foreground">Nothing to review.</p>
-              ) : (
-                <ul className="grid gap-2">
-                  {review.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between gap-3">
-                      <Link href={`/admin/content/blog/${p.id}`} className="hover:text-primary truncate font-medium">
-                        {p.title}
-                      </Link>
-                      <span className="text-muted-foreground flex-none text-xs">{timeAgo(p.created_at)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <Panel title="Awaiting your review">
+            {review.length === 0 ? (
+              <EmptyNote>Nothing to review.</EmptyNote>
+            ) : (
+              <ul className="m-0 grid list-none gap-2 p-0 text-[13px]">
+                {review.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-3">
+                    <Link href={`/admin/content/blog/${p.id}`} className="text-foreground hover:text-gold-deep truncate font-semibold no-underline">
+                      {p.title}
+                    </Link>
+                    <span className="text-stone flex-none text-xs">{timeAgo(p.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
         </div>
       </div>
     </div>
-  );
-}
-
-function Stat({ label, value, href, tone }: { label: string; value: number; href: string; tone?: "warn" }) {
-  return (
-    <Link href={href} className="block">
-      <Card className={tone === "warn" && value > 0 ? "border-warning/40" : "hover:border-primary/30 transition-colors"}>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">{label}</p>
-          <p className="font-display mt-2 text-3xl font-medium tracking-tight">{value}</p>
-        </CardContent>
-      </Card>
-    </Link>
   );
 }

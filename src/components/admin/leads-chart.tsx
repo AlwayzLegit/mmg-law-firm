@@ -54,7 +54,7 @@ export default function LeadsChart({ data }: { data: DailyPoint[] }) {
             stroke="var(--color-border)"
           />
           <Tooltip
-            cursor={{ fill: "var(--color-secondary)" }}
+            cursor={{ fill: "rgba(15,17,21,0.05)" }}
             contentStyle={{
               background: "var(--color-card)",
               border: "1px solid var(--color-border)",
@@ -72,7 +72,7 @@ export default function LeadsChart({ data }: { data: DailyPoint[] }) {
           />
           <Bar
             dataKey="count"
-            fill="var(--color-primary)"
+            fill="var(--color-ink)"
             radius={[4, 4, 0, 0]}
           />
         </BarChart>

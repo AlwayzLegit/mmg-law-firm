@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, Bot } from "lucide-react";
 
+import { AdminPageHeader, adminBtn } from "@/components/admin/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -93,10 +94,30 @@ export default async function ContentPagesAdmin() {
 
   return (
     <div>
-      <h1 className="font-display text-[30px] leading-[1.1] font-semibold tracking-[-0.02em]">Content</h1>
-      <p className="text-stone mt-1.5 text-[13px]">
-        Counties, cities, city × practice landing pages, and practice areas.
-      </p>
+      <AdminPageHeader
+        eyebrow="Content"
+        title="Content"
+        description="Counties, cities, city × practice landing pages, and practice areas."
+        actions={
+          <>
+            <Link href="/admin/content/blog" className={adminBtn.outline}>
+              Blog
+            </Link>
+            <Link
+              href="/admin/content/agent"
+              className={reviewCount + questionCount > 0 ? adminBtn.ink : adminBtn.outline}
+            >
+              <Bot className="h-4 w-4" aria-hidden />
+              Content agent
+              {reviewCount > 0 ? ` · ${reviewCount} to review` : ""}
+              {questionCount > 0 ? ` · ${questionCount} question${questionCount === 1 ? "" : "s"}` : ""}
+            </Link>
+            <Link href="/admin/content/redirects" className={adminBtn.outline}>
+              Redirects
+            </Link>
+          </>
+        }
+      />
 
       <div className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
         <RowSummary
@@ -139,39 +160,10 @@ export default async function ContentPagesAdmin() {
         />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/admin/content/blog"
-          className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium"
-        >
-          Blog →
-        </Link>
-        <Link
-          href="/admin/content/agent"
-          className={`inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium ${
-            reviewCount + questionCount > 0
-              ? "border-warning/40 bg-warning/5 hover:bg-warning/10"
-              : "border-border hover:bg-secondary"
-          }`}
-        >
-          <Bot className="h-4 w-4" aria-hidden />
-          Content agent
-          {reviewCount > 0 ? ` · ${reviewCount} to review` : ""}
-          {questionCount > 0 ? ` · ${questionCount} question${questionCount === 1 ? "" : "s"}` : ""}
-          {" →"}
-        </Link>
-        <Link
-          href="/admin/content/redirects"
-          className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium"
-        >
-          Manage URL redirects →
-        </Link>
-      </div>
-
       {(stalePages.length > 0 || missingAngle.length > 0) && (
         <Card className="border-warning/40 bg-warning/5 mt-8">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="text-warning h-4 w-4" aria-hidden />
               Pages needing attention
             </CardTitle>
@@ -225,7 +217,7 @@ export default async function ContentPagesAdmin() {
 
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle className="text-base">Editing pages</CardTitle>
+          <CardTitle>Editing pages</CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground text-sm">
           Click any city × practice row above (or open{" "}

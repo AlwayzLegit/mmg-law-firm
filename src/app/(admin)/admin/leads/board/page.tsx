@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { List } from "lucide-react";
 
+import { AdminPageHeader, FilterPill, adminBtn } from "@/components/admin/ui";
+
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getTagVocabulary } from "@/lib/data/lead-tags";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -70,51 +72,29 @@ export default async function LeadsBoardPage({
 
   return (
     <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">
-            Leads board
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Drag a card between columns to change its status, or use the picker
-            on each card. Showing up to {BOARD_LIMIT} non-spam leads.
-          </p>
-        </div>
-        <Link
-          href="/admin/leads"
-          className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
-        >
-          <List className="h-3.5 w-3.5" aria-hidden />
-          List view
-        </Link>
-      </div>
-
-      <nav
-        className="mt-4 flex flex-wrap items-center gap-2"
-        aria-label="Filter board"
-      >
-        <span className="text-muted-foreground text-xs">Assignee:</span>
-        {(["all", "me"] as const).map((opt) => (
-          <Link
-            key={opt}
-            href={assigneeHref(opt)}
-            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-              (opt === "me") === mine
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border hover:bg-secondary"
-            }`}
-          >
-            {opt === "all" ? "Anyone" : "Mine"}
+      <AdminPageHeader
+        eyebrow="Pipeline"
+        title="Leads board"
+        description={`Drag a card between columns to change its status, or use the picker on each card. Showing up to ${BOARD_LIMIT} non-spam leads.`}
+        actions={
+          <Link href="/admin/leads" className={adminBtn.outline}>
+            <List className="h-3.5 w-3.5" aria-hidden />
+            List view
           </Link>
+        }
+      />
+
+      <nav className="mt-5 flex flex-wrap items-center gap-2" aria-label="Filter board">
+        <span className="micro-label text-stone mr-1">Assignee</span>
+        {(["all", "me"] as const).map((opt) => (
+          <FilterPill key={opt} href={assigneeHref(opt)} active={(opt === "me") === mine}>
+            {opt === "all" ? "Anyone" : "Mine"}
+          </FilterPill>
         ))}
         {tag ? (
-          <span className="border-primary/30 bg-primary/10 text-primary ml-1 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium">
+          <span className="bg-gold/18 text-gold-deep ml-1 inline-flex h-[34px] items-center gap-2 rounded-full px-3 text-xs font-semibold">
             Tag: {tag}
-            <Link
-              href={clearTagHref}
-              aria-label="Clear tag filter"
-              className="hover:text-primary/70"
-            >
+            <Link href={clearTagHref} aria-label="Clear tag filter" className="text-gold-deep no-underline hover:text-foreground">
               ✕
             </Link>
           </span>
@@ -122,7 +102,7 @@ export default async function LeadsBoardPage({
       </nav>
 
       {error ? (
-        <p className="text-destructive mt-6 text-sm">{error.message}</p>
+        <p className="mt-6 text-[13px] text-[#b91c1c]">{error.message}</p>
       ) : (
         <div className="mt-6">
           <KanbanBoard

@@ -1,5 +1,5 @@
-import Link from "next/link";
 
+import { AdminPageHeader, EmptyNote, FilterPill, Panel } from "@/components/admin/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
@@ -58,55 +58,38 @@ export default async function TopicsPage({
 
   return (
     <div>
-      <Link href="/admin/content/agent" className="text-muted-foreground hover:text-primary text-sm">
-        ← Content agent
-      </Link>
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">Topic queue</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            What the agent writes next, in priority order (lower runs sooner).
-            Each topic names the money page the post must link to — never compete with.
-          </p>
-        </div>
-        <SeedButton />
-      </div>
+      <AdminPageHeader
+        back={{ href: "/admin/content/agent", label: "Content agent" }}
+        eyebrow="Content agent"
+        title="Topic queue"
+        description="What the agent writes next, in priority order (lower runs sooner). Each topic names the money page the post must link to — never compete with."
+        actions={<SeedButton />}
+      />
 
-      <nav className="mt-4 flex flex-wrap gap-2" aria-label="Filter by status">
+      <nav className="mt-5 flex flex-wrap gap-2" aria-label="Filter by status">
         {FILTERS.map((s) => (
-          <Link
-            key={s}
-            href={s === "all" ? "/admin/content/agent/topics" : `/admin/content/agent/topics?status=${s}`}
-            className={`border-border rounded-md border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-              status === s ? "border-primary/40 bg-primary/10 text-primary" : "hover:bg-secondary"
-            }`}
-          >
+          <FilterPill key={s} href={s === "all" ? "/admin/content/agent/topics" : `/admin/content/agent/topics?status=${s}`} active={status === s}>
             {s}
-          </Link>
+          </FilterPill>
         ))}
       </nav>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Topics ({rows.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {rows.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                Nothing here. Click <strong>Seed defaults</strong> to load the Tier 1/2 keyword targets, add one below, or paste an import.
-              </p>
-            ) : (
-              <ul className="divide-border divide-y">
-                {rows.map((t) => <TopicRow key={t.id} t={t} />)}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <Panel title={`Topics (${rows.length})`}>
+          {rows.length === 0 ? (
+            <EmptyNote>
+              Nothing here. Click <strong className="text-foreground">Seed defaults</strong> to load the Tier 1/2 keyword targets, add one below, or paste an import.
+            </EmptyNote>
+          ) : (
+            <ul className="divide-line m-0 list-none divide-y p-0">
+              {rows.map((t) => <TopicRow key={t.id} t={t} />)}
+            </ul>
+          )}
+        </Panel>
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Add a topic</CardTitle>
+              <CardTitle>Add a topic</CardTitle>
             </CardHeader>
             <CardContent>
               <NewTopicForm practiceAreas={PRACTICE_AREAS.map((p) => ({ slug: p.slug, name: p.name }))} />
@@ -114,7 +97,7 @@ export default async function TopicsPage({
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Import</CardTitle>
+              <CardTitle>Import</CardTitle>
             </CardHeader>
             <CardContent>
               <ImportForm />

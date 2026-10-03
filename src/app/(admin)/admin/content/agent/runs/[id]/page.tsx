@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 
 import ContentHistory from "@/components/admin/content-history";
 import { StatusPill, duration } from "@/components/admin/agent-status-pill";
+import { AdminPageHeader } from "@/components/admin/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -45,31 +46,29 @@ export default async function RunDetailPage({ params }: Props) {
 
   return (
     <div>
-      <Link href="/admin/content/agent" className="text-muted-foreground hover:text-primary text-sm">
-        ← Content agent
-      </Link>
-      <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">Run · {run.agent_name}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Started {new Date(run.started_at).toLocaleString("en-US")} · {duration(run.started_at, run.finished_at)}
-            {run.instructions_version ? ` · instructions v${run.instructions_version}` : ""}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusPill kind="run" value={run.status} />
-          {run.status === "running" && profile.role === "owner" ? <FailRunButton id={run.id} /> : null}
-        </div>
-      </div>
+      <AdminPageHeader
+        back={{ href: "/admin/content/agent", label: "Content agent" }}
+        eyebrow="Agent run"
+        title={run.agent_name}
+        description={`Started ${new Date(run.started_at).toLocaleString("en-US")} · ${duration(run.started_at, run.finished_at)}${
+          run.instructions_version ? ` · instructions v${run.instructions_version}` : ""
+        }`}
+        actions={
+          <>
+            <StatusPill kind="run" value={run.status} />
+            {run.status === "running" && profile.role === "owner" ? <FailRunButton id={run.id} /> : null}
+          </>
+        }
+      />
       {run.error ? (
-        <p className="bg-destructive/10 text-destructive mt-4 rounded-md p-3 text-sm">{run.error}</p>
+        <p className="mt-4 rounded-[10px] bg-[rgba(220,38,38,.08)] p-3 text-[13px] text-[#b91c1c]">{run.error}</p>
       ) : null}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Summary</CardTitle>
+              <CardTitle>Summary</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
               {run.summary_md ? (
@@ -84,7 +83,7 @@ export default async function RunDetailPage({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Questions ({(questions.data ?? []).length})</CardTitle>
+              <CardTitle>Questions ({(questions.data ?? []).length})</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 text-sm">
               {(questions.data ?? []).length === 0 ? (
@@ -113,7 +112,7 @@ export default async function RunDetailPage({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Report (raw)</CardTitle>
+              <CardTitle>Report (raw)</CardTitle>
             </CardHeader>
             <CardContent>
               <pre className="bg-secondary max-h-96 overflow-auto rounded-md p-3 text-xs">{JSON.stringify(run.report ?? {}, null, 2)}</pre>
@@ -127,7 +126,7 @@ export default async function RunDetailPage({ params }: Props) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Posts ({postIds.length})</CardTitle>
+              <CardTitle>Posts ({postIds.length})</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
               {postIds.length === 0 ? (
@@ -151,7 +150,7 @@ export default async function RunDetailPage({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Topics ({topicIds.length})</CardTitle>
+              <CardTitle>Topics ({topicIds.length})</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
               {topicIds.length === 0 ? (
@@ -171,7 +170,7 @@ export default async function RunDetailPage({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Log</CardTitle>
+              <CardTitle>Log</CardTitle>
             </CardHeader>
             <CardContent>
               {log.length === 0 ? (

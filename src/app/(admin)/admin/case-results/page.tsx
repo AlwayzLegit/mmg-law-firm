@@ -1,13 +1,30 @@
-import Link from "next/link";
-import { Search } from "lucide-react";
-
 import { CaseResultsEmptyGuide } from "@/components/admin/case-results-empty-guide";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AdminPageHeader,
+  EmptyNote,
+  GridHead,
+  GridRow,
+  Panel,
+  SearchForm,
+  TonePill,
+} from "@/components/admin/ui";
 import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import NewCaseResultForm from "./new-case-result-form";
 import { requireAdmin } from "@/lib/auth/require-admin";
+
+type Row = {
+  id: string;
+  headline: string;
+  amount_display: string | null;
+  year: number | null;
+  is_published: boolean;
+  created_at: string;
+  practice_areas: { name: string } | null;
+};
+
+const COLS = "md:grid-cols-[minmax(0,2fr)_minmax(120px,0.8fr)_minmax(140px,1fr)_64px_96px]";
 
 export default async function CaseResultsAdmin({
   searchParams,
@@ -33,165 +50,78 @@ export default async function CaseResultsAdmin({
 
   const { data, error } = await query;
 
-  type Row = {
-    id: string;
-    headline: string;
-    amount_display: string | null;
-    year: number | null;
-    is_published: boolean;
-    created_at: string;
-    practice_areas: { name: string } | null;
-  };
-
   const rows = (data ?? []) as unknown as Row[];
   const drafts = rows.filter((r) => !r.is_published);
   const published = rows.filter((r) => r.is_published);
 
   return (
     <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">
-            Case Results
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Anonymized recoveries. Published rows appear publicly with the
-            past-results disclaimer in proximity. Per CRPC §7.1, never identify
-            clients.
-          </p>
-        </div>
-        <NewCaseResultForm />
-      </div>
+      <AdminPageHeader
+        eyebrow="Content"
+        title="Case Results"
+        description="Anonymized recoveries. Published rows appear publicly with the past-results disclaimer in proximity. Per CRPC §7.1, never identify clients."
+        actions={<NewCaseResultForm />}
+      />
 
       {rows.length > 0 || rawQ ? (
-        <form method="get" className="mt-6 flex max-w-md items-center gap-2">
-          <div className="relative flex-1">
-            <Search
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-              aria-hidden
-            />
-            <input
-              type="search"
-              name="q"
-              defaultValue={rawQ}
-              placeholder="Search headline or amount"
-              aria-label="Search case results"
-              className="border-border bg-background focus:ring-ring h-9 w-full rounded-md border pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 rounded-md px-4 text-sm font-medium"
-          >
-            Search
-          </button>
-          {rawQ ? (
-            <Link
-              href="/admin/case-results"
-              className="text-muted-foreground hover:text-primary text-xs"
-            >
-              Clear
-            </Link>
-          ) : null}
-        </form>
+        <SearchForm
+          className="mt-6"
+          action="/admin/case-results"
+          value={rawQ}
+          placeholder="Search headline or amount"
+          ariaLabel="Search case results"
+          clearHref="/admin/case-results"
+        />
       ) : null}
 
       {error ? (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <p className="text-destructive text-sm">{error.message}</p>
-          </CardContent>
-        </Card>
+        <Panel className="mt-6">
+          <p className="m-0 text-[13px] text-[#b91c1c]">{error.message}</p>
+        </Panel>
       ) : rows.length === 0 && rawQ ? (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <p className="text-muted-foreground text-sm">
-              No case results match &ldquo;{rawQ}&rdquo;.
-            </p>
-          </CardContent>
-        </Card>
+        <Panel className="mt-6">
+          <EmptyNote>No case results match &ldquo;{rawQ}&rdquo;.</EmptyNote>
+        </Panel>
       ) : rows.length === 0 ? (
         <div className="mt-6">
           <CaseResultsEmptyGuide />
         </div>
       ) : (
         <div className="mt-6 grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Drafts ({drafts.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {drafts.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No drafts.</p>
-              ) : (
-                <List rows={drafts} />
-              )}
-            </CardContent>
-          </Card>
+          <Panel title={`Drafts (${drafts.length})`}>
+            {drafts.length === 0 ? <EmptyNote>No drafts.</EmptyNote> : <List rows={drafts} />}
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Published ({published.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {published.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No published case results yet.
-                </p>
-              ) : (
-                <List rows={published} />
-              )}
-            </CardContent>
-          </Card>
+          <Panel title={`Published (${published.length})`}>
+            {published.length === 0 ? <EmptyNote>No published case results yet.</EmptyNote> : <List rows={published} />}
+          </Panel>
         </div>
       )}
     </div>
   );
 }
 
-type Row = {
-  id: string;
-  headline: string;
-  amount_display: string | null;
-  year: number | null;
-  is_published: boolean;
-  created_at: string;
-  practice_areas: { name: string } | null;
-};
-
 function List({ rows }: { rows: Row[] }) {
   return (
-    <ul className="divide-border divide-y">
+    <div className="-mx-4">
+      <GridHead cols={COLS}>
+        <span>Headline</span>
+        <span>Amount</span>
+        <span>Practice area</span>
+        <span>Year</span>
+        <span>Status</span>
+      </GridHead>
       {rows.map((r) => (
-        <li key={r.id} className="py-3">
-          <Link
-            href={`/admin/case-results/${r.id}`}
-            className="hover:text-primary flex items-center justify-between gap-3 text-sm"
-          >
-            <div className="min-w-0">
-              <p className="truncate font-medium">{r.headline}</p>
-              <p className="text-muted-foreground truncate text-xs">
-                {r.amount_display ?? "Amount not set"}
-                {r.practice_areas?.name ? ` · ${r.practice_areas.name}` : ""}
-                {r.year ? ` · ${r.year}` : ""}
-              </p>
-            </div>
-            <span
-              className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-                r.is_published
-                  ? "bg-success/10 text-success"
-                  : "bg-secondary text-muted-foreground"
-              }`}
-            >
-              {r.is_published ? "Published" : "Draft"}
-            </span>
-          </Link>
-        </li>
+        <GridRow key={r.id} cols={COLS} href={`/admin/case-results/${r.id}`}>
+          <span className="min-w-0 truncate font-semibold">{r.headline}</span>
+          <span className="font-display text-[15px] font-semibold tracking-[-0.01em]">{r.amount_display ?? <span className="text-stone font-sans text-xs font-normal">Amount not set</span>}</span>
+          <span className="text-stone min-w-0 truncate">{r.practice_areas?.name ?? "—"}</span>
+          <span className="text-stone tabular-nums">{r.year ?? "—"}</span>
+          <span>
+            <TonePill tone={r.is_published ? "good" : "muted"}>{r.is_published ? "Published" : "Draft"}</TonePill>
+          </span>
+        </GridRow>
       ))}
-    </ul>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { Tag } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, EmptyNote, Panel } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { tagCounts } from "@/lib/leads/tags";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -29,47 +28,34 @@ export default async function LeadTagsPage() {
 
   return (
     <div>
-      <Link
-        href="/admin/leads"
-        className="text-muted-foreground hover:text-primary text-sm"
-      >
-        ← Leads
-      </Link>
+      <AdminPageHeader
+        back={{ href: "/admin/leads", label: "Leads" }}
+        eyebrow="Leads"
+        title="Manage tags"
+        description="Rename a tag to fix a typo or to merge it into another (rename it to an existing tag). Deleting removes it from every lead. Spam is excluded from the counts."
+      />
 
-      <div className="mt-3">
-        <h1 className="font-display text-2xl font-medium tracking-tight">
-          Manage tags
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Rename a tag to fix a typo or to merge it into another (rename it to
-          an existing tag). Deleting removes it from every lead. Spam is
-          excluded from the counts.
-        </p>
-      </div>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Tag className="h-4 w-4" aria-hidden />
+      <Panel
+        className="mt-6 max-w-3xl"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Tag className="text-gold-deep h-4 w-4" aria-hidden />
             Tags ({counts.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <p className="text-destructive text-sm">{error.message}</p>
-          ) : counts.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No tags yet. Add tags from any lead&apos;s detail page.
-            </p>
-          ) : (
-            <ul className="divide-border divide-y">
-              {counts.map((c) => (
-                <TagRow key={c.tag} tag={c.tag} count={c.count} />
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+          </span>
+        }
+      >
+        {error ? (
+          <p className="m-0 text-[13px] text-[#b91c1c]">{error.message}</p>
+        ) : counts.length === 0 ? (
+          <EmptyNote>No tags yet. Add tags from any lead&apos;s detail page.</EmptyNote>
+        ) : (
+          <ul className="divide-line m-0 list-none divide-y p-0">
+            {counts.map((c) => (
+              <TagRow key={c.tag} tag={c.tag} count={c.count} />
+            ))}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

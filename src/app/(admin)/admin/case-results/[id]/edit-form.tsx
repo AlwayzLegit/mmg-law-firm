@@ -81,7 +81,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Headline</CardTitle>
+          <CardTitle>Headline</CardTitle>
         </CardHeader>
         <CardContent>
           <Input
@@ -101,7 +101,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Amount + classification</CardTitle>
+          <CardTitle>Amount + classification</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <Field

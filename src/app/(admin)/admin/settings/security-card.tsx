@@ -41,7 +41,7 @@ export default function SecurityCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Security</CardTitle>
+        <CardTitle>Security</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-5">
         <form onSubmit={onSetPassword} className="grid gap-3" noValidate>

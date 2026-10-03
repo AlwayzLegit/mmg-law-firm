@@ -41,6 +41,14 @@ const COLUMNS = [
 
 type ColKey = (typeof COLUMNS)[number]["key"];
 
+const COL_DOT: Record<ColKey, string> = {
+  new: "bg-status-new",
+  contacted: "bg-gold",
+  qualified: "bg-[#16a34a]",
+  signed: "bg-ink",
+  rejected: "bg-ink/25",
+};
+
 function groupByStatus(cards: KanbanCard[]): Record<ColKey, KanbanCard[]> {
   const out: Record<ColKey, KanbanCard[]> = {
     new: [],
@@ -182,22 +190,25 @@ export default function KanbanBoard({
                 setDragId(null);
                 if (id) move(id, col.key);
               }}
-              className={`bg-secondary/30 flex w-72 flex-none flex-col rounded-lg border transition-colors ${
+              className={`flex w-72 flex-none flex-col rounded-[14px] ring-1 transition-colors ${
                 overCol === col.key
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border"
+                  ? "bg-gold/10 ring-gold"
+                  : "bg-ink/4 ring-transparent"
               }`}
               aria-label={`${col.label} (${items.length})`}
             >
-              <header className="border-border flex items-center justify-between border-b px-3 py-2.5">
-                <h2 className="text-sm font-semibold">{col.label}</h2>
-                <span className="text-muted-foreground bg-background rounded-full px-2 py-0.5 text-xs font-medium">
+              <header className="flex items-center justify-between px-3.5 pt-3 pb-2">
+                <h2 className="micro-label text-stone m-0 inline-flex items-center gap-2">
+                  <span className={`inline-block h-2 w-2 rounded-full ${COL_DOT[col.key]}`} aria-hidden />
+                  {col.label}
+                </h2>
+                <span className="bg-card text-foreground rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ring-1 ring-ink/8">
                   {items.length}
                 </span>
               </header>
               <ul className="flex flex-1 flex-col gap-2 p-2">
                 {items.length === 0 ? (
-                  <li className="text-muted-foreground px-2 py-6 text-center text-xs">
+                  <li className="text-stone border-ink/12 m-1 rounded-[10px] border border-dashed px-2 py-6 text-center text-xs">
                     Drop here
                   </li>
                 ) : (
@@ -214,20 +225,20 @@ export default function KanbanBoard({
                         setDragId(null);
                         setOverCol(null);
                       }}
-                      className={`border-border bg-background cursor-grab rounded-md border p-3 shadow-sm active:cursor-grabbing ${
+                      className={`bg-card ring-ink/8 hover:ring-gold cursor-grab rounded-[10px] p-3 ring-1 transition-shadow active:cursor-grabbing ${
                         dragId === c.id ? "opacity-50" : ""
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <Link
                           href={`/admin/leads/${c.id}`}
-                          className="hover:text-primary text-sm font-medium"
+                          className="text-foreground hover:text-gold-deep text-[13px] font-semibold no-underline"
                         >
                           {c.full_name}
                         </Link>
                         {c.assigned_to && assigneeNames[c.assigned_to] ? (
                           <span
-                            className="bg-primary/10 text-primary inline-flex h-5 w-5 flex-none items-center justify-center rounded-full text-[10px] font-semibold"
+                            className="bg-ink text-cream inline-flex h-5 w-5 flex-none items-center justify-center rounded-full text-[9px] font-semibold"
                             title={`Assigned to ${assigneeNames[c.assigned_to]}`}
                             aria-label={`Assigned to ${assigneeNames[c.assigned_to]}`}
                           >
@@ -236,7 +247,7 @@ export default function KanbanBoard({
                         ) : null}
                       </div>
                       {c.phone ? (
-                        <p className="text-muted-foreground mt-0.5 text-xs">
+                        <p className="text-stone m-0 mt-0.5 text-xs tabular-nums">
                           {c.phone}
                         </p>
                       ) : null}
@@ -245,7 +256,7 @@ export default function KanbanBoard({
                           <Link
                             key={t}
                             href={`/admin/leads/board?tag=${encodeURIComponent(t)}`}
-                            className="border-border bg-secondary text-muted-foreground hover:text-primary rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                            className="bg-ink/6 text-stone hover:text-foreground rounded-full px-1.5 py-0.5 text-[10px] font-semibold no-underline"
                           >
                             {t}
                           </Link>
@@ -273,7 +284,7 @@ export default function KanbanBoard({
                             maxLength={30}
                             list="board-tag-suggest"
                             autoFocus
-                            className="border-border bg-background focus:ring-ring h-5 w-20 rounded-full border px-2 text-[10px] focus:ring-2 focus:outline-none"
+                            className="border-ink/14 bg-card focus:border-gold focus:ring-gold/25 h-5 w-20 rounded-full border px-2 text-[10px] outline-none focus:ring-2"
                           />
                         ) : (
                           <button
@@ -284,13 +295,13 @@ export default function KanbanBoard({
                             }}
                             aria-label={`Add a tag to ${c.full_name}`}
                             title="Add tag"
-                            className="border-border text-muted-foreground hover:text-primary inline-flex items-center rounded-full border border-dashed px-1.5 py-0.5"
+                            className="border-ink/20 text-stone hover:border-gold hover:text-foreground inline-flex items-center rounded-full border border-dashed px-1.5 py-0.5"
                           >
                             <Plus className="h-3 w-3" aria-hidden />
                           </button>
                         )}
                       </div>
-                      <div className="text-muted-foreground mt-2 flex items-center justify-between text-[11px]">
+                      <div className="text-stone mt-2 flex items-center justify-between text-[11px]">
                         <time dateTime={c.created_at}>
                           {new Date(c.created_at).toLocaleDateString("en-US", {
                             month: "short",
@@ -302,7 +313,7 @@ export default function KanbanBoard({
                             dateTime={c.follow_up_at}
                             className={
                               new Date(c.follow_up_at).getTime() < now
-                                ? "text-destructive font-medium"
+                                ? "font-semibold text-[#b91c1c]"
                                 : ""
                             }
                             title="Follow-up"
@@ -323,7 +334,7 @@ export default function KanbanBoard({
                         id={`move-${c.id}`}
                         value={c.status}
                         onChange={(e) => move(c.id, e.target.value as ColKey)}
-                        className="border-border bg-background mt-2 h-7 w-full rounded border text-xs"
+                        className="border-ink/14 bg-card text-stone mt-2 h-7 w-full rounded-[7px] border px-1.5 text-xs outline-none focus:border-gold"
                       >
                         {COLUMNS.map((o) => (
                           <option key={o.key} value={o.key}>

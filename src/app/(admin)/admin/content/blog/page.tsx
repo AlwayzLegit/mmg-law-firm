@@ -1,7 +1,15 @@
-import Link from "next/link";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AdminPageHeader,
+  EmptyNote,
+  FilterPill,
+  GridHead,
+  GridRow,
+  Pager,
+  Panel,
+  SearchForm,
+  TonePill,
+  adminCode,
+} from "@/components/admin/ui";
 import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -9,6 +17,7 @@ import NewPostForm from "./new-post-form";
 import { requireAdmin } from "@/lib/auth/require-admin";
 
 const PAGE_SIZE = 50;
+const COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_80px_minmax(120px,0.9fr)_90px]";
 const STATUS_OPTIONS = ["all", "needs_review", "approved", "published", "draft"] as const;
 type Status = (typeof STATUS_OPTIONS)[number];
 
@@ -70,209 +79,102 @@ export default async function ContentBlogAdmin({
 
   return (
     <div>
-      <Link
-        href="/admin/content/pages"
-        className="text-muted-foreground hover:text-primary text-sm"
-      >
-        ← Content
-      </Link>
+      <AdminPageHeader
+        eyebrow="Content"
+        title="Blog"
+        description={
+          <>
+            Click any row to edit. Posts with a future <code className={adminCode}>published_at</code> stay hidden until that time.
+          </>
+        }
+        actions={<NewPostForm />}
+      />
 
-      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">
-            Blog
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Click any row to edit. Posts with a future{" "}
-            <code className="bg-secondary rounded px-1 py-0.5 text-xs">
-              published_at
-            </code>{" "}
-            stay hidden until that time.
-          </p>
-        </div>
-        <NewPostForm />
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex flex-wrap gap-2" aria-label="Filter by status">
+          {STATUS_OPTIONS.map((s) => (
+            <FilterPill key={s} href={hrefWith({ status: s, page: 1 })} active={status === s}>
+              {s === "needs_review" ? "Needs review" : s}
+            </FilterPill>
+          ))}
+        </nav>
+        <SearchForm
+          action="/admin/content/blog"
+          value={rawQ}
+          placeholder="Search title or slug"
+          ariaLabel="Search posts"
+          hidden={status !== "all" ? { status } : undefined}
+          clearHref={hrefWith({ q: "" })}
+        />
       </div>
 
-      <form method="get" className="mt-6 flex max-w-md items-center gap-2">
-        {status !== "all" ? (
-          <input type="hidden" name="status" value={status} />
-        ) : null}
-        <div className="relative flex-1">
-          <Search
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-            aria-hidden
-          />
-          <input
-            type="search"
-            name="q"
-            defaultValue={rawQ}
-            placeholder="Search title or slug"
-            aria-label="Search posts"
-            className="border-border bg-background focus:ring-ring h-9 w-full rounded-md border pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 rounded-md px-4 text-sm font-medium"
-        >
-          Search
-        </button>
-        {rawQ ? (
-          <Link
-            href={hrefWith({ q: "" })}
-            className="text-muted-foreground hover:text-primary text-xs"
-          >
-            Clear
-          </Link>
-        ) : null}
-      </form>
+      <Panel
+        className="mt-6"
+        title={`Posts (${total})`}
+        action={totalPages > 1 ? <span className="text-stone text-xs">page {page} of {totalPages}</span> : null}
+      >
+        {error ? (
+          <p className="m-0 text-[13px] text-[#b91c1c]">{error.message}</p>
+        ) : !data || data.length === 0 ? (
+          <EmptyNote>
+            {rawQ || status !== "all" ? "No posts match these filters." : "No posts yet. Click New post to draft your first one."}
+          </EmptyNote>
+        ) : (
+          <div className="-mx-4">
+            <GridHead cols={COLS}>
+              <span>Title</span>
+              <span>Keyword · tags</span>
+              <span>Source</span>
+              <span>Status</span>
+              <span>Updated</span>
+            </GridHead>
+            {data.map((p) => {
+              const scheduled = p.is_published && p.published_at && new Date(p.published_at).getTime() > now;
+              const review =
+                !p.is_published && p.review_status === "needs_review"
+                  ? { tone: "warn" as const, label: "Needs review" }
+                  : !p.is_published && p.review_status === "approved"
+                    ? { tone: "good" as const, label: "Approved" }
+                    : !p.is_published && p.review_status === "rejected"
+                      ? { tone: "bad" as const, label: "Rejected" }
+                      : null;
+              return (
+                <GridRow key={p.id} cols={COLS} href={`/admin/content/blog/${p.id}`}>
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{p.title}</span>
+                    <span className="text-stone block truncate font-mono text-[11px]">/blog/{p.slug}</span>
+                  </span>
+                  <span className="text-stone min-w-0 truncate text-xs">
+                    {p.primary_keyword ? <span className="text-foreground font-medium">{p.primary_keyword}</span> : null}
+                    {p.primary_keyword && p.tags.length > 0 ? " · " : ""}
+                    {p.tags.slice(0, 3).join(", ")}
+                  </span>
+                  <span>
+                    {p.created_via === "agent" || p.created_via === "admin_api" ? (
+                      <TonePill tone="muted">{p.created_via === "agent" ? "Agent" : "API"}</TonePill>
+                    ) : (
+                      <span className="text-stone text-xs">Admin</span>
+                    )}
+                  </span>
+                  <span className="flex flex-wrap gap-1">
+                    {review ? <TonePill tone={review.tone}>{review.label}</TonePill> : null}
+                    {scheduled ? (
+                      <TonePill tone="warn">Scheduled</TonePill>
+                    ) : (
+                      <TonePill tone={p.is_published ? "ink" : "muted"}>{p.is_published ? "Published" : "Draft"}</TonePill>
+                    )}
+                  </span>
+                  <time dateTime={p.updated_at} className="text-stone text-xs">
+                    {new Date(p.updated_at).toLocaleDateString("en-US")}
+                  </time>
+                </GridRow>
+              );
+            })}
+          </div>
+        )}
 
-      <nav className="mt-4 flex flex-wrap gap-2" aria-label="Filter by status">
-        {STATUS_OPTIONS.map((s) => (
-          <Link
-            key={s}
-            href={hrefWith({ status: s, page: 1 })}
-            className={`border-border rounded-md border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-              status === s
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "hover:bg-secondary"
-            }`}
-          >
-            {s === "needs_review" ? "Needs review" : s}
-          </Link>
-        ))}
-      </nav>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">
-            Posts ({total})
-            {totalPages > 1 ? (
-              <span className="text-muted-foreground ml-2 text-xs font-normal">
-                · page {page} of {totalPages}
-              </span>
-            ) : null}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <p className="text-destructive text-sm">{error.message}</p>
-          ) : !data || data.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {rawQ || status !== "all"
-                ? "No posts match these filters."
-                : "No posts yet. Click New post to draft your first one."}
-            </p>
-          ) : (
-            <ul className="divide-border divide-y">
-              {data.map((p) => {
-                const scheduled =
-                  p.is_published &&
-                  p.published_at &&
-                  new Date(p.published_at).getTime() > now;
-                return (
-                  <li key={p.id} className="py-3">
-                    <Link
-                      href={`/admin/content/blog/${p.id}`}
-                      className="hover:text-primary flex items-center justify-between gap-3 text-sm"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{p.title}</p>
-                        <p className="text-muted-foreground truncate text-xs">
-                          /blog/{p.slug}
-                          {p.primary_keyword ? ` · ${p.primary_keyword}` : ""}
-                          {p.tags.length > 0
-                            ? ` · ${p.tags.slice(0, 3).join(", ")}`
-                            : ""}
-                        </p>
-                      </div>
-                      <div className="flex flex-none items-center gap-2 text-xs">
-                        {p.created_via === "agent" || p.created_via === "admin_api" ? (
-                          <span
-                            className="bg-secondary text-muted-foreground rounded-md px-2 py-0.5 font-medium"
-                            title={p.created_via === "agent" ? "Written by the content agent" : "Created via the admin API"}
-                          >
-                            {p.created_via === "agent" ? "Agent" : "API"}
-                          </span>
-                        ) : null}
-                        {!p.is_published && p.review_status === "needs_review" ? (
-                          <span className="bg-warning/10 text-warning rounded-md px-2 py-0.5 font-medium">
-                            Needs review
-                          </span>
-                        ) : !p.is_published && p.review_status === "approved" ? (
-                          <span className="bg-success/10 text-success rounded-md px-2 py-0.5 font-medium">
-                            Approved
-                          </span>
-                        ) : !p.is_published && p.review_status === "rejected" ? (
-                          <span className="bg-destructive/10 text-destructive rounded-md px-2 py-0.5 font-medium">
-                            Rejected
-                          </span>
-                        ) : null}
-                        {scheduled ? (
-                          <span className="bg-warning/10 text-warning rounded-md px-2 py-0.5 font-medium">
-                            Scheduled
-                          </span>
-                        ) : (
-                          <span
-                            className={`rounded-md px-2 py-0.5 font-medium ${
-                              p.is_published
-                                ? "bg-success/10 text-success"
-                                : "bg-secondary text-muted-foreground"
-                            }`}
-                          >
-                            {p.is_published ? "Published" : "Draft"}
-                          </span>
-                        )}
-                        <time
-                          dateTime={p.updated_at}
-                          className="text-muted-foreground"
-                        >
-                          {new Date(p.updated_at).toLocaleDateString("en-US")}
-                        </time>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {totalPages > 1 ? (
-            <nav
-              className="border-border mt-6 flex items-center justify-between gap-3 border-t pt-4"
-              aria-label="Pagination"
-            >
-              {page > 1 ? (
-                <Link
-                  href={hrefWith({ page: page - 1 })}
-                  rel="prev"
-                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-                  Previous
-                </Link>
-              ) : (
-                <span aria-hidden />
-              )}
-              <span className="text-muted-foreground text-xs">
-                Showing {from + 1}–{Math.min(to + 1, total)} of {total}
-              </span>
-              {page < totalPages ? (
-                <Link
-                  href={hrefWith({ page: page + 1 })}
-                  rel="next"
-                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
-                >
-                  Next
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                </Link>
-              ) : (
-                <span aria-hidden />
-              )}
-            </nav>
-          ) : null}
-        </CardContent>
-      </Card>
+        <Pager page={page} totalPages={totalPages} from={from} to={to} total={total} hrefFor={(p) => hrefWith({ page: p })} />
+      </Panel>
     </div>
   );
 }

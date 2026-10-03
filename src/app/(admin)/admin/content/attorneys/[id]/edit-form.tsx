@@ -78,7 +78,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Identity</CardTitle>
+          <CardTitle>Identity</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field label="Full name">
@@ -132,7 +132,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Bar admission</CardTitle>
+          <CardTitle>Bar admission</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -186,7 +186,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Bio copy</CardTitle>
+          <CardTitle>Bio copy</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field
@@ -219,7 +219,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Education</CardTitle>
+          <CardTitle>Education</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
@@ -276,7 +276,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Practice details</CardTitle>
+          <CardTitle>Practice details</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field
@@ -318,7 +318,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Headshot caption</CardTitle>
+          <CardTitle>Headshot caption</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field
@@ -349,7 +349,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">External profiles (sameAs)</CardTitle>
+          <CardTitle>External profiles (sameAs)</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field label="Avvo URL">
@@ -389,7 +389,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Display order</CardTitle>
+          <CardTitle>Display order</CardTitle>
         </CardHeader>
         <CardContent>
           <Field

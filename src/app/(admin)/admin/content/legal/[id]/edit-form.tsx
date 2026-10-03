@@ -63,7 +63,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Heading</CardTitle>
+          <CardTitle>Heading</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field label="Title">
@@ -121,7 +121,7 @@ export default function EditForm(props: Props) {
       {props.fallbackBody ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">In-code fallback (reference)</CardTitle>
+            <CardTitle>In-code fallback (reference)</CardTitle>
           </CardHeader>
           <CardContent>
             <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-secondary/40 p-4 text-xs leading-relaxed text-muted-foreground">
@@ -143,7 +143,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Listing fields</CardTitle>
+          <CardTitle>Listing fields</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field

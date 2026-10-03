@@ -83,7 +83,7 @@ export default async function TestimonialEditorPage({ params }: Props) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Approve for public display</CardTitle>
+              <CardTitle>Approve for public display</CardTitle>
             </CardHeader>
             <CardContent>
               <ApproveControl
@@ -100,7 +100,7 @@ export default async function TestimonialEditorPage({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Danger zone</CardTitle>
+              <CardTitle>Danger zone</CardTitle>
             </CardHeader>
             <CardContent>
               <DeleteButton id={row.id} initials={row.client_initials} />

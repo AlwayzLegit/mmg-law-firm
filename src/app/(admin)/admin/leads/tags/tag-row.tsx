@@ -71,14 +71,14 @@ export default function TagRow({ tag, count }: { tag: string; count: number }) {
             maxLength={30}
             autoFocus
             aria-label={`Rename tag ${tag}`}
-            className="border-border bg-background focus:ring-ring h-8 w-48 rounded-md border px-2 text-sm focus:ring-2 focus:outline-none"
+            className="border-ink/14 bg-card focus:border-gold focus:ring-gold/25 h-8 w-48 rounded-[8px] border px-2 text-[13px] outline-none focus:ring-2"
           />
           <button
             type="button"
             onClick={rename}
             disabled={pending}
             aria-label="Save"
-            className="text-success hover:bg-secondary rounded-md p-1.5"
+            className="hover:bg-ink/6 rounded-md p-1.5 text-[#15803d]"
           >
             <Check className="h-4 w-4" aria-hidden />
           </button>
@@ -90,11 +90,11 @@ export default function TagRow({ tag, count }: { tag: string; count: number }) {
             }}
             disabled={pending}
             aria-label="Cancel"
-            className="text-muted-foreground hover:bg-secondary rounded-md p-1.5"
+            className="text-stone hover:bg-ink/6 rounded-md p-1.5"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
-          <span className="text-muted-foreground text-xs">
+          <span className="text-stone text-xs">
             Rename to an existing tag to merge them.
           </span>
         </span>
@@ -102,12 +102,12 @@ export default function TagRow({ tag, count }: { tag: string; count: number }) {
         <>
           <Link
             href={`/admin/leads?tag=${encodeURIComponent(tag)}`}
-            className="hover:text-primary text-sm font-medium"
+            className="text-foreground hover:text-gold-deep text-[13px] font-semibold no-underline"
           >
             {tag}
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-muted-foreground text-xs">
+            <span className="bg-ink/8 text-stone rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums">
               {count} lead{count === 1 ? "" : "s"}
             </span>
             <button
@@ -115,7 +115,7 @@ export default function TagRow({ tag, count }: { tag: string; count: number }) {
               onClick={() => setEditing(true)}
               disabled={pending}
               aria-label={`Rename tag ${tag}`}
-              className="text-muted-foreground hover:text-primary rounded-md p-1.5"
+              className="text-stone hover:text-foreground rounded-md p-1.5"
             >
               <Pencil className="h-4 w-4" aria-hidden />
             </button>
@@ -124,7 +124,7 @@ export default function TagRow({ tag, count }: { tag: string; count: number }) {
               onClick={remove}
               disabled={pending}
               aria-label={`Delete tag ${tag}`}
-              className="text-muted-foreground hover:text-destructive rounded-md p-1.5"
+              className="text-stone rounded-md p-1.5 hover:text-[#b91c1c]"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
             </button>

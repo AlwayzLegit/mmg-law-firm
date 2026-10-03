@@ -111,9 +111,9 @@ export default async function PracticeAreaEditor({ params }: Props) {
         />
 
         <div className="space-y-6">
-          <Card>
+          <Card className="surface-ink bg-ink text-cream ring-0">
             <CardHeader>
-              <CardTitle className="text-base">Publish</CardTitle>
+              <CardTitle className="micro-label text-gold">Publish</CardTitle>
             </CardHeader>
             <CardContent>
               <PublishControl
@@ -128,7 +128,7 @@ export default async function PracticeAreaEditor({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Metadata</CardTitle>
+              <CardTitle>Metadata</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
               <Pair
@@ -148,7 +148,7 @@ export default async function PracticeAreaEditor({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Notes</CardTitle>
+              <CardTitle>Notes</CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-muted-foreground space-y-2">
               <p>

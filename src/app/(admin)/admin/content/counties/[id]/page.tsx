@@ -85,9 +85,9 @@ export default async function CountyEditorPage({ params }: Props) {
         />
 
         <div className="space-y-6">
-          <Card>
+          <Card className="surface-ink bg-ink text-cream ring-0">
             <CardHeader>
-              <CardTitle className="text-base">Publish</CardTitle>
+              <CardTitle className="micro-label text-gold">Publish</CardTitle>
             </CardHeader>
             <CardContent>
               <PublishToggle
@@ -99,7 +99,7 @@ export default async function CountyEditorPage({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Metadata</CardTitle>
+              <CardTitle>Metadata</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
               <Pair label="Created" value={new Date(data.created_at).toLocaleString("en-US")} />

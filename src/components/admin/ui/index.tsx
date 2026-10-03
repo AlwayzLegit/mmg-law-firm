@@ -190,3 +190,265 @@ export const adminBtn = {
 /** Admin text input / select class (38px, radius 9, gold focus ring). */
 export const adminInput =
   "bg-card border-ink/14 focus:border-gold focus:ring-gold/25 h-[38px] w-full rounded-[9px] border px-3 text-sm outline-none focus:ring-[3px]";
+
+/** Inline code chip for paths, slugs and env names. */
+export const adminCode = "bg-ink/6 rounded px-1.5 py-0.5 font-mono text-[11.5px] break-all";
+
+/** Link-based segmented control (server-side range / view switches). */
+export function SegmentedControl({
+  items,
+  label,
+  className,
+}: {
+  items: { href: string; label: string; active: boolean }[];
+  label: string;
+  className?: string;
+}) {
+  return (
+    <nav aria-label={label} className={cn("bg-ink/6 inline-flex rounded-[10px] p-1", className)}>
+      {items.map((it) => (
+        <Link
+          key={it.href}
+          href={it.href}
+          aria-current={it.active ? "page" : undefined}
+          className={cn(
+            "inline-flex h-8 items-center rounded-[7px] px-3 text-xs font-semibold no-underline transition-colors",
+            it.active ? "bg-card text-foreground shadow-sm" : "text-stone hover:text-foreground",
+          )}
+        >
+          {it.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+/** Column header row for a CSS-grid table. Pass the same `cols` class as the rows. */
+export function GridHead({ cols, children, className }: { cols: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      role="row"
+      className={cn(
+        "micro-label text-stone border-line hidden items-center gap-3 border-b px-4 pb-2.5 md:grid",
+        cols,
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** One row of a CSS-grid table. Renders a Link when `href` is given. */
+export function GridRow({
+  cols,
+  href,
+  children,
+  className,
+}: {
+  cols: string;
+  href?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const cls = cn(
+    "border-line grid items-center gap-x-3 gap-y-1.5 border-b px-4 py-3 text-[13px] last:border-b-0",
+    "md:gap-3",
+    cols,
+    href && "text-foreground hover:bg-ink/3 no-underline transition-colors",
+    className,
+  );
+  return href ? (
+    <Link href={href} className={cls} role="row">
+      {children}
+    </Link>
+  ) : (
+    <div className={cls} role="row">
+      {children}
+    </div>
+  );
+}
+
+/** Dark publish / status rail used on every content editor. */
+export function PublishRail({
+  title = "Publish",
+  children,
+  className,
+}: {
+  title?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("surface-ink bg-ink text-cream rounded-[14px] px-[22px] py-5", className)}>
+      <h2 className="micro-label text-gold m-0">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+/** Muted one-line empty state. */
+export function EmptyNote({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <p className={cn("text-stone m-0 text-[13px]", className)}>{children}</p>;
+}
+
+/** Initials avatar (ink on paper by default). */
+export function Avatar({
+  name,
+  src,
+  size = 32,
+  tone = "ink",
+  className,
+}: {
+  name: string;
+  src?: string | null;
+  size?: number;
+  tone?: "ink" | "gold" | "muted";
+  className?: string;
+}) {
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "?";
+  const style = { width: size, height: size, fontSize: Math.round(size * 0.36) };
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src} alt="" style={style} className={cn("flex-none rounded-full object-cover", className)} />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      style={style}
+      className={cn(
+        "inline-flex flex-none items-center justify-center rounded-full font-semibold",
+        tone === "ink" && "bg-ink text-cream",
+        tone === "gold" && "bg-gold/18 text-gold-deep",
+        tone === "muted" && "bg-ink/8 text-stone",
+        className,
+      )}
+    >
+      {initials}
+    </span>
+  );
+}
+
+/** GET search form (server filters). Preserves `hidden` params. */
+export function SearchForm({
+  action,
+  value,
+  placeholder,
+  ariaLabel,
+  hidden,
+  clearHref,
+  className,
+}: {
+  action: string;
+  value: string;
+  placeholder: string;
+  ariaLabel: string;
+  hidden?: Record<string, string>;
+  clearHref?: string;
+  className?: string;
+}) {
+  return (
+    <form method="get" action={action} className={cn("flex max-w-md items-center gap-2", className)}>
+      {hidden
+        ? Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)
+        : null}
+      <input
+        type="search"
+        name="q"
+        defaultValue={value}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        className={cn(adminInput, "flex-1")}
+      />
+      <button type="submit" className={adminBtn.ink}>
+        Search
+      </button>
+      {value && clearHref ? (
+        <Link href={clearHref} className={adminBtn.ghost}>
+          Clear
+        </Link>
+      ) : null}
+    </form>
+  );
+}
+
+/** Ranked list with gold proportion bars (analytics / SEO). */
+export function RankBars({
+  rows,
+  emptyText = "No data yet.",
+}: {
+  rows: { label: string; count: number; href?: string }[];
+  emptyText?: string;
+}) {
+  if (rows.length === 0) return <EmptyNote>{emptyText}</EmptyNote>;
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return (
+    <ol className="m-0 grid list-none gap-2.5 p-0">
+      {rows.map((r) => (
+        <li key={r.label} className="grid gap-1">
+          <div className="flex items-center justify-between gap-3 text-[13px]">
+            {r.href ? (
+              <Link href={r.href} className="text-foreground hover:text-gold-deep min-w-0 truncate no-underline" title={`View ${r.label} leads`}>
+                {r.label}
+              </Link>
+            ) : (
+              <span className="min-w-0 truncate">{r.label}</span>
+            )}
+            <span className="flex-none font-semibold tabular-nums">{r.count}</span>
+          </div>
+          <div className="bg-ink/6 h-1.5 overflow-hidden rounded-full">
+            <div className="bg-gold h-full rounded-full" style={{ width: `${Math.max(2, Math.round((r.count / max) * 100))}%` }} />
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** Pagination footer (prev / range / next). */
+export function Pager({
+  page,
+  totalPages,
+  from,
+  to,
+  total,
+  hrefFor,
+}: {
+  page: number;
+  totalPages: number;
+  from: number;
+  to: number;
+  total: number;
+  hrefFor: (page: number) => string;
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <nav className="border-line mt-4 flex items-center justify-between gap-3 border-t pt-4" aria-label="Pagination">
+      {page > 1 ? (
+        <Link href={hrefFor(page - 1)} rel="prev" className={adminBtn.outline}>
+          Previous
+        </Link>
+      ) : (
+        <span aria-hidden />
+      )}
+      <span className="text-stone text-xs">
+        Showing {from + 1}–{Math.min(to + 1, total)} of {total}
+      </span>
+      {page < totalPages ? (
+        <Link href={hrefFor(page + 1)} rel="next" className={adminBtn.outline}>
+          Next
+        </Link>
+      ) : (
+        <span aria-hidden />
+      )}
+    </nav>
+  );
+}

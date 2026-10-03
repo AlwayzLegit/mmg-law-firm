@@ -1,7 +1,4 @@
-import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, Avatar, EmptyNote, GridHead, GridRow, Pager, Panel, adminCode } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -19,6 +16,8 @@ type AuditRow = {
   ts: string;
 };
 
+const COLS = "md:grid-cols-[120px_minmax(150px,1fr)_120px_130px_minmax(0,2fr)]";
+
 export default async function AuditLogPage({
   searchParams,
 }: {
@@ -33,14 +32,10 @@ export default async function AuditLogPage({
   if (profile.role !== "owner") {
     return (
       <div>
-        <h1 className="font-display text-2xl font-medium tracking-tight">
-          Audit log
-        </h1>
-        <Card className="mt-6">
-          <CardContent className="text-muted-foreground py-8 text-sm">
-            The audit log is visible to firm owners only.
-          </CardContent>
-        </Card>
+        <AdminPageHeader eyebrow="Security" title="Audit log" />
+        <Panel className="mt-6">
+          <EmptyNote>The audit log is visible to firm owners only.</EmptyNote>
+        </Panel>
       </div>
     );
   }
@@ -48,9 +43,7 @@ export default async function AuditLogPage({
   const supabase = await getServerSupabase();
   const { data, error, count } = await supabase
     .from("audit_log")
-    .select("id, actor_id, entity, entity_id, action, diff, ts", {
-      count: "exact",
-    })
+    .select("id, actor_id, entity, entity_id, action, diff, ts", { count: "exact" })
     .order("ts", { ascending: false })
     .range(from, to);
   const rows = (data ?? []) as AuditRow[];
@@ -58,135 +51,73 @@ export default async function AuditLogPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // Resolve actor names in one query.
-  const actorIds = [
-    ...new Set(rows.map((r) => r.actor_id).filter(Boolean)),
-  ] as string[];
+  const actorIds = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))] as string[];
   let names: Record<string, string> = {};
   if (actorIds.length > 0) {
-    const { data: admins } = await supabase
-      .from("admin_profiles")
-      .select("user_id, full_name")
-      .in("user_id", actorIds);
-    names = Object.fromEntries(
-      (admins ?? []).map((a) => [a.user_id, a.full_name ?? "Admin"]),
-    );
+    const { data: admins } = await supabase.from("admin_profiles").select("user_id, full_name").in("user_id", actorIds);
+    names = Object.fromEntries((admins ?? []).map((a) => [a.user_id, a.full_name ?? "Admin"]));
   }
+
+  const actorOf = (r: AuditRow) => {
+    if (r.actor_id) return { name: names[r.actor_id] ?? "Admin", kind: "admin" as const };
+    const keyName = r.diff?.api_key_name;
+    if (typeof keyName === "string" && keyName) return { name: `API key “${keyName}”`, kind: "api" as const };
+    if (r.diff?.via === "admin_api") return { name: "Admin API", kind: "api" as const };
+    return { name: "System", kind: "system" as const };
+  };
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-medium tracking-tight">
-        Audit log
-      </h1>
-      <p className="text-muted-foreground mt-1 text-sm">
-        Admin actions, most recent first. Includes API and system events.
-      </p>
+      <AdminPageHeader
+        eyebrow="Security"
+        title="Audit log"
+        description="Admin actions, most recent first. Includes API and system events."
+      />
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">
-            {total} {total === 1 ? "entry" : "entries"}
-            {totalPages > 1 ? (
-              <span className="text-muted-foreground ml-2 text-xs font-normal">
-                · page {page} of {totalPages}
-              </span>
-            ) : null}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <p className="text-destructive text-sm">{error.message}</p>
-          ) : rows.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No activity yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-border text-muted-foreground border-b text-xs tracking-wide uppercase">
-                  <tr>
-                    <th className="px-2 py-3 text-left">When</th>
-                    <th className="px-2 py-3 text-left">Actor</th>
-                    <th className="px-2 py-3 text-left">Entity</th>
-                    <th className="px-2 py-3 text-left">Action</th>
-                    <th className="px-2 py-3 text-left">Detail</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.id} className="border-border/60 border-b">
-                      <td className="text-muted-foreground px-2 py-3 align-top text-xs whitespace-nowrap">
-                        <time dateTime={r.ts}>
-                          {new Date(r.ts).toLocaleString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </time>
-                      </td>
-                      <td className="px-2 py-3 align-top">
-                        {r.actor_id
-                          ? (names[r.actor_id] ?? "Admin")
-                          : "System / API"}
-                      </td>
-                      <td className="text-muted-foreground px-2 py-3 align-top">
-                        {r.entity}
-                      </td>
-                      <td className="px-2 py-3 align-top">
-                        <span className="bg-secondary rounded-md px-2 py-0.5 text-xs font-medium">
-                          {r.action}
-                        </span>
-                      </td>
-                      <td className="text-muted-foreground max-w-[28rem] px-2 py-3 align-top text-xs">
-                        {r.diff ? (
-                          <code className="break-words">
-                            {JSON.stringify(r.diff)}
-                          </code>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <Panel
+        className="mt-6"
+        title={`${total} ${total === 1 ? "entry" : "entries"}`}
+        action={totalPages > 1 ? <span className="text-stone text-xs">page {page} of {totalPages}</span> : null}
+      >
+        {error ? (
+          <p className="text-[13px] text-[#b91c1c]">{error.message}</p>
+        ) : rows.length === 0 ? (
+          <EmptyNote>No activity yet.</EmptyNote>
+        ) : (
+          <div className="-mx-4">
+            <GridHead cols={COLS}>
+              <span>When</span>
+              <span>Actor</span>
+              <span>Entity</span>
+              <span>Action</span>
+              <span>Detail</span>
+            </GridHead>
+            {rows.map((r) => {
+              const actor = actorOf(r);
+              return (
+                <GridRow key={r.id} cols={COLS} className="items-start">
+                  <time dateTime={r.ts} className="text-stone text-xs whitespace-nowrap">
+                    {new Date(r.ts).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                  </time>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Avatar name={actor.kind === "admin" ? actor.name : actor.kind === "api" ? "A P" : "S Y"} size={24} tone={actor.kind === "admin" ? "ink" : actor.kind === "api" ? "gold" : "muted"} />
+                    <span className="min-w-0 truncate font-semibold">{actor.name}</span>
+                  </span>
+                  <span className="text-stone">{r.entity}</span>
+                  <span>
+                    <code className={adminCode}>{r.action}</code>
+                  </span>
+                  <span className="text-stone min-w-0 text-xs">
+                    {r.diff ? <code className="font-mono break-all text-[11px]">{JSON.stringify(r.diff)}</code> : "—"}
+                  </span>
+                </GridRow>
+              );
+            })}
+          </div>
+        )}
 
-          {totalPages > 1 ? (
-            <nav
-              className="border-border mt-6 flex items-center justify-between gap-3 border-t pt-4"
-              aria-label="Pagination"
-            >
-              {page > 1 ? (
-                <Link
-                  href={`/admin/audit?page=${page - 1}`}
-                  rel="prev"
-                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-                  Previous
-                </Link>
-              ) : (
-                <span aria-hidden />
-              )}
-              <span className="text-muted-foreground text-xs">
-                Showing {from + 1}–{Math.min(to + 1, total)} of {total}
-              </span>
-              {page < totalPages ? (
-                <Link
-                  href={`/admin/audit?page=${page + 1}`}
-                  rel="next"
-                  className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium"
-                >
-                  Next
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                </Link>
-              ) : (
-                <span aria-hidden />
-              )}
-            </nav>
-          ) : null}
-        </CardContent>
-      </Card>
+        <Pager page={page} totalPages={totalPages} from={from} to={to} total={total} hrefFor={(p) => `/admin/audit?page=${p}`} />
+      </Panel>
     </div>
   );
 }

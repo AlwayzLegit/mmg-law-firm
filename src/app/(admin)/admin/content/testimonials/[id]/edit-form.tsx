@@ -69,7 +69,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Quote</CardTitle>
+          <CardTitle>Quote</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
@@ -90,7 +90,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Attribution</CardTitle>
+          <CardTitle>Attribution</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <Field

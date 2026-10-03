@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, EmptyNote, Panel, adminCode } from "@/components/admin/ui";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 import CreateRow from "./create-row";
@@ -97,37 +97,26 @@ export default async function LocationPagesIndex({
 
   return (
     <div>
-      <Link
-        href="/admin/content/pages"
-        className="text-muted-foreground hover:text-primary text-sm"
-      >
-        ← Content
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">
-            City × practice pages
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Per spec §17 #1, each row needs a unique{" "}
-            <code className="bg-secondary rounded px-1 py-0.5 text-xs">
-              local_angle_md
-            </code>{" "}
-            to publish, and per §10.4 must be reviewed every 12 months.
-          </p>
-        </div>
-        <CreateRow cities={cityOptions} practiceAreas={practiceOptions} />
-      </div>
+      <AdminPageHeader
+        eyebrow="Content"
+        title="City × practice pages"
+        description={
+          <>
+            Per spec §17 #1, each row needs a unique <code className={adminCode}>local_angle_md</code> to publish, and per §10.4
+            must be reviewed every 12 months.
+          </>
+        }
+        actions={<CreateRow cities={cityOptions} practiceAreas={practiceOptions} />}
+      />
 
       {needsAngle ? (
         <div className="mt-4 flex items-center gap-2">
-          <span className="border-primary/30 bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium">
+          <span className="bg-gold/18 text-gold-deep inline-flex h-[34px] items-center gap-2 rounded-full px-3 text-xs font-semibold">
             Drafts needing a local angle
             <Link
               href="/admin/content/location-pages"
               aria-label="Clear filter"
-              className="hover:text-primary/70"
+              className="text-gold-deep hover:text-foreground no-underline"
             >
               ✕
             </Link>
@@ -135,29 +124,26 @@ export default async function LocationPagesIndex({
         </div>
       ) : null}
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">
-            {tableRows.length} {tableRows.length === 1 ? "row" : "rows"}
-            {needsAngle
-              ? " need a local angle"
-              : ` · ${rows.filter((r) => r.is_published).length} published`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <p className="text-destructive text-sm">{error.message}</p>
-          ) : rows.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No city × practice page rows yet. Click{" "}
-              <strong className="text-foreground">New page</strong> above to
-              create your first draft.
-            </p>
-          ) : (
-            <LocationPagesTable rows={tableRows} />
-          )}
-        </CardContent>
-      </Card>
+      <Panel
+        className="mt-6"
+        title={`${tableRows.length} ${tableRows.length === 1 ? "row" : "rows"}`}
+        action={
+          <span className="text-stone text-xs">
+            {needsAngle ? "need a local angle" : `${rows.filter((r) => r.is_published).length} published`}
+          </span>
+        }
+      >
+        {error ? (
+          <p className="m-0 text-[13px] text-[#b91c1c]">{error.message}</p>
+        ) : rows.length === 0 ? (
+          <EmptyNote>
+            No city × practice page rows yet. Click <strong className="text-foreground">New page</strong> above to create your
+            first draft.
+          </EmptyNote>
+        ) : (
+          <LocationPagesTable rows={tableRows} />
+        )}
+      </Panel>
     </div>
   );
 }

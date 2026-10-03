@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminPageHeader } from "@/components/admin/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { parseSettings } from "@/lib/content-agent/settings";
@@ -38,18 +39,19 @@ export default async function InstructionsPage({
 
   return (
     <div>
-      <Link href="/admin/content/agent" className="text-muted-foreground hover:text-primary text-sm">
-        ← Content agent
-      </Link>
-      <div className="mt-3">
-        <h1 className="font-display text-2xl font-medium tracking-tight">Agent instructions</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          The editorial brief the agent reads at the start of every run. Versioned: each publish is a new version; older ones stay for the record.
-          {current && list[0] && current.version !== list[0].version ? (
-            <span className="text-warning"> You are viewing v{current.version}; publishing creates a new version from it.</span>
-          ) : null}
-        </p>
-      </div>
+      <AdminPageHeader
+        back={{ href: "/admin/content/agent", label: "Content agent" }}
+        eyebrow="Content agent"
+        title="Agent instructions"
+        description={
+          <>
+            The editorial brief the agent reads at the start of every run. Versioned: each publish is a new version; older ones stay for the record.
+            {current && list[0] && current.version !== list[0].version ? (
+              <span className="text-gold-deep"> You are viewing v{current.version}; publishing creates a new version from it.</span>
+            ) : null}
+          </>
+        }
+      />
 
       <div className="mt-6">
         <InstructionsForm
@@ -61,7 +63,7 @@ export default async function InstructionsPage({
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">Versions</CardTitle>
+          <CardTitle>Versions</CardTitle>
         </CardHeader>
         <CardContent>
           {list.length === 0 ? (

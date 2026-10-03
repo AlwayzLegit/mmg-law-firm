@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Search, Star } from "lucide-react";
+import { Star } from "lucide-react";
 
 import { TestimonialsEmptyGuide } from "@/components/admin/testimonials-empty-guide";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, EmptyNote, Panel, SearchForm } from "@/components/admin/ui";
 import { sanitizeSearchTerm as sanitize } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -42,114 +42,53 @@ export default async function ContentTestimonialsAdmin({
 
   return (
     <div>
-      <Link
-        href="/admin/content/pages"
-        className="text-muted-foreground hover:text-primary text-sm"
-      >
-        ← Content
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">
-            Testimonials
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Per CRPC §7.1, only approved testimonials appear publicly with the
-            proximity disclaimer. Use initials, never full names.
-          </p>
-        </div>
-        <NewTestimonialForm />
-      </div>
+      <AdminPageHeader
+        eyebrow="Content"
+        title="Testimonials"
+        description="Per CRPC §7.1, only approved testimonials appear publicly with the proximity disclaimer. Use initials, never full names."
+        actions={<NewTestimonialForm />}
+      />
 
       {rows.length > 0 || rawQ ? (
-        <form method="get" className="mt-6 flex max-w-md items-center gap-2">
-          <div className="relative flex-1">
-            <Search
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-              aria-hidden
-            />
-            <input
-              type="search"
-              name="q"
-              defaultValue={rawQ}
-              placeholder="Search quote, initials, or city"
-              aria-label="Search testimonials"
-              className="border-border bg-background focus:ring-ring h-9 w-full rounded-md border pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 rounded-md px-4 text-sm font-medium"
-          >
-            Search
-          </button>
-          {rawQ ? (
-            <Link
-              href="/admin/content/testimonials"
-              className="text-muted-foreground hover:text-primary text-xs"
-            >
-              Clear
-            </Link>
-          ) : null}
-        </form>
+        <SearchForm
+          className="mt-6"
+          action="/admin/content/testimonials"
+          value={rawQ}
+          placeholder="Search quote, initials, or city"
+          ariaLabel="Search testimonials"
+          clearHref="/admin/content/testimonials"
+        />
       ) : null}
 
       {error ? (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <p className="text-destructive text-sm">{error.message}</p>
-          </CardContent>
-        </Card>
+        <Panel className="mt-6">
+          <p className="m-0 text-[13px] text-[#b91c1c]">{error.message}</p>
+        </Panel>
       ) : rows.length === 0 && rawQ ? (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <p className="text-muted-foreground text-sm">
-              No testimonials match &ldquo;{rawQ}&rdquo;.
-            </p>
-          </CardContent>
-        </Card>
+        <Panel className="mt-6">
+          <EmptyNote>No testimonials match &ldquo;{rawQ}&rdquo;.</EmptyNote>
+        </Panel>
       ) : rows.length === 0 ? (
         <div className="mt-6">
           <TestimonialsEmptyGuide />
         </div>
       ) : (
         <div className="mt-6 grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Pending review ({pending.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pending.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  Nothing pending. New testimonials land here for attorney
-                  review.
-                </p>
-              ) : (
-                <List rows={pending} />
-              )}
-            </CardContent>
-          </Card>
+          <Panel title={`Pending review (${pending.length})`}>
+            {pending.length === 0 ? (
+              <EmptyNote>Nothing pending. New testimonials land here for attorney review.</EmptyNote>
+            ) : (
+              <List rows={pending} />
+            )}
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Approved ({approved.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {approved.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No approved testimonials yet. Once approved they&apos;ll
-                  appear on /reviews and on the homepage.
-                </p>
-              ) : (
-                <List rows={approved} />
-              )}
-            </CardContent>
-          </Card>
+          <Panel title={`Approved (${approved.length})`}>
+            {approved.length === 0 ? (
+              <EmptyNote>No approved testimonials yet. Once approved they&apos;ll appear on /reviews and on the homepage.</EmptyNote>
+            ) : (
+              <List rows={approved} />
+            )}
+          </Panel>
         </div>
       )}
     </div>
@@ -170,15 +109,15 @@ type Row = {
 
 function List({ rows }: { rows: Row[] }) {
   return (
-    <ul className="divide-border divide-y">
+    <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
       {rows.map((t) => (
-        <li key={t.id} className="py-3">
+        <li key={t.id}>
           <Link
             href={`/admin/content/testimonials/${t.id}`}
-            className="hover:text-primary block text-sm"
+            className="bg-ink/3 hover:bg-ink/6 text-foreground block rounded-[10px] px-4 py-3 text-[13px] no-underline transition-colors"
           >
             <div className="flex items-center justify-between gap-3 text-xs">
-              <p className="text-muted-foreground">
+              <p className="text-stone m-0">
                 <strong className="text-foreground">{t.client_initials}</strong>
                 {t.city ? ` · ${t.city}` : ""}
                 {t.source ? ` · ${t.source}` : ""}
@@ -187,7 +126,7 @@ function List({ rows }: { rows: Row[] }) {
               </p>
               {t.rating ? <Stars value={t.rating} /> : null}
             </div>
-            <p className="text-foreground mt-1 line-clamp-2 italic">
+            <p className="font-display text-foreground m-0 mt-1.5 line-clamp-2 text-[15px] italic">
               &ldquo;{t.quote}&rdquo;
             </p>
           </Link>
@@ -208,7 +147,7 @@ function Stars({ value }: { value: number }) {
         <Star
           key={i}
           aria-hidden
-          className={`h-3 w-3 ${i < v ? "fill-amber-500 text-amber-500" : "text-muted"}`}
+          className={`h-3 w-3 ${i < v ? "fill-gold text-gold" : "text-ink/15"}`}
         />
       ))}
     </span>

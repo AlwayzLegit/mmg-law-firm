@@ -91,7 +91,7 @@ export default function EditForm(props: Props) {
     <form onSubmit={onSave} className="grid gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Firm-level facts</CardTitle>
+          <CardTitle>Firm-level facts</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <Field
@@ -137,7 +137,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">By the numbers</CardTitle>
+          <CardTitle>By the numbers</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <p className="text-xs text-muted-foreground">
@@ -201,7 +201,7 @@ export default function EditForm(props: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-baseline justify-between text-base">
+          <CardTitle className="flex items-baseline justify-between">
             <span>Homepage FAQs</span>
             <span className="text-xs font-normal text-muted-foreground">
               {faqs.length} / 30

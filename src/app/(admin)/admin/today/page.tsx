@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, Inbox, ListTodo } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPageHeader, EmptyNote, Panel } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -106,37 +106,27 @@ export default async function TodayPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 className="font-display text-2xl font-medium tracking-tight">
-          Today
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
-      </div>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {openCount === 0
-          ? "No open tasks. Add one below or work your due follow-ups."
-          : `${openCount} open task${openCount === 1 ? "" : "s"}${
-              overdue.length ? ` · ${overdue.length} overdue` : ""
-            }.`}
-      </p>
+      <AdminPageHeader
+        eyebrow={new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+        title="Today"
+        description={
+          openCount === 0
+            ? "No open tasks. Add one below or work your due follow-ups."
+            : `${openCount} open task${openCount === 1 ? "" : "s"}${overdue.length ? ` · ${overdue.length} overdue` : ""}.`
+        }
+      />
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ListTodo className="h-4 w-4 text-primary" aria-hidden />
+      <Panel
+        className="mt-6"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <ListTodo className="text-gold-deep h-4 w-4" aria-hidden />
             Add a task
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AddTaskForm />
-        </CardContent>
-      </Card>
+          </span>
+        }
+      >
+        <AddTaskForm />
+      </Panel>
 
       {overdue.length > 0 ? (
         <Section title={`Overdue (${overdue.length})`} tone="destructive">
@@ -160,20 +150,19 @@ export default async function TodayPage() {
         </Section>
       ) : null}
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <CalendarClock className="h-4 w-4 text-primary" aria-hidden />
+      <Panel
+        className="mt-6"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <CalendarClock className="text-gold-deep h-4 w-4" aria-hidden />
             Follow-ups due ({followUps.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {followUps.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No follow-ups due. Nice.
-            </p>
+          </span>
+        }
+      >
+        {followUps.length === 0 ? (
+            <EmptyNote>No follow-ups due. Nice.</EmptyNote>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-line m-0 list-none divide-y p-0">
               {followUps.map((l) => (
                 <li
                   key={l.id}
@@ -181,11 +170,11 @@ export default async function TodayPage() {
                 >
                   <Link
                     href={`/admin/leads/${l.id}`}
-                    className="text-sm font-medium hover:text-primary"
+                    className="text-foreground hover:text-gold-deep text-[13px] font-semibold no-underline"
                   >
                     {l.full_name}
                   </Link>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-stone text-xs">
                     {new Date(l.follow_up_at as string).toLocaleString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -197,23 +186,21 @@ export default async function TodayPage() {
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
+      </Panel>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Inbox className="h-4 w-4 text-primary" aria-hidden />
+      <Panel
+        className="mt-6"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Inbox className="text-gold-deep h-4 w-4" aria-hidden />
             New &amp; unassigned ({newLeads.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {newLeads.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No unassigned intake. Inbox zero.
-            </p>
+          </span>
+        }
+      >
+        {newLeads.length === 0 ? (
+            <EmptyNote>No unassigned intake. Inbox zero.</EmptyNote>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-line m-0 list-none divide-y p-0">
               {newLeads.map((l) => (
                 <li
                   key={l.id}
@@ -221,11 +208,11 @@ export default async function TodayPage() {
                 >
                   <Link
                     href={`/admin/leads/${l.id}`}
-                    className="text-sm font-medium hover:text-primary"
+                    className="text-foreground hover:text-gold-deep text-[13px] font-semibold no-underline"
                   >
                     {l.full_name}
                   </Link>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-stone text-xs">
                     {new Date(l.created_at as string).toLocaleDateString(
                       "en-US",
                       { month: "short", day: "numeric" },
@@ -235,8 +222,7 @@ export default async function TodayPage() {
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
+      </Panel>
     </div>
   );
 }
@@ -251,15 +237,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <Card
-      className={
-        tone === "destructive" ? "mt-6 border-destructive/40 bg-destructive/5" : "mt-6"
-      }
+    <Panel
+      className={tone === "destructive" ? "mt-6 ring-[#dc2626]/30" : "mt-6"}
+      title={<span className={tone === "destructive" ? "text-[#b91c1c]" : undefined}>{title}</span>}
     >
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+      {children}
+    </Panel>
   );
 }

@@ -97,7 +97,7 @@ export default async function BlogPostEditor({ params }: Props) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Review</CardTitle>
+              <CardTitle>Review</CardTitle>
             </CardHeader>
             <CardContent>
               <ReviewControl
@@ -109,9 +109,9 @@ export default async function BlogPostEditor({ params }: Props) {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="surface-ink bg-ink text-cream ring-0">
             <CardHeader>
-              <CardTitle className="text-base">Publish</CardTitle>
+              <CardTitle className="micro-label text-gold">Publish</CardTitle>
             </CardHeader>
             <CardContent>
               <PublishControl
@@ -124,7 +124,7 @@ export default async function BlogPostEditor({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Metadata</CardTitle>
+              <CardTitle>Metadata</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
               <Pair
@@ -164,7 +164,7 @@ export default async function BlogPostEditor({ params }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Danger zone</CardTitle>
+              <CardTitle>Danger zone</CardTitle>
             </CardHeader>
             <CardContent>
               <DeleteButton id={data.id} title={data.title} />
