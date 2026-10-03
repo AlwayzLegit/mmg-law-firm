@@ -68,6 +68,25 @@ export default async function AdminSettingsPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <SecurityCard />
+        {profile.role === "owner" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">API keys</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <p className="text-muted-foreground">
+                Scoped bearer tokens for the admin API — the content agent, n8n,
+                scripts. Each key has its own scopes, rate limit and audit trail.
+              </p>
+              <Link
+                href="/admin/settings/api-keys"
+                className="text-primary mt-3 inline-block font-medium hover:underline"
+              >
+                Manage API keys →
+              </Link>
+            </CardContent>
+          </Card>
+        ) : null}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Communications</CardTitle>

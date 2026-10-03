@@ -8,6 +8,7 @@ import ContentHistory from "@/components/admin/content-history";
 
 import EditForm from "./edit-form";
 import PublishControl from "./publish-control";
+import ReviewControl from "./review-control";
 import DeleteButton from "./delete-button";
 import { requireAdmin } from "@/lib/auth/require-admin";
 
@@ -20,7 +21,7 @@ export default async function BlogPostEditor({ params }: Props) {
   const { data, error } = await supabase
     .from("blog_posts")
     .select(
-      "id, slug, title, subtitle, body_md, excerpt, hero_image_url, tags, meta_description, is_published, published_at, created_at, updated_at, author_name",
+      "id, slug, title, subtitle, body_md, excerpt, hero_image_url, tags, meta_description, is_published, published_at, created_at, updated_at, author_name, review_status, created_via, primary_keyword, secondary_keywords, word_count, topic_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -96,6 +97,20 @@ export default async function BlogPostEditor({ params }: Props) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Review</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ReviewControl
+                id={data.id}
+                reviewStatus={data.review_status}
+                isPublished={data.is_published}
+                createdVia={data.created_via}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Publish</CardTitle>
             </CardHeader>
             <CardContent>
@@ -123,6 +138,26 @@ export default async function BlogPostEditor({ params }: Props) {
               <Pair
                 label="Tags"
                 value={data.tags.length > 0 ? data.tags.join(", ") : "—"}
+              />
+              <Pair label="Keyword" value={data.primary_keyword ?? "—"} />
+              <Pair
+                label="Secondary"
+                value={
+                  (data.secondary_keywords ?? []).length > 0
+                    ? (data.secondary_keywords as string[]).join(", ")
+                    : "—"
+                }
+              />
+              <Pair label="Words" value={String(data.word_count ?? "—")} />
+              <Pair
+                label="Source"
+                value={
+                  data.created_via === "agent"
+                    ? "Content agent"
+                    : data.created_via === "admin_api"
+                      ? "Admin API"
+                      : "Admin"
+                }
               />
             </CardContent>
           </Card>

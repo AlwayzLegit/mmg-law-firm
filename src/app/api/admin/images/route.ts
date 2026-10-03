@@ -1,6 +1,6 @@
 import "server-only";
 
-import { authorizeAdminApi, json } from "@/lib/api/auth";
+import { authenticateApi, clampInt, json } from "@/lib/api/auth";
 import {
   decodeBase64Image,
   fetchRemoteImage,
@@ -12,22 +12,17 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function clamp(n: number, lo: number, hi: number): number {
-  if (Number.isNaN(n)) return lo;
-  return Math.min(Math.max(n, lo), hi);
-}
-
 /**
  * GET /api/admin/images — list uploaded images (newest first).
  * Query: limit (1–100, default 50), offset (default 0).
  */
 export async function GET(req: Request): Promise<Response> {
-  const denied = authorizeAdminApi(req);
-  if (denied) return denied;
+  const auth = await authenticateApi(req, ["images:read"]);
+  if (!auth.ok) return auth.response;
 
   const url = new URL(req.url);
-  const limit = clamp(Number(url.searchParams.get("limit") ?? 50), 1, 100);
-  const offset = Math.max(Number(url.searchParams.get("offset") ?? 0) || 0, 0);
+  const limit = clampInt(url.searchParams.get("limit"), 1, 100, 50);
+  const offset = clampInt(url.searchParams.get("offset"), 0, 1e9, 0);
 
   try {
     const images = await listImages(limit, offset);
@@ -51,8 +46,8 @@ export async function GET(req: Request): Promise<Response> {
  * drop into a blog post's hero_image_url or inline markdown.
  */
 export async function POST(req: Request): Promise<Response> {
-  const denied = authorizeAdminApi(req);
-  if (denied) return denied;
+  const auth = await authenticateApi(req, ["images:write"]);
+  if (!auth.ok) return auth.response;
 
   const ctype = (req.headers.get("content-type") ?? "").toLowerCase();
 
@@ -107,6 +102,6 @@ export async function POST(req: Request): Promise<Response> {
   const stored = await storeImageBytes(bytes, contentType, filename);
   if (!stored.ok) return json(stored.status, { error: stored.error });
 
-  await logImageAudit("upload", { name: stored.name, source });
+  await logImageAudit("upload", { name: stored.name, source }, auth.principal);
   return json(201, { image: { url: stored.url, name: stored.name } });
 }

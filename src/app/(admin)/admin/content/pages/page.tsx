@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Bot } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -14,7 +14,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export default async function ContentPagesAdmin() {
   await requireAdmin();
   const supabase = await getServerSupabase();
-  const [counties, cities, locationPages, practiceAreas, attorneys, legal] =
+  const [counties, cities, locationPages, practiceAreas, attorneys, legal, needsReview, openQuestions] =
     await Promise.all([
       supabase
         .from("counties")
@@ -49,7 +49,17 @@ export default async function ContentPagesAdmin() {
         .from("legal_pages")
         .select("id, slug, title, is_published")
         .order("display_order"),
+      supabase
+        .from("blog_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("review_status", "needs_review"),
+      supabase
+        .from("agent_questions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open"),
     ]);
+  const reviewCount = needsReview.count ?? 0;
+  const questionCount = openQuestions.count ?? 0;
 
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
@@ -131,7 +141,27 @@ export default async function ContentPagesAdmin() {
         />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/admin/content/blog"
+          className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium"
+        >
+          Blog →
+        </Link>
+        <Link
+          href="/admin/content/agent"
+          className={`inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium ${
+            reviewCount + questionCount > 0
+              ? "border-warning/40 bg-warning/5 hover:bg-warning/10"
+              : "border-border hover:bg-secondary"
+          }`}
+        >
+          <Bot className="h-4 w-4" aria-hidden />
+          Content agent
+          {reviewCount > 0 ? ` · ${reviewCount} to review` : ""}
+          {questionCount > 0 ? ` · ${questionCount} question${questionCount === 1 ? "" : "s"}` : ""}
+          {" →"}
+        </Link>
         <Link
           href="/admin/content/redirects"
           className="border-border hover:bg-secondary inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium"

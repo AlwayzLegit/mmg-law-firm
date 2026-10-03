@@ -4,6 +4,8 @@ import { randomUUID } from "node:crypto";
 
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
+import type { ApiPrincipal } from "./auth";
+
 export const IMAGE_BUCKET = "media";
 export const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const IMAGE_ALLOWED = new Set([
@@ -180,6 +182,7 @@ export async function deleteImage(
 export async function logImageAudit(
   action: string,
   diff?: Record<string, unknown>,
+  principal?: ApiPrincipal | null,
 ): Promise<void> {
   try {
     const supabase = getServiceSupabase();
@@ -188,7 +191,13 @@ export async function logImageAudit(
       entity: "media",
       entity_id: null,
       action,
-      diff: { via: "admin_api", ...(diff ?? {}) },
+      diff: {
+        via: "admin_api",
+        ...(principal
+          ? { api_key_id: principal.id, api_key_name: principal.name }
+          : {}),
+        ...(diff ?? {}),
+      },
     });
   } catch {
     // Audit gaps must never fail an API write.

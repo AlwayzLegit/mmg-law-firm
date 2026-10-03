@@ -9,7 +9,7 @@ import NewPostForm from "./new-post-form";
 import { requireAdmin } from "@/lib/auth/require-admin";
 
 const PAGE_SIZE = 50;
-const STATUS_OPTIONS = ["all", "published", "draft"] as const;
+const STATUS_OPTIONS = ["all", "needs_review", "approved", "published", "draft"] as const;
 type Status = (typeof STATUS_OPTIONS)[number];
 
 export default async function ContentBlogAdmin({
@@ -31,14 +31,18 @@ export default async function ContentBlogAdmin({
   const supabase = await getServerSupabase();
   let query = supabase
     .from("blog_posts")
-    .select("id, slug, title, is_published, published_at, updated_at, tags", {
-      count: "exact",
-    })
+    .select(
+      "id, slug, title, is_published, published_at, updated_at, tags, review_status, created_via, primary_keyword",
+      { count: "exact" },
+    )
     .order("updated_at", { ascending: false })
     .range(from, to);
 
   if (status === "published") query = query.eq("is_published", true);
   else if (status === "draft") query = query.eq("is_published", false);
+  else if (status === "needs_review" || status === "approved") {
+    query = query.eq("review_status", status);
+  }
   if (q) query = query.or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
 
   const { data, error, count } = await query;
@@ -134,7 +138,7 @@ export default async function ContentBlogAdmin({
                 : "hover:bg-secondary"
             }`}
           >
-            {s}
+            {s === "needs_review" ? "Needs review" : s}
           </Link>
         ))}
       </nav>
@@ -176,12 +180,34 @@ export default async function ContentBlogAdmin({
                         <p className="truncate font-medium">{p.title}</p>
                         <p className="text-muted-foreground truncate text-xs">
                           /blog/{p.slug}
+                          {p.primary_keyword ? ` · ${p.primary_keyword}` : ""}
                           {p.tags.length > 0
                             ? ` · ${p.tags.slice(0, 3).join(", ")}`
                             : ""}
                         </p>
                       </div>
                       <div className="flex flex-none items-center gap-2 text-xs">
+                        {p.created_via === "agent" || p.created_via === "admin_api" ? (
+                          <span
+                            className="bg-secondary text-muted-foreground rounded-md px-2 py-0.5 font-medium"
+                            title={p.created_via === "agent" ? "Written by the content agent" : "Created via the admin API"}
+                          >
+                            {p.created_via === "agent" ? "Agent" : "API"}
+                          </span>
+                        ) : null}
+                        {!p.is_published && p.review_status === "needs_review" ? (
+                          <span className="bg-warning/10 text-warning rounded-md px-2 py-0.5 font-medium">
+                            Needs review
+                          </span>
+                        ) : !p.is_published && p.review_status === "approved" ? (
+                          <span className="bg-success/10 text-success rounded-md px-2 py-0.5 font-medium">
+                            Approved
+                          </span>
+                        ) : !p.is_published && p.review_status === "rejected" ? (
+                          <span className="bg-destructive/10 text-destructive rounded-md px-2 py-0.5 font-medium">
+                            Rejected
+                          </span>
+                        ) : null}
                         {scheduled ? (
                           <span className="bg-warning/10 text-warning rounded-md px-2 py-0.5 font-medium">
                             Scheduled

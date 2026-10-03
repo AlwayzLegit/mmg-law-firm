@@ -4,6 +4,17 @@ import { getServerSupabase } from "@/lib/supabase/server";
 /** Human labels for the audit actions content editors emit. */
 const ACTION_LABEL: Record<string, string> = {
   create: "Created",
+  approve: "Approved",
+  reject: "Rejected",
+  reopen_review: "Reopened for review",
+  start: "Run started",
+  run_progress: "Run progress",
+  run_succeeded: "Run succeeded",
+  run_failed: "Run failed",
+  run_needs_human: "Run needs a decision",
+  topics_added: "Topics added",
+  answered: "Question answered",
+  dismissed: "Question dismissed",
   edit: "Edited",
   publish: "Published",
   unpublish: "Unpublished",
@@ -13,6 +24,22 @@ const ACTION_LABEL: Record<string, string> = {
   update: "Updated",
   delete: "Deleted",
 };
+
+/**
+ * Who did it: a named admin, a named API key (`diff.api_key_name`, written by
+ * the admin API), the legacy shared API key, or "System".
+ */
+export function actorLabel(
+  actorId: string | null,
+  diff: Record<string, unknown> | null,
+  nameOf: Map<string, string>,
+): string {
+  if (actorId) return nameOf.get(actorId) ?? "An admin";
+  const keyName = diff?.api_key_name;
+  if (typeof keyName === "string" && keyName) return `API key “${keyName}”`;
+  if (diff?.via === "admin_api") return "Admin API";
+  return "System";
+}
 
 function timeAgo(iso: string): string {
   const secs = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -80,9 +107,11 @@ export default async function ContentHistory({
                   <span className="text-muted-foreground">
                     {" "}
                     by{" "}
-                    {e.actor_id
-                      ? (nameOf.get(e.actor_id as string) ?? "An admin")
-                      : "System"}
+                    {actorLabel(
+                      e.actor_id as string | null,
+                      e.diff as Record<string, unknown> | null,
+                      nameOf,
+                    )}
                   </span>
                 </span>
                 <time

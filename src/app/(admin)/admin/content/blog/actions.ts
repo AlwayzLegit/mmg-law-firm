@@ -315,3 +315,62 @@ export async function deleteBlogPost(
   revalidatePath("/blog");
   return { ok: true };
 }
+
+const ReviewInput = z.object({
+  id: z.string().uuid(),
+  decision: z.enum(["approved", "rejected", "needs_review"]),
+  note: z.string().trim().max(1000).optional(),
+});
+
+/**
+ * Editorial review decision on a (usually agent-written) draft. Approve marks
+ * it ready to publish; reject parks it and sends any linked topic back to the
+ * queue with the reviewer's note. Publishing itself stays a separate step.
+ */
+export async function reviewBlogPost(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+  const parsed = ReviewInput.safeParse({
+    id: formData.get("id"),
+    decision: formData.get("decision"),
+    note: formData.get("note") ?? undefined,
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const { id, decision, note } = parsed.data;
+
+  const supabase = await getServerSupabase();
+  const { data: post } = await supabase
+    .from("blog_posts")
+    .select("is_published, topic_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!post) return { ok: false, error: "Post not found." };
+  if (post.is_published) {
+    return { ok: false, error: "Unpublish the post before changing its review state." };
+  }
+
+  const { error } = await supabase
+    .from("blog_posts")
+    .update({ review_status: decision })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  if (post.topic_id) {
+    const topicPatch =
+      decision === "rejected"
+        ? { status: "queued", post_id: null, claimed_by_run_id: null, claimed_at: null, ...(note ? { notes: note } : {}) }
+        : { status: "drafted" };
+    await supabase.from("content_topics").update(topicPatch).eq("id", post.topic_id);
+  }
+
+  logAudit({
+    actor_id: user.id,
+    entity: "blog_posts",
+    entity_id: id,
+    action: decision === "approved" ? "approve" : decision === "rejected" ? "reject" : "reopen_review",
+    diff: note ? { note } : undefined,
+  });
+  revalidatePath(`/admin/content/blog/${id}`);
+  revalidatePath("/admin/content/blog");
+  revalidatePath("/admin/content/agent");
+  return { ok: true };
+}
