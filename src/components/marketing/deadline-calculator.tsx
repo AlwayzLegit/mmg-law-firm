@@ -62,7 +62,7 @@ export function DeadlineCalculator() {
           caption="Two years from the injury (Code of Civil Procedure §335.1). Miss it and the court will almost always dismiss the case."
         />
       </div>
-      <p className="text-cream/45 mt-auto pt-[18px] text-xs" aria-live="polite">
+      <p className="text-cream/60 mt-auto pt-[18px] text-xs" aria-live="polite">
         {note}
       </p>
     </>

@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   // Next's built-in optimized list.)
   experimental: {
     optimizePackageImports: ["recharts"],
+    // Not using `inlineCss`: in 16.2 it embeds the full stylesheet in <head>
+    // AND twice more in the RSC payload (~1 MB homepage HTML). Revisit if
+    // that duplication is fixed upstream.
   },
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot

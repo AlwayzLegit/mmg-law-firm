@@ -113,7 +113,7 @@ function AreaList({
                 on ? "bg-ink text-cream" : "text-foreground hover:bg-ink/5",
               )}
             >
-              <span className="text-gold-deep text-[11px] tracking-[0.1em] tabular-nums">{NUM.get(a.slug)}</span>
+              <span className={cn("text-[11px] tracking-[0.1em] tabular-nums", on ? "text-gold" : "text-gold-deep")}>{NUM.get(a.slug)}</span>
               <span>{a.name}</span>
               <ArrowRight
                 className={cn("text-gold h-3.5 w-3.5 transition-opacity", on ? "opacity-100" : "opacity-0")}
@@ -159,7 +159,7 @@ function Panel({ area, hidden }: { area: PracticeArea; hidden: boolean }) {
         <p className="text-cream/74 mt-3.5 text-[15.5px] leading-[1.65]">{area.intro}</p>
         <div className="mt-auto flex flex-wrap gap-2.5 pt-7">
           <Link href={`/practice-areas/${area.slug}`} className={buttonVariants({ variant: "gold", size: "pill-sm" })}>
-            Read more
+            Read more<span className="sr-only"> about {area.name.toLowerCase()}</span>
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
           <Link href="/contact" className={buttonVariants({ variant: "outline-cream", size: "pill-sm" })}>

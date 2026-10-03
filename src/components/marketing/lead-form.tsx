@@ -25,6 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
+import { track } from "@/lib/analytics/track";
 import { cn } from "@/lib/utils";
 import { LeadSchema, leadFormDefaults, type LeadFormValues } from "@/lib/validation/lead";
 
@@ -38,6 +39,8 @@ type LeadFormProps = {
   defaultCitySlug?: string;
   defaultCountySlug?: string;
   headline?: string;
+  /** Heading level for the headline — h2 when the form is the page's main section (contact). */
+  headingAs?: "h2" | "h3";
   description?: string;
   className?: string;
   /** Ignored by the stepper (no field to focus on step 1); kept for compatibility. */
@@ -76,6 +79,7 @@ export function LeadForm({
   defaultCitySlug,
   defaultCountySlug,
   headline = "Request a free consultation",
+  headingAs: Heading = "h3",
   description = "Tell us briefly what happened. We'll call you back within one business hour during office hours.",
   className,
 }: LeadFormProps) {
@@ -223,7 +227,7 @@ export function LeadForm({
       <div className="bg-ink/8 mt-3 h-[3px] overflow-hidden rounded-sm" aria-hidden>
         <div className="bg-gold h-full transition-[width] duration-[400ms] ease-out" style={{ width: `${progress}%` }} />
       </div>
-      <h3 className="font-display mt-5 text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] text-ink">{headline}</h3>
+      <Heading className="font-display mt-5 text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] text-ink">{headline}</Heading>
       <p className="text-stone mt-2 text-sm">{description}</p>
 
       {submitted ? (
@@ -526,9 +530,7 @@ function safeJson(res: Response): Promise<{ error?: string; issues?: unknown }> 
   return res.json().catch(() => ({}));
 }
 
-/** Fire a PostHog event if the SDK is loaded. Never sends PII. */
+/** Fire an analytics event (queued until PostHog loads). Never sends PII. */
 function captureEvent(event: string, props?: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  const posthog = (window as unknown as { posthog?: { capture: (e: string, p?: Record<string, unknown>) => void } }).posthog;
-  posthog?.capture(event, props);
+  track(event, props);
 }

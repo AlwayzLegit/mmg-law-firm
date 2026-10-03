@@ -8,7 +8,11 @@
  * path.
  */
 
-const BASE = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+// The project URL is public (it is in every image src). Falling back to it
+// keeps local builds without `.env.local` from emitting relative
+// `/storage/...` URLs that next/image rejects with a 400.
+const BASE =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://bpsfplnwimwgfdmxuijx.supabase.co";
 
 /** Public URL for an object in the `media` bucket. */
 export function mediaUrl(objectName: string): string {

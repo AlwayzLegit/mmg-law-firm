@@ -63,8 +63,10 @@ export function Hero({ className }: HeroProps) {
           className="object-cover"
           style={{ objectPosition: "50% 18%" }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f1115_0%,rgba(15,17,21,.8)_24%,rgba(15,17,21,.06)_62%,rgba(15,17,21,.35)_100%)] max-lg:bg-[linear-gradient(to_bottom,rgba(15,17,21,.92)_0%,rgba(15,17,21,.7)_60%,rgba(15,17,21,.85)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-ink to-transparent" />
+        {/* One overlay layer (side fade + bottom fade). Keeping the bottom
+            fade in the same top-anchored box means text reflow when the web
+            font swaps in resizes it instead of moving it — no layout shift. */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,#0f1115_0%,rgba(15,17,21,0)_46%),linear-gradient(to_right,#0f1115_0%,rgba(15,17,21,.8)_24%,rgba(15,17,21,.06)_62%,rgba(15,17,21,.35)_100%)] max-lg:bg-[linear-gradient(to_top,#0f1115_0%,rgba(15,17,21,0)_46%),linear-gradient(to_bottom,rgba(15,17,21,.92)_0%,rgba(15,17,21,.7)_60%,rgba(15,17,21,.85)_100%)]" />
       </div>
 
       <div className="container-page relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-end gap-10 pt-0">
@@ -175,7 +177,10 @@ function ConsultationCard() {
       <div className="text-cream/70 mt-3 flex flex-wrap gap-1.5 text-xs">
         <Chip icon={Clock}>{FIRM.hours}</Chip>
         <Chip icon={Scale}>Statewide CA</Chip>
-        <Chip icon={Languages}>{FIRM.languages.join(" · ")}</Chip>
+        <Chip icon={Languages}>
+          <span className="sr-only">Languages: </span>
+          {FIRM.languages.join(" · ")}
+        </Chip>
       </div>
     </GlassCard>
   );

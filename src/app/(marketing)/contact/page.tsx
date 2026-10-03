@@ -136,6 +136,7 @@ export default function ContactPage() {
           <LeadForm
             variant="full"
             autoFocus
+            headingAs="h2"
             headline="Tell us what happened"
             description="We'll respond within one business hour during office hours. Free consultation."
           />

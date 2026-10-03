@@ -3,12 +3,12 @@
 import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
-import { PostHogProvider as PHProvider } from "posthog-js/react";
+
+import { TRACK_EVENT, drainTrackQueue } from "@/lib/analytics/track";
 
 /**
- * PostHog client init + pageview capture. Initialized only when the public
- * env vars are set — otherwise the provider passes children through and
- * nothing is captured (so local dev and preview deploys stay clean).
+ * PostHog client init + pageview capture. Loaded lazily by `PostHogLoader`
+ * once the page is idle, and only when the public env vars are set.
  *
  * Privacy posture for a law-firm site:
  * - Autocapture is disabled. We capture explicit events (pageviews,
@@ -23,10 +23,9 @@ const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
+export function PostHogRuntime() {
   React.useEffect(() => {
     if (!POSTHOG_KEY) return;
-    if (typeof window === "undefined") return;
     posthog.init(POSTHOG_KEY, {
       api_host: POSTHOG_HOST,
       capture_pageview: false, // we send these manually below
@@ -38,6 +37,14 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         if (process.env.NODE_ENV !== "production") ph.debug(false);
       },
     });
+
+    // Drain events fired before the SDK loaded, then keep listening.
+    const flush = () => {
+      for (const [name, props] of drainTrackQueue()) posthog.capture(name, props);
+    };
+    flush();
+    window.addEventListener(TRACK_EVENT, flush);
+    return () => window.removeEventListener(TRACK_EVENT, flush);
   }, []);
 
   // Site-wide phone-click capture. `tel:` links live in the header, footer,
@@ -56,20 +63,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("click", onClick, { capture: true });
   }, []);
 
-  if (!POSTHOG_KEY) return <>{children}</>;
+  if (!POSTHOG_KEY) return null;
   return (
-    <PHProvider client={posthog}>
-      {/* PageviewTracker calls useSearchParams(), which opts the calling tree
-       *  out of prerendering unless it sits under a Suspense boundary. This
-       *  provider wraps the root layout, so without this boundary EVERY static
-       *  page fails to prerender — but only once NEXT_PUBLIC_POSTHOG_KEY is
-       *  set, since the tracker isn't rendered at all without it. That's what
-       *  made the build fail on redeploy after the key was added in Vercel. */}
-      <React.Suspense fallback={null}>
-        <PageviewTracker />
-      </React.Suspense>
-      {children}
-    </PHProvider>
+    // useSearchParams() needs a Suspense boundary; this component is only
+    // ever rendered client-side, but the boundary keeps the tree valid.
+    <React.Suspense fallback={null}>
+      <PageviewTracker />
+    </React.Suspense>
   );
 }
 

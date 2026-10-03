@@ -33,11 +33,11 @@ export function CaliforniaMap({
       <title>{title}</title>
       <defs>
         <clipPath id="ca-clip">
-          <path d={CA_PATH} />
+          <use href="#ca-shape" />
         </clipPath>
       </defs>
       <path d={GRATICULE_PATH} clipPath="url(#ca-clip)" fill="none" stroke="rgba(245,242,234,.06)" strokeWidth={0.6} />
-      <path d={CA_PATH} fill="rgba(245,242,234,.035)" stroke="#c9a35a" strokeWidth={1.1} strokeLinejoin="round" />
+      <path id="ca-shape" d={CA_PATH} fill="rgba(245,242,234,.035)" stroke="#c9a35a" strokeWidth={1.1} strokeLinejoin="round" />
       <g>
         {cities.map((c) => {
           const { x, y } = projectCity(c);

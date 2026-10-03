@@ -33,10 +33,22 @@ const projection = geoMercator().fitExtent(
   ],
   ca,
 );
-const path = geoPath(projection);
+// One decimal place is plenty at 620×720 and roughly halves the path text.
+const path = geoPath(projection).digits(1);
 
 export const CA_PATH = path(ca) ?? "";
-export const GRATICULE_PATH = path(geoGraticule().step([2, 2])()) ?? "";
+// Bound the graticule to California's bounding box. The default graticule
+// covers the whole globe and alone weighed ~200 KB of inline SVG (duplicated
+// again in the RSC payload); clipped to the state it is ~0.5 KB.
+export const GRATICULE_PATH =
+  path(
+    geoGraticule()
+      .extent([
+        [-125, 32],
+        [-113.5, 42.5],
+      ])
+      .step([2, 2])(),
+  ) ?? "";
 
 export function projectCity(c: MapCity): { x: number; y: number } {
   const p = projection([c.lng, c.lat]);

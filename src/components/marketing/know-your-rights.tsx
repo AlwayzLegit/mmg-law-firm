@@ -47,7 +47,7 @@ export function KnowYourRights({ className }: { className?: string }) {
               California reduces your recovery by your share of fault — it doesn&apos;t erase it. Drag to see how.
             </p>
             <FaultSlider />
-            <p className="text-cream/45 mt-auto pt-[18px] text-xs">
+            <p className="text-cream/60 mt-auto pt-[18px] text-xs">
               Illustration of the general rule only. Insurers routinely overstate a claimant&apos;s share of fault — we
               negotiate that percentage down or eliminate it.
             </p>

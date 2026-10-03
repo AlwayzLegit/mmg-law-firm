@@ -1,4 +1,9 @@
 import { z } from "zod";
+
+// Zod 4 probes `Function("")` to decide whether it may JIT-compile object
+// parsers. Under our CSP (no `unsafe-eval`) that probe is a logged violation
+// on every page that ships the lead form, so opt out of the JIT path.
+z.config({ jitless: true });
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";

@@ -95,7 +95,7 @@ function Card({ area, index }: { area: PracticeArea; index: number }) {
         <h3 className="font-display text-[23px] leading-[1.15] font-semibold tracking-[-0.01em]">{area.name}</h3>
         <span className="text-stone mt-2 line-clamp-3 text-sm leading-[1.55]">{area.intro}</span>
         <span className="text-gold-deep mt-auto inline-flex items-center gap-1.5 pt-3.5 text-[13px] font-semibold">
-          Read more
+          Read more<span className="sr-only"> about {area.name.toLowerCase()}</span>
           <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
         </span>
       </span>

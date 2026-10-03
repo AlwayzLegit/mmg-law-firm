@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import Script from "next/script";
+
+import { PostHogLoader } from "@/components/analytics/posthog-loader";
 import { Instrument_Sans, Newsreader } from "next/font/google";
 
 import { SchemaGraph } from "@/components/seo/schema-graph";
@@ -16,14 +18,6 @@ const Toaster = dynamic(() =>
   import("@/components/ui/sonner").then((m) => m.Toaster),
 );
 
-// PostHog runs entirely client-side; lazy-loaded so the analytics chunk
-// doesn't block hydration. When NEXT_PUBLIC_POSTHOG_KEY isn't set the
-// provider passes children through unchanged.
-const PostHogProvider = dynamic(() =>
-  import("@/components/analytics/posthog-provider").then(
-    (m) => m.PostHogProvider,
-  ),
-);
 
 // Redesign v2 type: Instrument Sans for UI/body, Newsreader (optical-size
 // axis) for display. Weights/styles limited to what the design uses so the
@@ -37,11 +31,10 @@ const instrumentSans = Instrument_Sans({
 
 const newsreader = Newsreader({
   subsets: ["latin"],
-  // Variable font (wght + opsz axes): one file per style instead of one per
-  // weight; the design uses 500/600 plus the optical-size axis.
-  weight: "variable",
+  // Static 500/600 (+ italics). The variable wght+opsz file was ~147 KB per
+  // style on the critical path; the four static cuts total well under that.
+  weight: ["500", "600"],
   style: ["normal", "italic"],
-  axes: ["opsz"],
   variable: "--font-newsreader",
   display: "swap",
 });
@@ -104,7 +97,9 @@ export default function RootLayout({
 
         <SchemaGraph />
 
-        <PostHogProvider>{children}</PostHogProvider>
+        {children}
+        {/* Analytics loads after the page is idle — never on the critical path. */}
+        <PostHogLoader />
 
         <Toaster richColors closeButton />
 
