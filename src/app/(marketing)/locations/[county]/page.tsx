@@ -1,18 +1,17 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowRight, MapPin } from "lucide-react";
+import { Clock, Languages, MapPin } from "lucide-react";
 
-import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
-import { PageHero } from "@/components/marketing/page-hero";
+import { CourtInfo } from "@/components/marketing/locations/court-info";
+import { LinkCards } from "@/components/marketing/locations/link-cards";
+import { LocalStats } from "@/components/marketing/locations/local-stats";
+import { LocationHero } from "@/components/marketing/locations/location-hero";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
-import { buttonVariants } from "@/components/ui/button";
-import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import { pickLocationImage } from "@/lib/media";
+import { FIRM } from "@/lib/constants";
 import { localFaqItems } from "@/lib/data/local-faq";
 import {
   getCountyBySlug,
@@ -24,7 +23,6 @@ import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
-import { cn } from "@/lib/utils";
 
 export const dynamicParams = true;
 export const revalidate = 86400;
@@ -66,9 +64,7 @@ export default async function CountyPage({ params }: Props) {
     getCitiesInCounty(c.slug),
     getPublishedLocationPages(),
   ]);
-  const countyLocationPages = allLocationPages.filter(
-    (p) => p.county_slug === c.slug,
-  );
+  const countyLocationPages = allLocationPages.filter((p) => p.county_slug === c.slug);
   const path = `/locations/${c.slug}`;
 
   const legalService = {
@@ -103,177 +99,87 @@ export default async function CountyPage({ params }: Props) {
           { name: c.name, path },
         ]}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }} />
 
-      <PageHero
-        breadcrumbs={[
+      <LocationHero
+        path={county}
+        crumbs={[
           { label: "Home", href: "/" },
           { label: "Locations", href: "/locations" },
           { label: c.name },
         ]}
-        title={`${c.name} Personal Injury Lawyer`}
+        eyebrow={`Attorney Advertising · ${c.name}`}
+        titleA={c.name}
+        titleB="Personal Injury Lawyer"
         description={
           c.intro_md ??
           `${FIRM.legalName} represents ${c.name} clients across the full range of personal-injury matters. Free consultation. Bilingual counsel. No fee unless we win your case.`
         }
-        actions={
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/contact"
-              className={cn(buttonVariants({ size: "marketing" }), "group/cta")}
-            >
-              <span>Free consultation</span>
-              <ArrowRight
-                className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
-                aria-hidden
-              />
-            </Link>
-            <a
-              href={`tel:${FIRM.phoneTel}`}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "marketing" }),
-              )}
-            >
-              Call {FIRM.phone}
-            </a>
-          </div>
-        }
-        aside={
-          <AttorneyHeroAside
-            image={pickLocationImage(county).name}
-            alt={pickLocationImage(county).alt}
-            priority
-          />
-        }
+        facts={[
+          ...(c.seat ? [{ icon: MapPin, k: "County seat:", v: c.seat }] : []),
+          { icon: Clock, k: "Deadline:", v: "2 years for most claims" },
+          { icon: Languages, k: "Counsel in", v: FIRM.languages.join(" · ") },
+        ]}
       />
 
-      <article className="container-page py-16 md:py-20">
-        <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
-          <div>
+      <article className="container-page grid items-start gap-12 pt-[clamp(40px,6vw,64px)] pb-24 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <div className="grid min-w-0 gap-12">
+          <section>
+            <h2 className="text-display-sm font-semibold">Cities we cover in {c.name}</h2>
+            {cities.length === 0 ? (
+              <p className="text-stone mt-4">
+                We work throughout {c.name}. Call us to confirm we can take your matter where you live.
+              </p>
+            ) : (
+              <LinkCards
+                pin
+                min={200}
+                className="mt-5"
+                items={cities.map((city) => ({ href: `/locations/${c.slug}/${city.slug}`, label: city.name }))}
+              />
+            )}
+          </section>
+
+          {c.local_stats_md ? <LocalStats place={c.name} body={c.local_stats_md} /> : null}
+
+          {c.seat ? <CourtInfo county={c.name} seat={c.seat} address={c.superior_court_address} /> : null}
+
+          <DeadlinesCallout />
+
+          {countyLocationPages.length > 0 ? (
             <section>
-              <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                Cities we cover in {c.name}
-              </h2>
-              {cities.length === 0 ? (
-                <p className="text-muted-foreground mt-4">
-                  We work throughout {c.name}. Call us to confirm we can take
-                  your matter where you live.
-                </p>
-              ) : (
-                <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {cities.map((city) => (
-                    <li key={city.slug}>
-                      <Link
-                        href={`/locations/${c.slug}/${city.slug}`}
-                        className="group border-border bg-card hover:border-primary/30 flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
-                      >
-                        <MapPin
-                          className="text-primary h-4 w-4 flex-none"
-                          aria-hidden
-                        />
-                        <span className="font-medium">{city.name}</span>
-                        <ArrowRight
-                          className="text-muted-foreground group-hover:text-primary ml-auto h-4 w-4 transition-colors"
-                          aria-hidden
-                        />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <h2 className="text-display-xs font-semibold">Local practice-area pages in {c.short_name}</h2>
+              <LinkCards
+                className="mt-[18px]"
+                items={countyLocationPages.map((p) => ({
+                  href: `/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`,
+                  label: `${p.city_name} ${p.practice_area_name}`,
+                }))}
+              />
             </section>
-
-            {c.local_stats_md ? (
-              <section className="border-border bg-secondary/40 mt-12 rounded-2xl border p-8">
-                <h2 className="font-display text-2xl font-medium tracking-tight">
-                  About injuries in {c.name}
-                </h2>
-                <div className="text-muted-foreground mt-4 whitespace-pre-line">
-                  {c.local_stats_md}
-                </div>
-                <p className="text-muted-foreground mt-6 text-xs">
-                  {DISCLAIMERS.general}
-                </p>
-              </section>
-            ) : null}
-
-            {c.seat ? (
-              <section className="mt-12">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  Court information
-                </h2>
-                <p className="text-muted-foreground mt-3">
-                  The county seat is {c.seat}. Most {c.name} personal-injury
-                  matters are filed in the {c.name} Superior Court.
-                </p>
-                {c.superior_court_address ? (
-                  <address className="border-border bg-card text-muted-foreground mt-4 rounded-lg border p-4 text-sm not-italic">
-                    <span className="text-foreground block text-xs font-medium tracking-wide uppercase">
-                      {c.name} Superior Court
-                    </span>
-                    <span className="mt-1 block whitespace-pre-line">
-                      {c.superior_court_address}
-                    </span>
-                  </address>
-                ) : null}
-              </section>
-            ) : null}
-
-            <DeadlinesCallout />
-
-            {countyLocationPages.length > 0 ? (
-              <section className="mt-12">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  Local practice-area pages in {c.short_name}
-                </h2>
-                <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {countyLocationPages.map((p) => (
-                    <li key={`${p.city_slug}/${p.practice_area_slug}`}>
-                      <Link
-                        href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}
-                        className="group border-border bg-card hover:border-primary/30 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors"
-                      >
-                        <span className="text-sm font-medium">
-                          {p.city_name} {p.practice_area_name}
-                        </span>
-                        <ArrowRight
-                          className="text-muted-foreground group-hover:text-primary h-4 w-4 flex-none transition-colors"
-                          aria-hidden
-                        />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-          </div>
-
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <LeadForm
-              variant="compact"
-              defaultCountySlug={c.slug}
-              headline={`Tell us about your matter in ${c.short_name}`}
-              description="Free consultation. We'll call you back within one business hour during office hours."
-            />
-          </aside>
+          ) : null}
         </div>
+
+        <aside id="intake" className="scroll-mt-[124px] lg:sticky lg:top-[124px]">
+          <LeadForm
+            variant="compact"
+            defaultCountySlug={c.slug}
+            headline={`Tell us about your matter in ${c.short_name}`}
+            description="Free consultation. We'll call you back within one business hour during office hours."
+          />
+        </aside>
       </article>
 
       <PracticeAreaGrid
+        className="surface-paper-2 border-line border-t"
         heading={`Practice areas in ${c.short_name}`}
         subheading="What we handle for clients across the county."
       />
 
       <Faq items={faqItems} heading={`${c.name} Personal Injury FAQ`} />
 
-      <CtaBand />
+      <CtaBand eyebrow={`Injured in ${c.short_name}?`} />
     </>
   );
 }

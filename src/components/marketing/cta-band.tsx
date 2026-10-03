@@ -10,6 +10,7 @@ import { Eyebrow } from "./primitives/eyebrow";
 import { Reveal } from "./primitives/reveal";
 
 type Props = {
+  eyebrow?: string;
   heading?: string;
   body?: string;
   className?: string;
@@ -20,6 +21,7 @@ type Props = {
  * behind a left-to-right gradient, gold hairline, gold pill + outline phone.
  */
 export function CtaBand({
+  eyebrow = "Free consultation",
   heading = "Ready to talk?",
   body = "Free consultation. Bilingual counsel. No fee unless we win your case.",
   className,
@@ -39,7 +41,7 @@ export function CtaBand({
       <div className="gold-hairline" />
       <div className="container-page flex flex-wrap items-center justify-between gap-8 py-[clamp(56px,8vw,96px)]">
         <Reveal className="max-w-[600px]">
-          <Eyebrow>Free consultation</Eyebrow>
+          <Eyebrow>{eyebrow}</Eyebrow>
           <h2 className="text-display-lg text-cream mt-3.5 font-semibold">{heading}</h2>
           <p className="text-cream/72 mt-3 text-base">{body}</p>
         </Reveal>

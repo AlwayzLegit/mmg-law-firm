@@ -1,32 +1,30 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
 
+import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { CompensationSection } from "@/components/marketing/compensation-section";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
-import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
-import { PageHero } from "@/components/marketing/page-hero";
+import { LinkCards } from "@/components/marketing/locations/link-cards";
+import { LocationHero } from "@/components/marketing/locations/location-hero";
+import { ProcessTimeline } from "@/components/marketing/practice/process-timeline";
+import { SubtopicCards } from "@/components/marketing/practice/subtopic-cards";
+import { WhatToDoPanel } from "@/components/marketing/practice/what-to-do";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
-import { buttonVariants } from "@/components/ui/button";
-import { FIRM, DISCLAIMERS } from "@/lib/constants";
-import { pickLocationImage } from "@/lib/media";
+import { FIRM } from "@/lib/constants";
 import { findPracticeArea, lawyerPhraseTitle } from "@/lib/data/practice-areas";
 import {
   PRACTICE_AREA_CONTENT,
   getAttorneyHelp,
 } from "@/lib/data/practice-area-content";
-import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
-import { cn } from "@/lib/utils";
 
 // Spec §17 hard rule #1: city × practice pages require unique local_angle_md
 // to publish. We never auto-generate filler. dynamicParams=true so a freshly
@@ -85,6 +83,7 @@ export default async function CityPracticePage({ params }: Props) {
   const area = findPracticeArea(practiceArea);
   const content = area ? PRACTICE_AREA_CONTENT[area.slug] : undefined;
   const path = `/locations/${row.county_slug}/${row.city_slug}/${row.practice_area_slug}`;
+  const isEmployment = area?.category === "employment";
 
   // Sibling practice-area pages in the same city. Cross-linking them gives each
   // money page more than one internal inbound link (a low-internal-links notice
@@ -101,9 +100,7 @@ export default async function CityPracticePage({ params }: Props) {
   // same-city "siblings" list is usually empty). Same-county cities first, then
   // the rest of the state; capped at 6.
   const samePractice = allLocationPages.filter(
-    (p) =>
-      p.practice_area_slug === row.practice_area_slug &&
-      p.city_slug !== row.city_slug,
+    (p) => p.practice_area_slug === row.practice_area_slug && p.city_slug !== row.city_slug,
   );
   const nearbyCities = [
     ...samePractice.filter((p) => p.county_slug === row.county_slug),
@@ -139,6 +136,8 @@ export default async function CityPracticePage({ params }: Props) {
       ? buildFaqPage(content.faqs)
       : null;
 
+  const nounSingular = area?.nounSingular ?? row.practice_area_name.toLowerCase();
+
   return (
     <>
       <BreadcrumbJsonLd
@@ -146,256 +145,112 @@ export default async function CityPracticePage({ params }: Props) {
           { name: "Home", path: "/" },
           { name: "Locations", path: "/locations" },
           { name: row.county_name, path: `/locations/${row.county_slug}` },
-          {
-            name: row.city_name,
-            path: `/locations/${row.county_slug}/${row.city_slug}`,
-          },
+          { name: row.city_name, path: `/locations/${row.county_slug}/${row.city_slug}` },
           { name: row.practice_area_name, path },
         ]}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(legalService) }} />
       {faqGraph ? (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(faqGraph) }} />
       ) : null}
 
-      <PageHero
-        breadcrumbs={[
+      <LocationHero
+        path={path}
+        crumbs={[
           { label: "Home", href: "/" },
           { label: "Locations", href: "/locations" },
           { label: row.county_name, href: `/locations/${row.county_slug}` },
-          {
-            label: row.city_name,
-            href: `/locations/${row.county_slug}/${row.city_slug}`,
-          },
+          { label: row.city_name, href: `/locations/${row.county_slug}/${row.city_slug}` },
           { label: row.practice_area_name },
         ]}
-        title={`${row.city_name} ${area ? lawyerPhraseTitle(area) : row.practice_area_name}`}
+        eyebrow={`Attorney Advertising · ${isEmployment ? "Employment law" : "Personal injury"}`}
+        titleA={row.city_name}
+        titleB={area ? lawyerPhraseTitle(area) : row.practice_area_name}
         description={row.intro_md ?? undefined}
-        actions={
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/contact"
-              className={cn(buttonVariants({ size: "marketing" }), "group/cta")}
-            >
-              <span>Free consultation</span>
-              <ArrowRight
-                className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
-                aria-hidden
-              />
-            </Link>
-            <a
-              href={`tel:${FIRM.phoneTel}`}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "marketing" }),
-              )}
-            >
-              Call {FIRM.phone}
-            </a>
-          </div>
-        }
-        aside={
-          <AttorneyHeroAside
-            image={pickLocationImage(path).name}
-            alt={pickLocationImage(path).alt}
-            priority
-          />
-        }
       />
 
-      <article className="container-page py-16 md:py-20">
-        <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
-          <div>
-            <section>
-              <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                {row.practice_area_name} matters in {row.city_name}
-              </h2>
-              {/* Rendered as Markdown so deepened pages can use H2/H3 section
-                  headings and lists. Plain-paragraph rows (the default local
-                  copy) render identically as <p> elements. */}
-              <div className="prose prose-neutral text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground prose-h2:text-xl prose-h2:md:text-2xl prose-h2:mt-10 prose-h3:text-base mt-4 max-w-none leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {row.local_angle_md}
-                </ReactMarkdown>
-              </div>
+      <article className="container-page grid items-start gap-12 pt-[clamp(40px,6vw,64px)] pb-24 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <div className="min-w-0">
+          <section>
+            <h2 className="text-display-sm font-semibold">
+              {row.practice_area_name} matters in {row.city_name}
+            </h2>
+            {/* Rendered as Markdown so deepened pages can use H2/H3 section
+                headings and lists. Plain-paragraph rows (the default local
+                copy) render identically as <p> elements. */}
+            <div className="prose-v2 mt-3.5 text-[16.5px]">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{row.local_angle_md}</ReactMarkdown>
+            </div>
+          </section>
+
+          <AttorneyHelpSection
+            practiceLabel={area?.name.toLowerCase() ?? row.practice_area_name.toLowerCase()}
+            body={getAttorneyHelp(row.practice_area_slug, nounSingular)}
+          />
+
+          {content?.subtopics?.length ? (
+            <SubtopicCards
+              subtopics={content.subtopics}
+              areaIcon={area?.icon ?? "Scale"}
+              heading={`Types of ${area?.nounPlural ?? row.practice_area_name.toLowerCase()} we handle`}
+            />
+          ) : null}
+
+          <CompensationSection nounSingular={area?.nounSingular} category={area?.category} />
+
+          {content?.process?.length ? <ProcessTimeline steps={content.process} /> : null}
+
+          {content?.whatToDo?.length ? <WhatToDoPanel items={content.whatToDo} /> : null}
+
+          <DeadlinesCallout category={area?.category} />
+
+          {siblings.length > 0 ? (
+            <section className="mt-14">
+              <h2 className="text-display-xs font-semibold">More practice areas in {row.city_name}</h2>
+              <LinkCards
+                className="mt-[18px]"
+                items={siblings.map((s) => ({
+                  href: `/locations/${s.county_slug}/${s.city_slug}/${s.practice_area_slug}`,
+                  label: `${s.practice_area_name} in ${s.city_name}`,
+                }))}
+              />
             </section>
+          ) : null}
 
-            <AttorneyHelpSection
-              practiceLabel={
-                area?.name.toLowerCase() ??
-                row.practice_area_name.toLowerCase()
-              }
-              body={getAttorneyHelp(
-                row.practice_area_slug,
-                area?.nounSingular ?? row.practice_area_name.toLowerCase(),
-              )}
-            />
-
-            {content?.subtopics?.length ? (
-              <section className="mt-12">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  Types of{" "}
-                  {area?.nounPlural ?? row.practice_area_name.toLowerCase()} we
-                  handle
-                </h2>
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  {content.subtopics.map((s) => (
-                    <div
-                      key={s.title}
-                      className="border-border bg-card rounded-2xl border p-5"
-                    >
-                      <h3 className="font-display text-base font-medium tracking-tight">
-                        {s.title}
-                      </h3>
-                      <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
-                        {s.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            <CompensationSection
-              nounSingular={area?.nounSingular}
-              category={area?.category}
-            />
-
-            {content?.process?.length ? (
-              <section className="mt-12">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  How we work
-                </h2>
-                <ol className="mt-6 space-y-5">
-                  {content.process.map((step, i) => (
-                    <li key={step.title} className="flex gap-4">
-                      <span className="bg-primary/10 font-display text-primary mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm font-semibold">
-                        {i + 1}
-                      </span>
-                      <div>
-                        <h3 className="font-display text-base font-medium">
-                          {step.title}
-                        </h3>
-                        <p className="text-muted-foreground mt-1 text-sm">
-                          {step.body}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            ) : null}
-
-            {content?.whatToDo?.length ? (
-              <section className="border-border bg-secondary/40 mt-12 rounded-2xl border p-8">
-                <h2 className="font-display text-2xl font-medium tracking-tight">
-                  What to do right away
-                </h2>
-                <ul className="mt-6 space-y-3">
-                  {content.whatToDo.map((line) => (
-                    <li key={line} className="flex items-start gap-3 text-sm">
-                      <CheckCircle2
-                        className="text-primary mt-0.5 h-4 w-4 flex-none"
-                        aria-hidden
-                      />
-                      <span className="text-foreground">{line}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-muted-foreground mt-6 text-xs">
-                  {DISCLAIMERS.general}
-                </p>
-              </section>
-            ) : null}
-
-            <DeadlinesCallout category={area?.category} />
-
-            {siblings.length > 0 ? (
-              <section className="border-border mt-12 border-t pt-8">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  More practice areas in {row.city_name}
-                </h2>
-                <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {siblings.map((s) => (
-                    <li key={s.practice_area_slug}>
-                      <Link
-                        href={`/locations/${s.county_slug}/${s.city_slug}/${s.practice_area_slug}`}
-                        className="group border-border bg-card hover:border-primary/40 flex items-center justify-between rounded-xl border p-4 text-sm font-medium transition-colors"
-                      >
-                        <span>
-                          {s.practice_area_name} in {s.city_name}
-                        </span>
-                        <ArrowRight
-                          className="text-muted-foreground group-hover:text-primary h-4 w-4 flex-none transition-colors"
-                          aria-hidden
-                        />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-
-            {nearbyCities.length > 0 ? (
-              <section className="border-border mt-12 border-t pt-8">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  {row.practice_area_name} in nearby cities
-                </h2>
-                <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {nearbyCities.map((p) => (
-                    <li key={`${p.county_slug}/${p.city_slug}`}>
-                      <Link
-                        href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}
-                        className="group border-border bg-card hover:border-primary/40 flex items-center justify-between rounded-xl border p-4 text-sm font-medium transition-colors"
-                      >
-                        <span>
-                          {p.practice_area_name} in {p.city_name}
-                        </span>
-                        <ArrowRight
-                          className="text-muted-foreground group-hover:text-primary h-4 w-4 flex-none transition-colors"
-                          aria-hidden
-                        />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
-          </div>
-
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <LeadForm
-              variant="compact"
-              defaultCountySlug={row.county_slug}
-              defaultCitySlug={row.city_slug}
-              defaultPracticeArea={row.practice_area_slug}
-              headline={`Tell us about your ${area?.nounSingular ?? row.practice_area_name.toLowerCase()} in ${row.city_name}`}
-              description="Free consultation. We'll call you back within one business hour during office hours."
-            />
-          </aside>
+          {nearbyCities.length > 0 ? (
+            <section className="mt-14">
+              <h2 className="text-display-xs font-semibold">{row.practice_area_name} in nearby cities</h2>
+              <LinkCards
+                className="mt-[18px]"
+                items={nearbyCities.map((p) => ({
+                  href: `/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`,
+                  label: `${p.practice_area_name} in ${p.city_name}`,
+                }))}
+              />
+            </section>
+          ) : null}
         </div>
+
+        <aside id="intake" className="scroll-mt-[124px] lg:sticky lg:top-[124px]">
+          <LeadForm
+            variant="compact"
+            defaultCountySlug={row.county_slug}
+            defaultCitySlug={row.city_slug}
+            defaultPracticeArea={row.practice_area_slug}
+            headline={`Tell us about your ${nounSingular} in ${row.city_name}`}
+            description="Free consultation. We'll call you back within one business hour during office hours."
+          />
+        </aside>
       </article>
 
       {row.faq_json?.length ? (
-        <Faq
-          items={row.faq_json}
-          heading={`${row.city_name} ${row.practice_area_name} FAQ`}
-        />
+        <Faq items={row.faq_json} heading={`${row.city_name} ${row.practice_area_name} FAQ`} />
       ) : content?.faqs?.length ? (
         <Faq items={content.faqs} heading={`${row.practice_area_name} FAQ`} />
       ) : null}
 
       <CtaBand
-        heading={
-          area?.category === "employment"
-            ? `Mistreated at work in ${row.city_name}?`
-            : `Injured in ${row.city_name}?`
-        }
+        heading={isEmployment ? `Mistreated at work in ${row.city_name}?` : `Injured in ${row.city_name}?`}
         body="Free consultation. Bilingual counsel. No fee unless we win your case."
       />
     </>
