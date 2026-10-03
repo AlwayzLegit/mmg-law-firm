@@ -3,8 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { authInput, authLabel, authPrimary } from "@/components/admin/auth-split";
 import { setPassword } from "@/app/(admin)/admin/settings/actions";
 
 export default function OnboardingForm() {
@@ -31,12 +30,10 @@ export default function OnboardingForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 grid gap-3" noValidate>
-      <div className="grid gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
-          New password
-        </label>
-        <Input
+    <form onSubmit={onSubmit} className="mt-6 grid gap-3.5" noValidate>
+      <label className={authLabel}>
+        New password
+        <input
           id="password"
           name="password"
           type="password"
@@ -45,13 +42,12 @@ export default function OnboardingForm() {
           required
           minLength={10}
           placeholder="At least 10 characters"
+          className={authInput}
         />
-      </div>
-      <div className="grid gap-1.5">
-        <label htmlFor="confirm" className="text-sm font-medium">
-          Confirm password
-        </label>
-        <Input
+      </label>
+      <label className={authLabel}>
+        Confirm password
+        <input
           id="confirm"
           name="confirm"
           type="password"
@@ -59,14 +55,15 @@ export default function OnboardingForm() {
           required
           minLength={10}
           placeholder="Re-enter password"
+          className={authInput}
         />
-      </div>
-      <Button type="submit" disabled={busy}>
-        {busy ? "Saving..." : "Set password & continue"}
-      </Button>
-      <p className="text-muted-foreground text-xs">
-        This device is remembered for 30 days. New devices will still need a
-        one-time email code in addition to your password.
+      </label>
+      <button type="submit" disabled={busy} className={authPrimary}>
+        {busy ? "Saving…" : "Set password & continue"}
+      </button>
+      <p className="text-stone text-xs">
+        This device is remembered for 30 days. New devices will still need a one-time email code in addition to your
+        password.
       </p>
     </form>
   );

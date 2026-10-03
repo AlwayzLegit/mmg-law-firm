@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { authInput, authLabel, authPrimary, authSecondary } from "@/components/admin/auth-split";
+import { cn } from "@/lib/utils";
 import {
   loginWithPassword,
   verifyDeviceCode,
@@ -109,9 +110,8 @@ export default function LoginForm({
 
   if (linkSent) {
     return (
-      <div className="mt-6 rounded-md border border-success/40 bg-success/10 p-4 text-sm text-foreground">
-        We sent a one-time sign-in link to{" "}
-        <span className="font-medium">{email}</span>. Open it on this device to
+      <div className="mt-6 rounded-[10px] border border-[#15803d]/30 bg-[rgba(22,163,74,.1)] p-4 text-sm">
+        We sent a one-time sign-in link to <span className="font-semibold">{email}</span>. Open it on this device to
         continue — the link expires in one hour and verifies this device.
       </div>
     );
@@ -119,104 +119,112 @@ export default function LoginForm({
 
   if (mode === "verify") {
     return (
-      <form onSubmit={onVerify} className="mt-6 grid gap-3" noValidate>
-        <p className="text-sm text-muted-foreground">
+      <form onSubmit={onVerify} className="mt-6 grid gap-3.5" noValidate>
+        <button
+          type="button"
+          onClick={() => setMode("password")}
+          className="text-stone hover:text-foreground inline-flex items-center gap-1.5 text-[13px]"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          Back
+        </button>
+        <p className="text-stone text-[13.5px]">
           New device detected. Enter the 6-digit code we emailed to{" "}
-          <span className="font-medium">{email || "your inbox"}</span> to verify
-          and remember this device for 30 days.
+          <strong className="text-foreground font-semibold">{email || "your inbox"}</strong> to verify and remember this
+          device for 30 days.
         </p>
         {!email ? (
-          <Input
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.currentTarget.value)}
-          />
+          <label className={authLabel}>
+            Email
+            <input
+              type="email"
+              autoComplete="email"
+              placeholder="you@mmg-lawfirm.com"
+              value={email}
+              onChange={(e) => setEmail(e.currentTarget.value)}
+              className={authInput}
+            />
+          </label>
         ) : null}
-        <label htmlFor="code" className="text-sm font-medium">
+        <label className={authLabel}>
           Verification code
+          <input
+            id="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            autoFocus
+            required
+            value={code}
+            onChange={(e) => setCode(e.currentTarget.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="••••••"
+            className={cn(authInput, "font-display h-14 text-center text-2xl font-semibold tracking-[0.5em]")}
+          />
         </label>
-        <Input
-          id="code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          autoFocus
-          required
-          value={code}
-          onChange={(e) =>
-            setCode(e.currentTarget.value.replace(/\D/g, "").slice(0, 6))
-          }
-          placeholder="123456"
-        />
-        <Button type="submit" disabled={busy || code.length !== 6}>
-          {busy ? "Verifying..." : "Verify & sign in"}
-        </Button>
-        <div className="flex items-center justify-between text-xs">
-          <button
-            type="button"
-            onClick={onResend}
-            disabled={busy}
-            className="text-primary hover:underline disabled:opacity-50"
-          >
+        <button type="submit" disabled={busy || code.length !== 6} className={authPrimary}>
+          {busy ? "Verifying…" : "Verify and sign in"}
+        </button>
+        <p className="text-stone text-[12.5px]">
+          Didn&apos;t get it?{" "}
+          <button type="button" onClick={onResend} disabled={busy} className="text-gold-deep font-semibold hover:underline disabled:opacity-50">
             Resend code
           </button>
-          <button
-            type="button"
-            onClick={() => setMode("password")}
-            className="text-muted-foreground hover:underline"
-          >
-            ← Back
-          </button>
-        </div>
+        </p>
       </form>
     );
   }
 
   return (
-    <form onSubmit={onPassword} className="mt-6 grid gap-3" noValidate>
-      <label htmlFor="email" className="text-sm font-medium">
+    <form onSubmit={onPassword} className="mt-6 grid gap-3.5" noValidate>
+      <label className={authLabel}>
         Email
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          autoFocus
+          required
+          value={email}
+          onChange={(e) => setEmail(e.currentTarget.value)}
+          placeholder="you@mmg-lawfirm.com"
+          className={authInput}
+        />
       </label>
-      <Input
-        id="email"
-        type="email"
-        autoComplete="email"
-        autoFocus
-        required
-        value={email}
-        onChange={(e) => setEmail(e.currentTarget.value)}
-        placeholder="you@example.com"
-      />
-      <label htmlFor="password" className="text-sm font-medium">
-        Password
+      <label className={authLabel}>
+        <span className="flex justify-between">
+          <span>Password</span>
+          <button
+            type="button"
+            onClick={onMagicLink}
+            disabled={busy}
+            className="text-gold-deep font-medium normal-case tracking-normal hover:underline disabled:opacity-50"
+          >
+            Forgot?
+          </button>
+        </span>
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.currentTarget.value)}
+          placeholder="••••••••••"
+          className={authInput}
+        />
       </label>
-      <Input
-        id="password"
-        type="password"
-        autoComplete="current-password"
-        required
-        value={password}
-        onChange={(e) => setPassword(e.currentTarget.value)}
-        placeholder="••••••••"
-      />
-      <Button type="submit" disabled={busy || !email || !password}>
-        {busy ? "Signing in..." : "Sign in"}
-      </Button>
-      <div className="mt-1 text-center text-xs text-muted-foreground">
-        <button
-          type="button"
-          onClick={onMagicLink}
-          disabled={busy}
-          className="text-primary hover:underline disabled:opacity-50"
-        >
-          Email me a sign-in link instead
-        </button>
+      <button type="submit" disabled={busy || !email || !password} className={authPrimary}>
+        {busy ? "Signing in…" : "Continue"}
+      </button>
+      <div className="text-stone flex items-center gap-3 text-xs">
+        <span className="bg-ink/12 h-px flex-1" />
+        or
+        <span className="bg-ink/12 h-px flex-1" />
       </div>
-      <p className="text-xs text-muted-foreground">
-        New devices need a one-time email code in addition to your password.
-      </p>
+      <button type="button" onClick={onMagicLink} disabled={busy} className={authSecondary}>
+        Email me a magic link
+      </button>
+      <p className="text-stone text-xs">New devices need a one-time email code in addition to your password.</p>
     </form>
   );
 }

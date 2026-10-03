@@ -93,14 +93,12 @@ export default async function ContentPagesAdmin() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-medium tracking-tight">
-        Content
-      </h1>
-      <p className="text-muted-foreground mt-1 text-sm">
+      <h1 className="font-display text-[30px] leading-[1.1] font-semibold tracking-[-0.02em]">Content</h1>
+      <p className="text-stone mt-1.5 text-[13px]">
         Counties, cities, city × practice landing pages, and practice areas.
       </p>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
         <RowSummary
           title="Counties"
           published={counties.data?.filter((c) => c.is_published).length ?? 0}
@@ -298,29 +296,27 @@ function RowSummary({
   total: number;
   href?: string;
 }) {
+  const pct = total > 0 ? Math.round((published / total) * 100) : 0;
   const body = (
-    <CardContent className="pt-6">
-      <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
-        {title}
-      </p>
-      <p className="font-display mt-2 text-3xl font-medium tracking-tight">
+    <>
+      <p className="micro-label text-stone m-0">{title}</p>
+      <p className="font-display m-0 mt-2 text-[30px] leading-none font-semibold tracking-[-0.03em]">
         {published}
-        <span className="text-muted-foreground ml-1 text-base">
-          / {total} published
-        </span>
+        <span className="text-stone ml-1.5 font-sans text-sm font-normal tracking-normal">/ {total} published</span>
       </p>
-      {href ? <p className="text-primary mt-3 text-xs">Manage →</p> : null}
-    </CardContent>
+      <div className="bg-ink/8 mt-3.5 h-1.5 overflow-hidden rounded-full" aria-hidden>
+        <div className="bg-gold h-full rounded-full" style={{ width: `${pct}%` }} />
+      </div>
+      {href ? <p className="text-gold-deep m-0 mt-3 text-xs font-semibold">Manage →</p> : null}
+    </>
   );
-
+  const cls = "bg-card ring-ink/8 block rounded-[14px] px-5 py-[18px] ring-1";
   if (href) {
     return (
-      <Link href={href} className="block">
-        <Card className="hover:border-primary/30 transition-colors">
-          {body}
-        </Card>
+      <Link href={href} className={`${cls} text-foreground hover:ring-gold no-underline transition-shadow`}>
+        {body}
       </Link>
     );
   }
-  return <Card>{body}</Card>;
+  return <div className={cls}>{body}</div>;
 }

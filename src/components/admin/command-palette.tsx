@@ -262,7 +262,13 @@ const COMMANDS: Command[] = [
  * header) to jump to any admin destination. Doubles as the navigation
  * surface on mobile, where the sidebar is hidden.
  */
-export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
+export default function CommandPalette({
+  isOwner,
+  variant = "header",
+}: {
+  isOwner: boolean;
+  variant?: "header" | "rail";
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -393,18 +399,31 @@ export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="border-border bg-secondary/50 text-muted-foreground hover:bg-secondary inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition-colors"
-        aria-label="Open command menu"
-      >
-        <Search className="h-4 w-4" aria-hidden />
-        <span className="hidden sm:inline">Search…</span>
-        <kbd className="border-border bg-background ml-1 hidden rounded border px-1.5 py-0.5 font-mono text-[10px] sm:inline">
-          ⌘K
-        </kbd>
-      </button>
+      {variant === "rail" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="border-cream/12 bg-cream/5 text-cream/60 hover:text-cream flex h-[38px] w-full items-center gap-2.5 rounded-[9px] border px-3 text-[13px] transition-colors"
+          aria-label="Open command menu"
+        >
+          <Search className="h-3.5 w-3.5 opacity-60" aria-hidden />
+          <span className="flex-1 text-left">Search or jump to…</span>
+          <kbd className="bg-cream/8 text-cream/70 rounded-[5px] px-1.5 py-0.5 font-mono text-[10.5px] font-semibold">⌘K</kbd>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="border-border bg-secondary/50 text-muted-foreground hover:bg-secondary inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition-colors"
+          aria-label="Open command menu"
+        >
+          <Search className="h-4 w-4" aria-hidden />
+          <span className="hidden sm:inline">Search…</span>
+          <kbd className="border-border bg-background ml-1 hidden rounded border px-1.5 py-0.5 font-mono text-[10px] sm:inline">
+            ⌘K
+          </kbd>
+        </button>
+      )}
 
       {open ? (
         <div
@@ -414,12 +433,12 @@ export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
           aria-label="Command menu"
         >
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-[rgba(15,17,21,.45)] backdrop-blur-sm"
             onClick={close}
             aria-hidden
           />
-          <div className="border-border bg-background relative z-10 w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl">
-            <div className="border-border flex items-center gap-2 border-b px-3">
+          <div className="bg-card relative z-10 w-full max-w-[560px] overflow-hidden rounded-2xl shadow-lift ring-1 ring-ink/10">
+            <div className="border-line flex items-center gap-2 border-b px-4">
               <Search
                 className="text-muted-foreground h-4 w-4 flex-none"
                 aria-hidden
@@ -435,7 +454,7 @@ export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
                 onKeyDown={onInputKeyDown}
                 placeholder="Jump to a page or search leads…"
                 aria-label="Search admin and leads"
-                className="h-12 w-full bg-transparent text-sm outline-none"
+                className="h-[54px] w-full bg-transparent text-[15px] outline-none"
               />
             </div>
             <ul
@@ -458,10 +477,8 @@ export default function CommandPalette({ isOwner }: { isOwner: boolean }) {
                         aria-selected={i === active}
                         onClick={() => run(cmd)}
                         onMouseMove={() => setActive(i)}
-                        className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm ${
-                          i === active
-                            ? "bg-secondary text-foreground"
-                            : "text-foreground/90"
+                        className={`flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-left text-sm ${
+                          i === active ? "bg-paper text-foreground" : "text-foreground/90"
                         }`}
                       >
                         <Icon className="text-muted-foreground h-4 w-4 flex-none" />

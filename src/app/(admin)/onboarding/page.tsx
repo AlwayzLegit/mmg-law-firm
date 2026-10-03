@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { AuthSplit } from "@/components/admin/auth-split";
 import { requireAdmin } from "@/lib/auth/require-admin";
 
 import OnboardingForm from "./onboarding-form";
@@ -21,21 +22,17 @@ export default async function OnboardingPage() {
   if (profile.password_set) redirect("/admin");
 
   return (
-    <main className="bg-secondary/40 flex min-h-screen flex-col items-center justify-center px-4 py-16">
-      <div className="border-border bg-card w-full max-w-md rounded-2xl border p-8 shadow-sm">
-        <p className="text-primary text-xs font-medium tracking-[0.18em] uppercase">
-          MMG Law Firm
-        </p>
-        <h1 className="font-display mt-3 text-2xl font-medium tracking-tight">
-          Set your password
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Welcome{profile.full_name ? `, ${profile.full_name}` : ""}. Create a
-          password to finish setting up your account. Next time you can sign in
-          with your email and password — no one-time link needed.
-        </p>
-        <OnboardingForm />
+    <AuthSplit>
+      <p className="text-gold-deep m-0 text-xs font-semibold tracking-[0.16em] uppercase">Welcome · set your password</p>
+      <div className="bg-ink/8 mt-2.5 h-[3px] overflow-hidden rounded-sm">
+        <div className="bg-gold h-full w-1/2" />
       </div>
-    </main>
+      <h2 className="font-display mt-5 text-[30px] leading-[1.1] font-semibold tracking-[-0.02em]">Set your password</h2>
+      <p className="text-stone mt-1.5 text-[13.5px]">
+        Welcome{profile.full_name ? `, ${profile.full_name}` : ""}. Create a password to finish setting up your account.
+        Next time you can sign in with your email and password — no one-time link needed.
+      </p>
+      <OnboardingForm />
+    </AuthSplit>
   );
 }
