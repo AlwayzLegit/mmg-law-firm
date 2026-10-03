@@ -1,10 +1,6 @@
 import { CtaBand } from "@/components/marketing/cta-band";
 import { PageHero } from "@/components/marketing/page-hero";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
-import {
-  PracticeAreasHeroAside,
-  practiceAreasHeroImageExists,
-} from "@/components/marketing/practice-areas-hero-aside";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -33,17 +29,17 @@ export default function PracticeAreasPage() {
         ]}
         title={
           <>
-            Personal injury and employment law{" "}
-            <span className="text-primary">in California.</span>
+            Personal injury and employment law <em className="em-gold">in California.</em>
           </>
         }
         description="Personal injury is the heart of our practice — and we also stand up for California employees. Pick the area that matches your situation, or call us if you're not sure where it fits."
-        aside={practiceAreasHeroImageExists() ? <PracticeAreasHeroAside /> : undefined}
+        image={{ src: "/brand/working-the-file.webp", alt: "", priority: true }}
       />
 
       <PracticeAreaGrid
         heading="Choose your situation"
         subheading="Click any area for what we handle, how we work, and what to do next."
+        filters
       />
       <CtaBand />
     </>

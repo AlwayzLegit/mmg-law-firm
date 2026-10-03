@@ -10,7 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { SectionEyebrow } from "./section-eyebrow";
+import { Eyebrow } from "./primitives/eyebrow";
+import { IconTile } from "./primitives/icon-tile";
 
 // TODO(human): attorney review required — standard CA damages categories,
 // AI-drafted. Verify the framing before long-term use.
@@ -87,25 +88,26 @@ type Props = {
   /** Practice family. "employment" swaps PI damages for FEHA/Labor Code
    *  remedies. Undefined ⇒ injury. */
   category?: "injury" | "employment";
+  id?: string;
 };
 
 /**
  * "What compensation can cover" — California damages/remedy categories,
- * rendered as a card grid. Used on city × practice landing pages. The copy
- * deliberately avoids guarantee language: categories describe what a claim
- * can seek, never what a client will get. The category controls whether the
- * personal-injury or employment-law remedy set is shown.
+ * rendered as white tiles. Used on practice hubs and city × practice pages.
+ * The copy deliberately avoids guarantee language: categories describe what
+ * a claim can seek, never what a client will get. The category controls
+ * whether the personal-injury or employment-law remedy set is shown.
  */
-export function CompensationSection({ nounSingular, category }: Props) {
+export function CompensationSection({ nounSingular, category, id }: Props) {
   const isEmployment = category === "employment";
   const categories = isEmployment ? EMPLOYMENT_CATEGORIES : INJURY_CATEGORIES;
   return (
-    <section className="mt-12">
-      <SectionEyebrow>{isEmployment ? "Remedies" : "Damages"}</SectionEyebrow>
-      <h2 className="mt-4 font-display text-2xl font-medium tracking-tight md:text-3xl">
+    <section id={id} className="mt-14 scroll-mt-[130px]">
+      <Eyebrow>{isEmployment ? "Remedies" : "Damages"}</Eyebrow>
+      <h2 className="text-display-sm mt-3 font-semibold">
         {isEmployment ? "What you may be able to recover" : "What compensation can cover"}
       </h2>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
+      <p className="text-stone mt-3 max-w-[62ch] text-[15.5px]">
         {isEmployment ? (
           <>
             Every {nounSingular ?? "employment"} case is different, but
@@ -122,26 +124,17 @@ export function CompensationSection({ nounSingular, category }: Props) {
           </>
         )}
       </p>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      <ul className="m-0 mt-6 grid list-none grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2.5 p-0">
         {categories.map((c) => (
-          <div
-            key={c.title}
-            className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5"
-          >
-            <span className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <c.icon className="h-5 w-5" aria-hidden />
-            </span>
-            <div>
-              <h3 className="font-display text-base font-medium tracking-tight">
-                {c.title}
-              </h3>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                {c.body}
-              </p>
-            </div>
-          </div>
+          <li key={c.title} className="bg-card border-line hover:border-gold rounded-[14px] border px-4 py-[18px] transition-colors">
+            <IconTile size="md" tone="gold">
+              <c.icon aria-hidden />
+            </IconTile>
+            <h3 className="font-display mt-3 text-lg leading-[1.15] font-semibold tracking-[-0.01em]">{c.title}</h3>
+            <p className="text-stone mt-1.5 text-[13px] leading-[1.5]">{c.body}</p>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

@@ -2,19 +2,23 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Clock, Languages, ShieldCheck, User } from "lucide-react";
 
-import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
+import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { CaseResultCard } from "@/components/marketing/case-result-card";
 import { CompensationSection } from "@/components/marketing/compensation-section";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { DeadlinesCallout } from "@/components/marketing/deadlines-callout";
-import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
-import { PageHero } from "@/components/marketing/page-hero";
+import { PageHero, type HeroFact } from "@/components/marketing/page-hero";
+import { JumpNav, type JumpItem } from "@/components/marketing/practice/jump-nav";
+import { ProcessTimeline } from "@/components/marketing/practice/process-timeline";
+import { SubtopicCards } from "@/components/marketing/practice/subtopic-cards";
+import { WhatToDoPanel } from "@/components/marketing/practice/what-to-do";
+import { DetailsAccordion } from "@/components/marketing/primitives/details-accordion";
+import { Eyebrow } from "@/components/marketing/primitives/eyebrow";
 import { RelatedPracticeAreas } from "@/components/marketing/related-practice-areas";
-import { SubjectImage } from "@/components/marketing/subject-image";
 import { buttonVariants } from "@/components/ui/button";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREA_IMAGE, pickLocationImage } from "@/lib/media";
@@ -25,7 +29,6 @@ import {
 } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { getAttorneyHelp } from "@/lib/data/practice-area-content";
-import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { getPublishedLocationPages } from "@/lib/data/queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
@@ -65,6 +68,17 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
+/** "Car Accident Lawyer" → California <em>Car Accident</em> Lawyer. */
+function heroTitle(phrase: string) {
+  const m = /^(.*) (Lawyer)$/.exec(phrase);
+  if (!m) return <>California {phrase}</>;
+  return (
+    <>
+      California <em className="em-gold">{m[1]}</em> {m[2]}
+    </>
+  );
+}
+
 export default async function PracticeAreaPage({ params }: Props) {
   const { slug } = await params;
   const area = findPracticeArea(slug);
@@ -86,6 +100,7 @@ export default async function PracticeAreaPage({ params }: Props) {
     .sort((a, b) => a.city_name.localeCompare(b.city_name));
 
   const path = `/practice-areas/${area.slug}`;
+  const isEmployment = area.category === "employment";
 
   const legalService = {
     "@context": "https://schema.org",
@@ -114,6 +129,31 @@ export default async function PracticeAreaPage({ params }: Props) {
 
   const faqGraph = content.faqs.length > 0 ? buildFaqPage(content.faqs) : null;
 
+  const heroImage = PRACTICE_AREA_IMAGE[slug]
+    ? { src: PRACTICE_AREA_IMAGE[slug], alt: `${area.name} representation in California`, priority: true }
+    : { src: pickLocationImage(slug).name, alt: pickLocationImage(slug).alt, priority: true };
+
+  const facts: HeroFact[] = [
+    { icon: <ShieldCheck />, label: "No fee unless we win" },
+    {
+      icon: <Clock />,
+      label: isEmployment ? "Strict filing deadlines — call early" : "2-year filing deadline for most claims",
+    },
+    { icon: <Languages />, label: FIRM.languages.join(" · ") },
+    { icon: <User />, label: `${FIRM.attorneyName} handles your case directly` },
+  ];
+
+  const jumps: JumpItem[] = [
+    { id: "overview", label: "Overview" },
+    { id: "attorney", label: `How ${FIRM.attorneyName.split(" ")[0]} helps` },
+    { id: "compensation", label: isEmployment ? "Remedies" : "Compensation" },
+    ...(content.process.length > 0 ? [{ id: "process", label: "Process" }] : []),
+    ...(content.whatToDo.length > 0 ? [{ id: "what-to-do", label: "What to do" }] : []),
+    { id: "deadlines", label: "Deadlines" },
+    ...(content.faqs.length > 0 ? [{ id: "faq", label: "FAQ" }] : []),
+    { id: "related", label: "Related" },
+  ];
+
   return (
     <>
       <BreadcrumbJsonLd
@@ -135,214 +175,123 @@ export default async function PracticeAreaPage({ params }: Props) {
       ) : null}
 
       <PageHero
+        eyebrow={`Attorney Advertising · ${isEmployment ? "Employment law" : "Personal injury"}`}
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Practice Areas", href: "/practice-areas" },
           { label: area.name },
         ]}
-        title={`California ${lawyerPhraseTitle(area)}`}
+        title={heroTitle(lawyerPhraseTitle(area))}
         description={content.intro}
+        image={heroImage}
+        facts={facts}
         actions={
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/contact"
-              className={cn(buttonVariants({ size: "marketing" }), "group/cta")}
-            >
+          <>
+            <Link href="#intake" className={cn(buttonVariants({ variant: "gold", size: "pill" }), "group/cta")}>
               <span>Free consultation</span>
-              <ArrowRight
-                className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5"
-                aria-hidden
-              />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5" aria-hidden />
             </Link>
-            <a
-              href={`tel:${FIRM.phoneTel}`}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "marketing" }),
-              )}
-            >
+            <a href={`tel:${FIRM.phoneTel}`} className={buttonVariants({ variant: "outline-cream", size: "pill" })}>
               Call {FIRM.phone}
             </a>
-          </div>
-        }
-        aside={
-          <AttorneyHeroAside
-            image={pickLocationImage(slug).name}
-            alt={pickLocationImage(slug).alt}
-            priority
-          />
+          </>
         }
       />
 
-      <article className="container-page py-16 md:py-20">
-        <div className="grid gap-12 lg:grid-cols-[2fr_1fr] lg:gap-16">
-          <div className="prose-area">
-            {PRACTICE_AREA_IMAGE[slug] ? (
-              <SubjectImage
-                image={PRACTICE_AREA_IMAGE[slug]}
-                alt={`${area.name} representation in California`}
-                className="mb-10"
-              />
-            ) : null}
+      <JumpNav items={jumps} />
 
+      <article className="container-page grid items-start gap-12 pt-[clamp(40px,6vw,64px)] pb-24 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <div className="min-w-0">
+          <section id="overview" className="scroll-mt-[130px]">
             {content.body_from_db ? (
-              <div className="prose prose-neutral text-muted-foreground prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-foreground max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {content.body_md}
-                </ReactMarkdown>
+              <div className="prose-v2 text-[17px]">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content.body_md}</ReactMarkdown>
               </div>
             ) : (
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                {content.body_md || content.intro}
-              </p>
+              <p className="text-[19px] leading-[1.65]">{content.body_md || content.intro}</p>
             )}
+          </section>
 
-            <AttorneyHelpSection
-              practiceLabel={area.name.toLowerCase()}
-              body={getAttorneyHelp(area.slug, area.nounSingular)}
-            />
+          <AttorneyHelpSection
+            id="attorney"
+            practiceLabel={area.name.toLowerCase()}
+            body={getAttorneyHelp(area.slug, area.nounSingular)}
+          />
 
-            {content.subtopics.length > 0 ? (
-              <section className="mt-12">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  What we handle
-                </h2>
-                <div className="mt-6 grid gap-6 sm:grid-cols-2">
-                  {content.subtopics.map((s) => (
-                    <div
-                      key={s.title}
-                      className="border-border bg-card rounded-xl border p-6"
-                    >
-                      <h3 className="font-display text-base font-medium">
-                        {s.title}
-                      </h3>
-                      <p className="text-muted-foreground mt-2 text-sm">
-                        {s.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
+          <SubtopicCards subtopics={content.subtopics} areaIcon={area.icon} />
 
-            <CompensationSection
-              nounSingular={area.nounSingular}
-              category={area.category}
-            />
+          <CompensationSection id="compensation" nounSingular={area.nounSingular} category={area.category} />
 
-            {content.process.length > 0 ? (
-              <section className="mt-12">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  How we work
-                </h2>
-                <ol className="mt-6 space-y-5">
-                  {content.process.map((step, i) => (
-                    <li key={step.title} className="flex gap-4">
-                      <span className="bg-primary/10 font-display text-primary mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-sm font-semibold">
-                        {i + 1}
-                      </span>
-                      <div>
-                        <h3 className="font-display text-base font-medium">
-                          {step.title}
-                        </h3>
-                        <p className="text-muted-foreground mt-1 text-sm">
-                          {step.body}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            ) : null}
+          <ProcessTimeline id="process" steps={content.process} />
 
-            {content.whatToDo.length > 0 ? (
-              <section className="border-border bg-secondary/40 mt-12 rounded-2xl border p-8">
-                <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  What to do right away
-                </h2>
-                <ul className="mt-6 space-y-3">
-                  {content.whatToDo.map((line) => (
-                    <li key={line} className="flex items-start gap-3 text-sm">
-                      <CheckCircle2
-                        className="text-primary mt-0.5 h-4 w-4 flex-none"
-                        aria-hidden
-                      />
-                      <span className="text-foreground">{line}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-muted-foreground mt-6 text-xs">
-                  {DISCLAIMERS.general}
-                </p>
-              </section>
-            ) : null}
+          <WhatToDoPanel id="what-to-do" items={content.whatToDo} />
 
-            <DeadlinesCallout category={area.category} />
+          <DeadlinesCallout id="deadlines" category={area.category} />
 
-            {inlineResults.length > 0 ? (
-              <section className="mt-12">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                    Recent {area.shortName.toLowerCase()} results
-                  </h2>
-                  <Link
-                    href="/case-results"
-                    className="group/link text-primary inline-flex items-center gap-1.5 text-sm font-medium"
-                  >
-                    <span className="underline-offset-4 group-hover/link:underline">
-                      View all results
-                    </span>
-                    <span className="transition-transform group-hover/link:translate-x-0.5">
-                      &rarr;
-                    </span>
-                  </Link>
-                </div>
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {inlineResults.map((r) => (
-                    <CaseResultCard key={r.id} result={r} />
-                  ))}
-                </div>
-                <p className="text-muted-foreground mt-4 text-xs">
-                  {DISCLAIMERS.results}
-                </p>
-              </section>
-            ) : null}
-          </div>
+          {inlineResults.length > 0 ? (
+            <section className="mt-14">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <h2 className="text-display-sm font-semibold">Recent {area.shortName.toLowerCase()} results</h2>
+                <Link
+                  href="/case-results"
+                  className="group/link text-foreground inline-flex items-center gap-1.5 text-sm font-semibold no-underline"
+                >
+                  <span className="underline-offset-4 group-hover/link:underline">View all results</span>
+                  <span className="transition-transform group-hover/link:translate-x-0.5">&rarr;</span>
+                </Link>
+              </div>
+              <div className="mt-6 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                {inlineResults.map((r) => (
+                  <CaseResultCard key={r.id} result={r} />
+                ))}
+              </div>
+              <p className="text-stone mt-4 text-xs">{DISCLAIMERS.results}</p>
+            </section>
+          ) : null}
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <LeadForm
-              variant="compact"
-              defaultPracticeArea={area.slug}
-              headline={`Tell us about your ${area.nounSingular}`}
-              description="Free consultation. We'll call you back within one business hour during office hours."
-            />
-          </aside>
+          {content.faqs.length > 0 ? (
+            <section id="faq" className="mt-14 scroll-mt-[130px]">
+              <Eyebrow>FAQ</Eyebrow>
+              <h2 className="text-display-sm mt-3 font-semibold">{area.shortName} FAQ</h2>
+              <DetailsAccordion
+                name={`faq-${area.slug}`}
+                titleAs="h3"
+                className="mt-6"
+                items={content.faqs.map((f) => ({ title: f.question, body: f.answer }))}
+              />
+            </section>
+          ) : null}
         </div>
+
+        <aside id="intake" className="scroll-mt-[124px] lg:sticky lg:top-[124px]">
+          <LeadForm
+            variant="compact"
+            defaultPracticeArea={area.slug}
+            headline={`Tell us about your ${area.nounSingular}`}
+            description="Free consultation. We'll call you back within one business hour during office hours."
+          />
+        </aside>
       </article>
 
       {cityLinks.length > 0 ? (
-        <section className="border-border bg-secondary/30 border-t">
-          <div className="container-page py-16 md:py-20">
-            <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-              {area.name} representation by city
-            </h2>
-            <p className="text-muted-foreground mt-3 max-w-2xl">
+        <section className="bg-background border-line border-t">
+          <div className="container-page py-[clamp(48px,7vw,72px)]">
+            <h2 className="text-display-sm font-semibold">{area.name} representation by city</h2>
+            <p className="text-stone mt-3 max-w-2xl">
               We handle {area.nounSingular} cases across California. Explore the
               cities where we&apos;ve detailed our local experience:
             </p>
-            <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="m-0 mt-8 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3">
               {cityLinks.map((p) => (
                 <li key={`${p.county_slug}/${p.city_slug}`}>
                   <Link
                     href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}
-                    className="group border-border bg-card hover:border-primary/30 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors"
+                    className="group bg-card border-line hover:border-gold text-foreground flex items-center justify-between gap-3 rounded-xl border px-4 py-3 no-underline transition-colors"
                   >
                     <span className="font-medium">
                       {p.city_name} {area.shortName}
                     </span>
-                    <ArrowRight
-                      className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors"
-                      aria-hidden
-                    />
+                    <ArrowRight className="text-stone group-hover:text-gold-deep h-4 w-4 transition-colors" aria-hidden />
                   </Link>
                 </li>
               ))}
@@ -351,11 +300,7 @@ export default async function PracticeAreaPage({ params }: Props) {
         </section>
       ) : null}
 
-      {content.faqs.length > 0 ? (
-        <Faq items={content.faqs} heading={`${area.shortName} FAQ`} />
-      ) : null}
-
-      <RelatedPracticeAreas currentSlug={area.slug} max={4} />
+      <RelatedPracticeAreas id="related" currentSlug={area.slug} max={4} />
 
       <CtaBand
         heading={area.ctaHeading ?? `Injured in a ${area.nounSingular}?`}

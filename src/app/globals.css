@@ -380,6 +380,12 @@
       radial-gradient(ellipse at 30% 20%, rgba(201, 163, 90, 0.24), transparent 60%),
       linear-gradient(160deg, #1c2029, #0f1115);
   }
+  /* Practice-area index filter: radio pills hide non-matching cards with CSS
+     only, so every card stays in the document for crawlers. */
+  .pa-grid:has(.pa-filter input[value="injury"]:checked) li[data-category="employment"],
+  .pa-grid:has(.pa-filter input[value="employment"]:checked) li[data-category="injury"] {
+    display: none;
+  }
   .no-scrollbar {
     scrollbar-width: none;
   }
