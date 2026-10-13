@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { parseFragment } from "parse5";
 import { loadLogic } from "./logic.mjs";
 import { ROUTES, PAGE_COMPONENT } from "./routes.mjs";
+import { dedupeIds } from "./dedupe-ids.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DESIGN_HTML = path.join(TOOL_DIR, "design", "redesign-v3.dc.html");
@@ -901,7 +902,7 @@ ${pc.preload ? `  // Hero background is the LCP element — fetch it before CSS 
   );
 }
 `;
-  fs.writeFileSync(path.join(OUT_DIR, `${page}.tsx`), src);
+  fs.writeFileSync(path.join(OUT_DIR, `${page}.tsx`), dedupeIds(src));
   if (pc.faqs.length) FAQS[page] = pc.faqs;
   report[page] = {
     bytes: src.length,
