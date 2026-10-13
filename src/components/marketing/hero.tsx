@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM } from "@/lib/constants";
 import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";

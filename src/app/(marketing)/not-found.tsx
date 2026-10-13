@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Phone } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 

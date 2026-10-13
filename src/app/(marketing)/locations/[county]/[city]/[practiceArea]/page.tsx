@@ -12,7 +12,7 @@ import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
 import { findPracticeArea, lawyerPhraseTitle } from "@/lib/data/practice-areas";

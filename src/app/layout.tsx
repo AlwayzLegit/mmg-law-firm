@@ -1,29 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import dynamic from "next/dynamic";
 import Script from "next/script";
 import { Inter, Fraunces, Lato, Libre_Baskerville } from "next/font/google";
 
+import { PostHogLoader } from "@/components/analytics/posthog-loader";
 import { SchemaGraph } from "@/components/seo/schema-graph";
+import { DeferredToaster } from "@/components/ui/deferred-toaster";
 import { FIRM, SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { siteUrl } from "@/lib/seo/canonical";
 
 import "./globals.css";
-
-// Sonner ships its own CSS-in-JS + portal; nothing renders until a toast
-// fires, so the runtime can defer the chunk entirely.
-const Toaster = dynamic(() =>
-  import("@/components/ui/sonner").then((m) => m.Toaster),
-);
-
-// PostHog runs entirely client-side; lazy-loaded so the analytics chunk
-// doesn't block hydration. When NEXT_PUBLIC_POSTHOG_KEY isn't set the
-// provider passes children through unchanged.
-const PostHogProvider = dynamic(() =>
-  import("@/components/analytics/posthog-provider").then(
-    (m) => m.PostHogProvider,
-  ),
-);
 
 const inter = Inter({
   subsets: ["latin"],
@@ -117,9 +103,11 @@ export default function RootLayout({
 
         <SchemaGraph />
 
-        <PostHogProvider>{children}</PostHogProvider>
+        {children}
+        {/* Analytics loads after the page is idle — never on the critical path. */}
+        <PostHogLoader />
 
-        <Toaster richColors closeButton />
+        <DeferredToaster richColors closeButton />
 
         {gaId ? (
           <>

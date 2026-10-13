@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { Phone, RotateCcw } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -55,17 +55,20 @@ export default function GlobalError({
         </p>
       ) : null}
       <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-        <Button
+        {/* Native button with the shared classes: this boundary wraps every
+            page, so the base-ui Button would ship its runtime site-wide. */}
+        <button
+          type="button"
+          data-slot="button"
           onClick={() => reset()}
-          size="marketing"
-          className="group/cta gap-2"
+          className={cn(buttonVariants({ size: "marketing" }), "group/cta gap-2")}
         >
           <RotateCcw
             className="h-4 w-4 transition-transform group-hover/cta:-rotate-12"
             aria-hidden
           />
           <span>Try again</span>
-        </Button>
+        </button>
         <a
           href={`tel:${FIRM.phoneTel}`}
           className={cn(

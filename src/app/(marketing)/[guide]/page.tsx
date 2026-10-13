@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { V3_GUIDE_PAGES } from "@/components/v3/guide-pages";
 import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
 import { V3_GUIDES } from "@/lib/v3/pages";
 
@@ -29,6 +30,7 @@ export async function generateMetadata({ params }: Props) {
 export default async function GuidePage({ params }: Props) {
   const { guide } = await params;
   const page = find(guide);
-  if (!page) notFound();
-  return <V3PageShell pageKey={page.key} />;
+  const body = page ? V3_GUIDE_PAGES[page.key] : undefined;
+  if (!page || !body) notFound();
+  return <V3PageShell pageKey={page.key} page={body} />;
 }

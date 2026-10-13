@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Menu, Phone } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import {
   Sheet,
   SheetContent,

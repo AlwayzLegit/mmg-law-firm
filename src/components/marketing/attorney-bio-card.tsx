@@ -8,7 +8,7 @@ import {
   Scale,
 } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { getAttorneyProfile } from "@/lib/data/attorney";
 import { FIRM } from "@/lib/constants";
 import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";

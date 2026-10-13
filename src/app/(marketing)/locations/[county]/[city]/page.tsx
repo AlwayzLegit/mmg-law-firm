@@ -9,7 +9,7 @@ import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
@@ -24,6 +24,7 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { V3GlendalePage } from "@/components/v3/pages/glendale";
 import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
 import { V3CityLinks } from "@/components/v3/v3-city-links";
 
@@ -74,6 +75,7 @@ export default async function CityPage({ params }: Props) {
     return (
       <V3PageShell
         pageKey="glendale"
+        page={V3GlendalePage}
         crumbs={[
           { name: "Home", path: "/" },
           { name: "Locations", path: "/locations" },

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { V3PageShell } from "@/components/v3/v3-page-shell";
+import { V3AttorneyPage } from "@/components/v3/pages/attorney";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { FIRM } from "@/lib/constants";
 import { attorneySameAs, getAttorneyProfile } from "@/lib/data/attorney";
@@ -100,7 +101,7 @@ export default async function AttorneyBioPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(personJsonLd) }}
       />
-      <V3PageShell pageKey="attorney" />
+      <V3PageShell pageKey="attorney" page={V3AttorneyPage} />
     </>
   );
 }

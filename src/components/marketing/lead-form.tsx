@@ -2,8 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useForm, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import {
+  lazyLeadResolver,
+  preloadLeadValidation,
+} from "@/lib/validation/lazy-lead-resolver";
+import { leadFormDefaults, type LeadFormValues } from "@/lib/validation/lead-form-values";
 import {
   ArrowRight,
   CheckCircle2,
@@ -37,12 +41,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
+import { track } from "@/lib/analytics/track";
 import { cn } from "@/lib/utils";
-import {
-  LeadSchema,
-  leadFormDefaults,
-  type LeadFormValues,
-} from "@/lib/validation/lead";
 
 import { Turnstile } from "./turnstile";
 
@@ -74,16 +74,10 @@ export function LeadForm({
 }: LeadFormProps) {
   const isFull = variant === "full";
 
-  // LeadSchema uses .preprocess() / .transform(), so zodResolver's inferred
-  // input type collapses to `unknown` and conflicts with LeadFormValues used
-  // by Controller. The cast narrows the resolver to the form's value shape
-  // — types are still checked at the call sites that read field.value.
+  // Validation (Zod + schema + phone parsing) loads on first focus; see
+  // lazy-lead-resolver.ts.
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
-    resolver: zodResolver(LeadSchema) as unknown as Resolver<
-      LeadFormValues,
-      unknown,
-      LeadFormValues
-    >,
+    resolver: lazyLeadResolver,
     mode: "onBlur",
     defaultValues: {
       ...leadFormDefaults,
@@ -306,6 +300,8 @@ export function LeadForm({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
+          // Load the validation chunk as soon as the visitor engages.
+          onFocus={() => void preloadLeadValidation().catch(() => {})}
           noValidate
           className="relative grid gap-6"
         >
@@ -681,11 +677,5 @@ function safeJson(
 
 /** Fire a PostHog event if the SDK is loaded. Never sends PII. */
 function captureEvent(event: string, props?: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  const posthog = (
-    window as unknown as {
-      posthog?: { capture: (e: string, p?: Record<string, unknown>) => void };
-    }
-  ).posthog;
-  posthog?.capture(event, props);
+  track(event, props); // queued until PostHog loads (see lib/analytics/track)
 }

@@ -3,6 +3,11 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 
+// Zod 4 probes `Function("")` to decide whether it may JIT-compile object
+// parsers. Under our CSP (no `unsafe-eval`) that probe is a logged violation
+// on every page with a lead form, so opt out of the JIT path.
+z.config({ jitless: true });
+
 const PRACTICE_SLUGS = PRACTICE_AREAS.map((p) => p.slug);
 
 const PreferredContact = z.enum(["phone", "email", "text"]);
@@ -108,45 +113,6 @@ export const LeadSchema = z
  *  (phone normalized to E.164, empty optionals coerced to undefined). */
 export type LeadInput = z.infer<typeof LeadSchema>;
 
-/** Input: what the form holds before submission. Declared explicitly rather
- *  than via z.input — preprocess() collapses input types to `unknown`,
- *  which doesn't play nicely with react-hook-form's `field.value` typing. */
-export type LeadFormValues = {
-  full_name: string;
-  email?: string;
-  phone: string;
-  preferred_contact?: "phone" | "email" | "text";
-  practice_area?: string;
-  county_slug?: string;
-  city_slug?: string;
-  incident_date?: string;
-  description?: string;
-  has_attorney?: boolean;
-  consent_contact: boolean;
-  company?: string;
-  turnstileToken: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  utm_term?: string;
-  utm_content?: string;
-  gclid?: string;
-  referrer?: string;
-  source_url?: string;
-};
-
-export const leadFormDefaults: LeadFormValues = {
-  full_name: "",
-  email: undefined,
-  phone: "",
-  preferred_contact: "phone",
-  practice_area: undefined,
-  county_slug: undefined,
-  city_slug: undefined,
-  incident_date: undefined,
-  description: undefined,
-  has_attorney: false,
-  consent_contact: false,
-  company: "",
-  turnstileToken: "",
-};
+// The form value type and defaults live in a Zod-free module so the client
+// form components can import them without pulling Zod into their bundle.
+export { leadFormDefaults, type LeadFormValues } from "./lead-form-values";

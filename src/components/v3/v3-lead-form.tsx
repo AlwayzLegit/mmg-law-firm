@@ -2,17 +2,17 @@
 
 import * as React from "react";
 import type { CSSProperties } from "react";
-import { useForm, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
 import { Turnstile } from "@/components/marketing/turnstile";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
+import { track } from "@/lib/analytics/track";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
-  LeadSchema,
-  leadFormDefaults,
-  type LeadFormValues,
-} from "@/lib/validation/lead";
+  lazyLeadResolver,
+  preloadLeadValidation,
+} from "@/lib/validation/lazy-lead-resolver";
+import { leadFormDefaults, type LeadFormValues } from "@/lib/validation/lead-form-values";
 
 type Field = {
   name: string;
@@ -86,11 +86,7 @@ export function V3LeadForm({
 }: Props) {
   const uid = React.useId();
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
-    resolver: zodResolver(LeadSchema) as unknown as Resolver<
-      LeadFormValues,
-      unknown,
-      LeadFormValues
-    >,
+    resolver: lazyLeadResolver,
     mode: "onBlur",
     defaultValues: { ...leadFormDefaults, practice_area: practiceArea },
   });
@@ -265,7 +261,10 @@ export function V3LeadForm({
       onSubmit={form.handleSubmit(onSubmit)}
       noValidate
       style={{ display: "grid", gap: 14, ...formStyle }}
-      onFocus={() => capture("lead_form_started", { variant: "v3" }, true)}
+      onFocus={() => {
+        void preloadLeadValidation().catch(() => {}); // validation chunk, ready by first blur
+        capture("lead_form_started", { variant: "v3" }, true);
+      }}
     >
       <div aria-hidden style={{ position: "absolute", left: -9999, width: 0, height: 0, overflow: "hidden" }}>
         <label htmlFor={`${uid}-company`}>Company (leave blank)</label>
@@ -326,6 +325,5 @@ function capture(event: string, props?: Record<string, unknown>, once = false) {
     if (started) return;
     started = true;
   }
-  const ph = (window as unknown as { posthog?: { capture: (e: string, p?: Record<string, unknown>) => void } }).posthog;
-  ph?.capture(event, props);
+  track(event, props); // queued until PostHog loads (see lib/analytics/track)
 }

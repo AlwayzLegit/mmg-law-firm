@@ -15,7 +15,7 @@ import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { RelatedPracticeAreas } from "@/components/marketing/related-practice-areas";
 import { SubjectImage } from "@/components/marketing/subject-image";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREA_IMAGE, pickLocationImage } from "@/lib/media";
 import {
@@ -33,13 +33,15 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { V3_PRACTICE_PAGES } from "@/components/v3/practice-pages";
 import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
 import { V3CityLinks } from "@/components/v3/v3-city-links";
 import { V3_BY_PATH } from "@/lib/v3/pages";
 
 /** Practice areas rebuilt from the v3 design handoff → registry key. */
 function v3KeyFor(slug: string): string | undefined {
-  return V3_BY_PATH[`/practice-areas/${slug}`]?.key;
+  const key = V3_BY_PATH[`/practice-areas/${slug}`]?.key;
+  return key && V3_PRACTICE_PAGES[key] ? key : undefined;
 }
 
 export const dynamicParams = false;
@@ -91,7 +93,7 @@ export default async function PracticeAreaPage({ params }: Props) {
         label: `${p.city_name} ${area.shortName}`,
       }));
     return (
-      <V3PageShell pageKey={v3}>
+      <V3PageShell pageKey={v3} page={V3_PRACTICE_PAGES[v3]}>
         <V3CityLinks
           heading={`${area.name} representation by city`}
           intro={`MMG Law Firm handles ${area.nounSingular} cases across California. Explore the cities where we have detailed our local experience:`}
