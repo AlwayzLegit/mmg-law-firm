@@ -1,0 +1,178 @@
+// Builds docs/attorney-review-v3.md: a per-page checklist of the factual
+// claims in the generated v3 page bodies (statutes, deadlines, dollar
+// figures, credentials, quotes, absolute statements) so the attorney review
+// (handoff open item 1) can be done claim by claim instead of page by page.
+//
+//   node tools/v3-design/review-claims.mjs            (from the repo root)
+//
+// Re-run after editing any page in src/components/v3/pages/. The output is a
+// review aid, not a substitute for reading each page.
+
+import fs from "node:fs";
+import path from "node:path";
+
+const ROOT = process.cwd();
+const PAGES_DIR = path.join(ROOT, "src/components/v3/pages");
+const REGISTRY = path.join(ROOT, "src/lib/v3/pages.ts");
+const OUT = path.join(ROOT, "docs/attorney-review-v3.md");
+
+/** key → { path, title } from the registry, in registry order. */
+function readRegistry() {
+  const src = fs.readFileSync(REGISTRY, "utf8");
+  const rows = [];
+  const re = /P\(\{\s*key:\s*"([^"]+)",\s*path:\s*"([^"]+)"[^]*?title:\s*"([^"]+)"/g;
+  let m;
+  while ((m = re.exec(src))) rows.push({ key: m[1], path: m[2], title: m[3] });
+  return rows;
+}
+
+/** Strip a generated TSX page down to its visible text. */
+function visibleText(tsx) {
+  let s = tsx.slice(tsx.indexOf("return ("));
+  // Inline style objects and other {{ … }} props.
+  let prev;
+  do {
+    prev = s;
+    s = s.replace(/\{\{[^{}]*\}\}/g, " ");
+  } while (s !== prev);
+  s = s
+    .replace(/<svg[\s\S]*?<\/svg>/g, " ")
+    .replace(/\{"((?:[^"\\]|\\.)*)"\}/g, (_, t) => t.replace(/\\"/g, '"')) // {"text"}
+    .replace(/\{`([^`]*)`\}/g, "$1")
+    .replace(/\$?\{FIRM\.([a-zA-Z]+)\}/g, "[FIRM.$1]")
+    .replace(/<[^>]*>/g, "\n") // tags → block breaks
+    .replace(/\{[^{}]*\}/g, " ") // leftover JSX expressions
+    .replace(/&amp;/g, "&")
+    .replace(/[ \t]+/g, " ");
+  return s;
+}
+
+/** Split into sentence-ish units, dropping fragments and boilerplate. */
+function sentences(text) {
+  return text
+    .split(/\n+/)
+    .flatMap((block) => block.split(/(?<=[.!?])\s+(?=[A-Z“"(])/))
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 12 && /[a-z]/.test(t));
+}
+
+const CATEGORIES = [
+  { id: "statute", tag: "statute", label: "Statute / regulation cited", re: /§|\bCode\b|\bC\.F\.R\.|\bCFR\b|\bregulation\b|\bFMCSA\b|\bCal\.\s?Code\b/ },
+  {
+    id: "deadline",
+    tag: "deadline",
+    label: "Deadline or time period",
+    re: /\b(\d+|one|two|three|four|five|six|ten|thirty)[ -](day|days|month|months|year|years|hour|hours)\b/i,
+  },
+  { id: "money", tag: "money", label: "Dollar figure, limit or percentage", re: /\$\s?\d|\b\d+(\.\d+)?\s?%|\bpercent\b|\bpolicy limits?\b|\bminimum (coverage|limits?)\b/i },
+  {
+    id: "credential",
+    tag: "credential",
+    label: "Credential, biography or firm fact",
+    re: /\b(law school|Southwestern|licensed|admitted|bar number|State Bar|founded|since 20\d\d|years? (of )?(experience|practice)|languages?|Armenian|Russian|recognized|award|Super Lawyers|Rising Star)\b/i,
+  },
+  { id: "quote", tag: "quote", label: "Quotation or review excerpt", re: /[“"][^”"]{8,}[”"]|\breview(s|ed)?\b.*\b(Google|Birdeye|Yelp)\b|\bBirdeye\b/ },
+  {
+    id: "absolute",
+    tag: "promise",
+    label: "Promise / absolute statement (CRPC 7.1 check)",
+    // "free consultation" is deliberately excluded: it is the firm's standard
+    // offer and would drown out the statements that actually need a check.
+    // "never" (mostly safety advice) and the firm-approved fee line are left
+    // out; the fee line is listed once at the top instead of on every page.
+    re: /\b(guarantee[ds]?|always|will (win|recover|get)|best|top-rated|no fee|100%)\b/i,
+    // Disclaimers ("No outcome is guaranteed", "do not guarantee …") are the
+    // compliant form of the word — don't flag them.
+    unless: /\b(no|not|cannot|can't|never|without)\b[^.]{0,40}\bguarantee|\bno (outcome|result)s? (is|are|can be) guaranteed/i,
+  },
+];
+
+function classify(sentence) {
+  return CATEGORIES.filter((c) => c.re.test(sentence) && !(c.unless && c.unless.test(sentence))).map((c) => c.id);
+}
+
+const registry = readRegistry();
+const files = new Set(fs.readdirSync(PAGES_DIR).map((f) => f.replace(/\.tsx$/, "")));
+const totals = Object.fromEntries(CATEGORIES.map((c) => [c.id, 0]));
+const sections = [];
+const missing = [];
+
+for (const page of registry) {
+  if (!files.has(page.key)) {
+    missing.push(page.key);
+    continue;
+  }
+  const tsx = fs.readFileSync(path.join(PAGES_DIR, `${page.key}.tsx`), "utf8");
+  const seen = new Set();
+  const rows = [];
+  for (const s of sentences(visibleText(tsx))) {
+    const cats = classify(s);
+    if (cats.length === 0 || seen.has(s)) continue;
+    seen.add(s);
+    rows.push({ s, cats });
+    for (const c of cats) totals[c] += 1;
+  }
+  sections.push({ page, rows });
+}
+
+const tagOf = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.tag]));
+const lines = [];
+lines.push("# Attorney review checklist — v3 redesign");
+lines.push("");
+lines.push(
+  "_Generated by `tools/v3-design/review-claims.mjs` from the page bodies in `src/components/v3/pages/`. Re-run it after any copy edit._",
+);
+lines.push("");
+lines.push(
+  "Every v3 page carries `TODO(human): attorney review required`: the copy came from the design handoff and was drafted with AI assistance. This list pulls out the sentences most likely to need a legal check. It is a review aid, not a replacement for reading each page in full.",
+);
+lines.push("");
+lines.push("## Before launch: items that need a yes/no from the firm");
+lines.push("");
+lines.push("These could not be verified from the repository, and the sandbox that produced this list cannot reach the live site or Birdeye.");
+lines.push("");
+lines.push(
+  '- [ ] **Law school.** `/attorneys/mihran-ghazaryan` says "Southwestern Law School" (and "Law school: Southwestern"). The repo seed data does not record a law school; confirm against the State Bar profile or the `attorney_profiles.law_school` value in production.',
+);
+lines.push(
+  '- [ ] **Review excerpts.** `/reviews` quotes "The team was responsive, kept me updated" (Steve Shag) and "…clearly explain every step…" (David Dzharatanyan), sourced to the Birdeye listing as Google reviews. Confirm both are real, quoted accurately, and approved for use, with the testimonial disclaimer nearby (CRPC 7.1).',
+);
+lines.push(
+  '- [ ] **Fee claim.** "No recovery, no attorney fees or case expenses" was approved by the firm. Confirm it matches the actual fee agreement on every page that uses it (see the "Promise / absolute statement" rows below).',
+);
+lines.push(
+  "- [ ] **Languages.** Pages state service in English, Armenian and Russian. CLAUDE.md §18 still lists the attorney's languages as an assumption to confirm.",
+);
+lines.push(
+  "- [ ] **Statutes and deadlines.** Each cited code section and time period below should be checked once; many repeat across pages, so fixing the source wording in one place and re-running the converter is cheaper than editing pages by hand.",
+);
+lines.push("");
+lines.push("## Summary");
+lines.push("");
+lines.push("| Category | Sentences flagged |");
+lines.push("|---|---|");
+for (const c of CATEGORIES) lines.push(`| ${c.label} | ${totals[c.id]} |`);
+lines.push("");
+lines.push(`Pages covered: ${sections.length} of ${registry.length} registry entries.`);
+if (missing.length) lines.push(`Registry keys without a generated page body: ${missing.join(", ")}.`);
+lines.push("");
+lines.push("## Page by page");
+for (const { page, rows } of sections) {
+  lines.push("");
+  lines.push(`### ${page.title} — \`${page.path}\``);
+  lines.push("");
+  lines.push(`Source: \`src/components/v3/pages/${page.key}.tsx\` · Reviewed by: ________ · Date: ________`);
+  lines.push("");
+  if (rows.length === 0) {
+    lines.push("_No flagged sentences. Read the page once for tone and accuracy._");
+    continue;
+  }
+  for (const { s, cats } of rows) {
+    const tags = cats.map((c) => tagOf[c]).join(", ");
+    lines.push(`- [ ] ${s.replace(/\|/g, "\\|")} _(${tags})_`);
+  }
+}
+lines.push("");
+
+fs.writeFileSync(OUT, lines.join("\n"));
+console.log(`wrote ${path.relative(ROOT, OUT)}: ${sections.length} pages, ${Object.values(totals).reduce((a, b) => a + b, 0)} flags`);
