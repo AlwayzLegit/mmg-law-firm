@@ -1,0 +1,13 @@
+{
+  "name": "mmg-v3-design-converter",
+  "private": true,
+  "type": "module",
+  "description": "Regenerates src/components/v3/pages/* from the Redesign v3 design handoff. Not part of the app build.",
+  "scripts": {
+    "convert": "node convert.mjs && python post-resources.py ../.."
+  },
+  "dependencies": {
+    "parse5": "^7.3.0",
+    "sharp": "^0.34.5"
+  }
+}
