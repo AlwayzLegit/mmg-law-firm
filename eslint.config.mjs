@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Offline design-handoff converter (own package.json, not app code).
+    "tools/**",
+    // Local agent worktrees.
+    ".claude/**",
   ]),
 ]);
 

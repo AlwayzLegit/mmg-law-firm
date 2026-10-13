@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -657,12 +658,12 @@ export function LeadForm({
 
           <p className="text-muted-foreground text-xs">
             By submitting, you confirm you have read and agreed to our{" "}
-            <a
+            <Link
               href="/legal/privacy"
               className="hover:text-primary underline underline-offset-2"
             >
               Privacy Policy
-            </a>
+            </Link>
             . Submitting this form does not create an attorney-client
             relationship.
           </p>
