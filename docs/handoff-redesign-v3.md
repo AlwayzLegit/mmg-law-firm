@@ -9,7 +9,7 @@ session taking over. Read `CLAUDE.md` (project rules) first, then this._
 |---|---|
 | Branch | `redesign-v3` (pushed; **not merged**, no PR opened) |
 | Base | `main` @ `209e02f` |
-| Commits | `971b16a` test/lint fixes · `7c8e9ce` redesign · `1977f8c` converter tool |
+| Commits | `971b16a` test/lint fixes · `7c8e9ce` redesign · `1977f8c` converter tool · `728cf5e` this doc |
 | Vercel preview | https://mmg-law-firm-2q3w2j5kd-alwayzlegits-projects.vercel.app (build ✅) |
 | Checks (local) | `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm test` 134/134 ✅ · `pnpm build` ✅ (no warnings) |
 | Route crawl | all 61 page routes 200 on `pnpm start`; only `/blog` 404s locally (no DB) |
@@ -107,6 +107,54 @@ are committed under `public/v3/`.
      `/practice-areas/...` URLs instead (no duplicates, no redirects needed).
    - Mobile verified at 375px (home, menu, car); spot-check more at 768px.
    - Re-running `tools/v3-design/assets.mjs` needs the original zip images.
+
+## What was done (session log)
+
+Files touched outside `src/components/v3/` and `src/lib/v3/`:
+
+- `src/app/layout.tsx` — added Libre Baskerville + Lato (`next/font`),
+  themeColor `#12171b`.
+- `src/app/(marketing)/layout.tsx` — `.theme-v3` wrapper, V3Header/Footer,
+  V3MobileDock, V3Runtime, v3 CSS imports.
+- `src/app/(marketing)/page.tsx` — homepage = `<V3PageShell pageKey="home" />`.
+- `src/app/(marketing)/[guide]/page.tsx` — new; static params from
+  `V3_GUIDES`, explicit `Props` type (not `PageProps<"/[guide]">`).
+- contact, case-results, reviews, legal/privacy, legal/disclaimer pages →
+  thin `V3PageShell` wrappers.
+- attorney page → V3 body + existing Person JSON-LD.
+- `practice-areas/[slug]` → v3 for the six design areas + `V3CityLinks`.
+- `locations/[county]/[city]` → Glendale special case.
+- `src/app/sitemap.ts` — includes the v3 guide paths.
+- `src/lib/constants.ts` — added `FIRM.hoursShort`, `FIRM.hoursLong`.
+- `eslint.config.mjs` — ignores `tools/**`, `.claude/**`.
+- `.gitignore` — `.playwright-mcp/`, `tools/v3-design/out/`,
+  `tools/v3-design/node_modules/`.
+- `CLAUDE.md` — "v3 redesign" section.
+- Pre-existing failures on `main`, fixed: `src/lib/data/web-analytics.test.ts`
+  (6 queries vs 4 mocks), `src/components/marketing/lead-form.tsx` (privacy
+  `<a>` → `<Link>`).
+
+Problems hit during the build and how they were solved (useful if you rerun
+the converter):
+
+- CSS custom properties in inline styles → `as unknown as CSSProperties` cast.
+- Duplicate `href` when converting buttons to links → existing href dropped.
+- `WebkitMaskImage` casing for vendor-prefixed style keys.
+- Buttons converted to `<a>` lost vertical centering → inline-flex centering.
+- "Open form" windows → `#v3-form` only when the page has a truly inline form,
+  else `/contact`.
+- CA map used d3 from a CDN (CSP-blocked) → static SVG.
+- Hardcoded phone/address/hours/Maps URLs in the design → `FIRM.*`.
+- LCP: first hero image `priority`, hero background preloaded.
+- A hydration warning seen in Playwright was a screenshot artifact
+  (caret-color), not a code bug.
+
+## Starting the cloud session
+
+```
+Repo AlwayzLegit/mmg-law-firm, branch redesign-v3: read CLAUDE.md then docs/handoff-redesign-v3.md and continue the open items in priority order.
+Verify a clean baseline first (pnpm install/typecheck/lint/test/build); never merge to main or deploy to production without my explicit go-ahead.
+```
 
 ## How to verify
 
