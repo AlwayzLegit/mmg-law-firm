@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import Script from "next/script";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, Fraunces, Lato, Libre_Baskerville } from "next/font/google";
 
 import { SchemaGraph } from "@/components/seo/schema-graph";
 import { FIRM, SITE } from "@/lib/constants";
@@ -40,6 +40,25 @@ const fraunces = Fraunces({
   axes: ["opsz"],
 });
 
+// Public-site typefaces (v3 design): Georgia first with Libre Baskerville
+// as the web fallback for systems without Georgia (e.g. Android), and Lato
+// for small uppercase eyebrows. Libre isn't preloaded — most visitors render
+// Georgia and never download it.
+const libre = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-libre",
+  display: "swap",
+  preload: false,
+});
+
+const lato = Lato({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-lato",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: {
     default: `${FIRM.legalName} — California Personal-Injury Attorney`,
@@ -76,8 +95,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0c10" },
+    { media: "(prefers-color-scheme: light)", color: "#12171b" },
+    { media: "(prefers-color-scheme: dark)", color: "#12171b" },
   ],
 };
 
@@ -89,7 +108,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${inter.variable} ${fraunces.variable} ${libre.variable} ${lato.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <a href="#main-content" className="skip-link">

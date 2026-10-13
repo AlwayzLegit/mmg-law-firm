@@ -24,6 +24,12 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
+import { V3CityLinks } from "@/components/v3/v3-city-links";
+
+/** Glendale is the firm's office city; its page uses the v3 office design. */
+const isGlendale = (county: string, city: string) =>
+  county === "los-angeles-county" && city === "glendale";
 
 export const dynamicParams = true;
 export const revalidate = 86400;
@@ -37,6 +43,7 @@ type Props = { params: Promise<{ county: string; city: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { county, city } = await params;
+  if (isGlendale(county, city)) return v3Metadata("glendale");
   const c = await getCityBySlug(county, city);
   if (!c) {
     return buildMetadata({
@@ -58,6 +65,26 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function CityPage({ params }: Props) {
   const { county, city } = await params;
+  if (isGlendale(county, city)) {
+    const slugs = await getPublishedPracticeSlugsForCity(county, city);
+    const links = PRACTICE_AREAS.filter((p) => slugs.has(p.slug)).map((p) => ({
+      href: `/locations/${county}/${city}/${p.slug}`,
+      label: `Glendale ${p.shortName}`,
+    }));
+    return (
+      <V3PageShell
+        pageKey="glendale"
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Locations", path: "/locations" },
+          { name: "Los Angeles County", path: "/locations/los-angeles-county" },
+          { name: "Glendale", path: "/locations/los-angeles-county/glendale" },
+        ]}
+      >
+        <V3CityLinks heading="Glendale accident representation" links={links} />
+      </V3PageShell>
+    );
+  }
   const c = await getCityBySlug(county, city);
   if (!c) notFound();
 

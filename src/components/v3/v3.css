@@ -1,0 +1,121 @@
+/* Base styles for pages generated from the "Redesign v3" design handoff.
+   The design is authored with inline styles; this file only restores the
+   prototype's document defaults inside .v3-page and powers interactive
+   regions (see v3-runtime.tsx). */
+
+[data-v3-r][data-off] {
+  display: none !important;
+}
+
+.v3-page {
+  font-family: Georgia, var(--font-libre), "Times New Roman", serif;
+  color: #131a20;
+  background: #f8f4ed;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+  text-size-adjust: 100%;
+}
+
+/* Undo the site's global heading defaults (display font / weight / leading)
+   so the design's inline type settings render exactly as authored. */
+.v3-page :is(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+}
+
+.v3-page a {
+  color: #e8c384;
+  text-decoration: none;
+}
+.v3-page a:hover {
+  color: #f0d29c;
+}
+.v3-page button {
+  cursor: pointer;
+}
+.v3-page [id] {
+  scroll-margin-top: 120px;
+}
+.v3-page ::selection {
+  background: #e8c384;
+  color: #12171b;
+}
+.v3-page :focus-visible {
+  outline: 2px solid #987022;
+  outline-offset: 2px;
+}
+.v3-page .v3-field {
+  outline: none;
+}
+.v3-page .v3-field:focus,
+.v3-page .v3-field:focus-visible {
+  border-color: #987022 !important;
+  box-shadow: 0 0 0 1px #987022;
+}
+.v3-page .v3-field[aria-invalid="true"] {
+  border-color: #a12a1d !important;
+}
+
+@media print {
+  .v3-page [role="dialog"] {
+    position: static !important;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Brand tokens for every public page (v3: charcoal, gold, ivory, serif).
+   Pages still on the shared shadcn components (blog, locations, remaining
+   practice areas, legal) pick these up through the design tokens; the
+   admin app keeps the original palette because it sits outside .theme-v3.
+   ------------------------------------------------------------------------ */
+.theme-v3 {
+  --font-inter: Georgia, var(--font-libre), "Times New Roman", serif;
+  --font-fraunces: Georgia, var(--font-libre), "Times New Roman", serif;
+
+  --background: #f8f4ed;
+  --foreground: #131a20;
+  --card: #fffdf8;
+  --card-foreground: #131a20;
+  --popover: #fffdf8;
+  --popover-foreground: #131a20;
+  --primary: #8a5a1c;
+  --primary-foreground: #fff8e8;
+  --secondary: #f4ecdb;
+  --secondary-foreground: #131a20;
+  --muted: #f2eadb;
+  --muted-foreground: #4a5157;
+  --accent: #f1e6cf;
+  --accent-foreground: #131a20;
+  --border: #e3d6bb;
+  --input: #e3d3b2;
+  --ring: #987022;
+
+  --color-brand-50: #fbf8f1;
+  --color-brand-100: #f4ecdb;
+  --color-brand-200: #e9d9b8;
+  --color-brand-300: #d5b174;
+  --color-brand-400: #b98b35;
+  --color-brand-500: #8a5a1c;
+  --color-brand-600: #6f4512;
+  --color-brand-700: #1b2228;
+  --color-brand-800: #12202a;
+  --color-brand-900: #12171b;
+  --color-gold-50: #fbf8f1;
+  --color-gold-300: #e8c384;
+  --color-gold-500: #c9a35a;
+  --color-gold-600: #a8813f;
+  --color-gold-700: #987022;
+
+  background: var(--background);
+  color: var(--foreground);
+}
+.theme-v3 :is(h1, h2, h3, h4):not(.v3-page *) {
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.theme-v3 ::selection {
+  background: #e8c384;
+  color: #12171b;
+}

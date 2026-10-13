@@ -33,6 +33,14 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
+import { V3CityLinks } from "@/components/v3/v3-city-links";
+import { V3_BY_PATH } from "@/lib/v3/pages";
+
+/** Practice areas rebuilt from the v3 design handoff → registry key. */
+function v3KeyFor(slug: string): string | undefined {
+  return V3_BY_PATH[`/practice-areas/${slug}`]?.key;
+}
 
 export const dynamicParams = false;
 export const revalidate = 86400;
@@ -45,6 +53,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
+  const v3 = v3KeyFor(slug);
+  if (v3) return v3Metadata(v3);
   const area = findPracticeArea(slug);
   if (!area) {
     return buildMetadata({
@@ -69,6 +79,27 @@ export default async function PracticeAreaPage({ params }: Props) {
   const { slug } = await params;
   const area = findPracticeArea(slug);
   if (!area) notFound();
+
+  const v3 = v3KeyFor(slug);
+  if (v3) {
+    const pages = await getPublishedLocationPages();
+    const links = pages
+      .filter((p) => p.practice_area_slug === slug)
+      .sort((a, b) => a.city_name.localeCompare(b.city_name))
+      .map((p) => ({
+        href: `/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`,
+        label: `${p.city_name} ${area.shortName}`,
+      }));
+    return (
+      <V3PageShell pageKey={v3}>
+        <V3CityLinks
+          heading={`${area.name} representation by city`}
+          intro={`MMG Law Firm handles ${area.nounSingular} cases across California. Explore the cities where we have detailed our local experience:`}
+          links={links}
+        />
+      </V3PageShell>
+    );
+  }
 
   const [content, inlineResults, locationPages] = await Promise.all([
     getPracticeAreaContent(slug),

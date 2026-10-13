@@ -46,6 +46,16 @@ The repo root is `C:\Users\jetni\Desktop\MMG Law` (the directory name has a spac
 
 ---
 
+## v3 redesign (Oct 2026) — overrides §11 design system for public pages
+
+Branch `redesign-v3` implements the Claude Design handoff "Redesign v3":
+
+- **Brand (public site only):** charcoal `#12171b`, gold `#e8c384` / bronze `#8a5a1c`, ivory `#f8f4ed`; Georgia → Libre Baskerville serif, Lato for eyebrows. Tokens are scoped to `.theme-v3` (marketing layout) in `src/components/v3/v3.css`; the admin keeps the original navy palette.
+- **Specialties:** car, truck, motorcycle accidents lead the nav (`src/lib/v3/nav.ts`).
+- **Pages:** `src/lib/v3/pages.ts` is the registry (paths, titles, breadcrumbs, sitemap). Generated page bodies live in `src/components/v3/pages/*` (from `tools/v3-design/`, see its README). New guides are served by `src/app/(marketing)/[guide]/page.tsx`.
+- **Approved by the user:** the AI portrait rendition of Mihran in the design, and the claim "No recovery, no attorney fees or case expenses."
+- Page copy from the handoff carries `TODO(human): attorney review required`.
+
 ## Build cadence
 
 Build in groups (see §8 of the original spec). Commit after each group. If a decision affects more than one group, stop and ask the human before proceeding.
