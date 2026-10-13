@@ -209,9 +209,12 @@
     color: var(--color-brand-900);
   }
 
-  /* Skip-to-content link, hidden until focused. */
+  /* Skip-to-content link, hidden until focused. System font: it sits
+     outside .theme-v3, so it would otherwise inherit Inter and make every
+     public page download Inter (~49 KB) for one visually hidden link. */
   .skip-link {
     @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg;
+    font-family: ui-sans-serif, system-ui, sans-serif;
   }
 
   @media (prefers-reduced-motion: reduce) {

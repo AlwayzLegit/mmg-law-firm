@@ -33,15 +33,18 @@ const fraunces = Fraunces({
 });
 
 // Public-site typefaces (v3 design): Georgia first with Libre Baskerville
-// as the web fallback for systems without Georgia (e.g. Android), and Lato
-// for small uppercase eyebrows. Libre isn't preloaded — most visitors render
-// Georgia and never download it.
+// as the web fallback for systems without Georgia (Android, Linux), and Lato
+// for small uppercase eyebrows. Libre is only a stand-in for Georgia, so it
+// uses display "optional" (preloaded): used if it's ready at first paint,
+// otherwise that visit keeps the metric-matched fallback. With "swap", a late
+// Libre re-wrapped phone-width text after first paint (CLS 0.17 on the car
+// hub on Android-like devices). Devices with Georgia download ~34 KB they
+// don't render.
 const libre = Libre_Baskerville({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-libre",
-  display: "swap",
-  preload: false,
+  display: "optional",
 });
 
 const lato = Lato({

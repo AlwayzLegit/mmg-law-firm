@@ -77,7 +77,11 @@
   /* Fixed-height buttons/links that can now wrap grow instead of clipping. */
   .v3-page :is(a, button)[style*="white-space:nowrap"][style*="height:"] {
     height: auto !important;
-    min-height: 48px;
+    /* Explicit line-height + min-height keep the button's height the same
+       whichever font is showing; with line-height: normal the swap from the
+       fallback to Libre Baskerville resized the hero CTAs (CLS 0.17). */
+    min-height: 54px;
+    line-height: 1.25 !important;
     padding-top: 12px !important;
     padding-bottom: 12px !important;
     text-align: center;
