@@ -56,7 +56,7 @@ export function PageHero({
       />
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-56 bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:32px_32px]"
+        className="absolute inset-x-0 top-0 -z-10 h-56 bg-[linear-gradient(to_right,rgba(18,23,27,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(18,23,27,0.06)_1px,transparent_1px)] bg-[size:32px_32px]"
         style={{
           maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
           WebkitMaskImage:

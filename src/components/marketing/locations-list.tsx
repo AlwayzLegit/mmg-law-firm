@@ -64,7 +64,7 @@ export function LocationsList({ className }: Props) {
           {REGIONS.map((region, idx) => (
             <article
               key={region.region}
-              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_18px_40px_-22px_rgba(20,30,80,0.2)]"
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_18px_40px_-22px_rgba(18,23,27,0.2)]"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
