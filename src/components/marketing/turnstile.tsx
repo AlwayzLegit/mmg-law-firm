@@ -101,7 +101,13 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
       be submitted right now. Please call us at{" "}
       <a
         href={`tel:${FIRM.phoneTel}`}
-        className="text-primary font-semibold underline"
+        // Inherit the panel's text colour. Under the v3 theme both
+        // text-primary and the `.v3-page a` link rule resolve to the light
+        // gold, which is illegible on the cream form panel (1.5:1); the
+        // unlayered `.v3-page a` rule also beats a Tailwind utility, hence
+        // the inline style.
+        className="font-semibold underline"
+        style={{ color: "inherit" }}
       >
         {FIRM.phone}
       </a>{" "}

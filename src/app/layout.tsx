@@ -11,10 +11,15 @@ import { siteUrl } from "@/lib/seo/canonical";
 
 import "./globals.css";
 
+// Inter and Fraunces only render in the admin: the public site's
+// `.theme-v3` maps both variables to the Georgia stack. Not preloading them
+// saves ~115 KB of font downloads competing with every public page's LCP;
+// the admin fetches them on first use (display: swap).
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  preload: false,
 });
 
 const fraunces = Fraunces({
@@ -22,8 +27,9 @@ const fraunces = Fraunces({
   variable: "--font-fraunces",
   display: "swap",
   // Only opsz is actually referenced from CSS. SOFT added a second
-  // preload woff2 with no visual effect — dropped.
+  // woff2 with no visual effect — dropped.
   axes: ["opsz"],
+  preload: false,
 });
 
 // Public-site typefaces (v3 design): Georgia first with Libre Baskerville

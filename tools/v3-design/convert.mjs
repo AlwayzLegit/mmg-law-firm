@@ -222,6 +222,19 @@ function textJsx(s) {
   return "{" + q(s) + "}";
 }
 
+// Text colors from the design that miss WCAG AA (4.5:1) on the ivory/cream
+// backgrounds they sit on, mapped to the nearest same-hue shade that passes
+// on all of them (worst case #f4ecdb). Only `color` is remapped; borders,
+// fills and backgrounds keep the design value. CLAUDE.md §12 requires AA.
+const AA_TEXT_COLORS = { "#987022": "#83601d", "#b07f2c": "#845f21" };
+
+/** Apply AA_TEXT_COLORS to a raw `prop: value; …` declaration string. */
+function aaTextColors(decls) {
+  return decls.replace(/(^|;)(\s*)color(\s*):(\s*)(#[0-9a-f]{6})/gi, (m, sep, s1, s2, s3, hex) =>
+    AA_TEXT_COLORS[hex.toLowerCase()] ? `${sep}${s1}color${s2}:${s3}${AA_TEXT_COLORS[hex.toLowerCase()]}` : m,
+  );
+}
+
 function styleToObj(style, ctx) {
   const decls = [];
   // split on ; not inside parens
@@ -257,6 +270,7 @@ function styleToObj(style, ctx) {
       : prop.startsWith("-webkit-")
         ? "Webkit" + prop.slice(8).replace(/-([a-z])/g, (_, c) => c.toUpperCase()).replace(/^./, (c) => c.toUpperCase())
         : prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    if (key === "color" && AA_TEXT_COLORS[val.toLowerCase()]) val = AA_TEXT_COLORS[val.toLowerCase()];
     seen.set(key, val); // last declaration wins (matches CSS)
   }
   for (const [k, v] of seen) props.push(`${k}:${q(v)}`);
@@ -436,11 +450,11 @@ function conv(n, ctx, parent) {
     if (DROP_ATTR.has(name) && !(name === "value" && tag !== "input" && tag !== "textarea" && tag !== "option" && tag !== "select")) continue;
     if (name === "style") continue;
     if (name === "style-hover") {
-      classes.push(cssClass("hover", subst(a.value, ctx)));
+      classes.push(cssClass("hover", aaTextColors(subst(a.value, ctx))));
       continue;
     }
     if (name === "style-focus") {
-      classes.push(cssClass("focus", subst(a.value, ctx)));
+      classes.push(cssClass("focus", aaTextColors(subst(a.value, ctx))));
       continue;
     }
     if (name === "onclick") {
