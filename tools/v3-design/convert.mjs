@@ -929,7 +929,14 @@ for (const [key, cls] of HOVER) {
 }
 if (RESPONSIVE.size) {
   css += ":root{" + [...RESPONSIVE].map(([k, v]) => `${k}:${v.narrow}`).join(";") + "}\n";
-  css += "@media (min-width:1240px){:root{" + [...RESPONSIVE].map(([k, v]) => `${k}:${v.wide}`).join(";") + "}}\n";
+  // The three-column FAQ layout (270px nav + content + 362px card) needs
+  // ~1360px; at 1240–1359 the card wrapped under the sticky nav and the two
+  // sticky asides overlapped. Everything else switches at 1240.
+  const wideAt = (k) => (k.startsWith("--v3r-faq") ? 1360 : 1240);
+  for (const bp of [1240, 1360]) {
+    const vars = [...RESPONSIVE].filter(([k]) => wideAt(k) === bp);
+    if (vars.length) css += `@media (min-width:${bp}px){:root{` + vars.map(([k, v]) => `${k}:${v.wide}`).join(";") + "}}\n";
+  }
 }
 fs.writeFileSync(path.join(REPO, "src/components/v3/v3-generated.css"), css);
 fs.writeFileSync(

@@ -71,11 +71,14 @@
    shrink instead. !important is needed to override the inline styles; wider
    screens are untouched. */
 @media (max-width: 480px) {
-  .v3-page [style*="white-space:nowrap"] {
+  /* Each selector also matches the spaced form ("white-space: nowrap"):
+     React writes that form when a client component re-renders a style
+     prop (e.g. the lead form after a failed submit). */
+  .v3-page :is([style*="white-space:nowrap"], [style*="white-space: nowrap"]) {
     white-space: normal !important;
   }
   /* Fixed-height buttons/links that can now wrap grow instead of clipping. */
-  .v3-page :is(a, button)[style*="white-space:nowrap"][style*="height:"] {
+  .v3-page :is(a, button):is([style*="white-space:nowrap"], [style*="white-space: nowrap"])[style*="height:"] {
     height: auto !important;
     /* Explicit line-height + min-height keep the button's height the same
        whichever font is showing; with line-height: normal the swap from the
@@ -90,7 +93,7 @@
     padding-right: 16px !important;
   }
   /* Tracked-out uppercase button labels: tighten so long words fit. */
-  .v3-page :is(a, button)[style*="white-space:nowrap"][style*="letter-spacing"] {
+  .v3-page :is(a, button):is([style*="white-space:nowrap"], [style*="white-space: nowrap"])[style*="letter-spacing"] {
     letter-spacing: 0.06em !important;
   }
   /* Label | content grids with a fixed-width label column stack instead. */
@@ -103,8 +106,10 @@
        column doesn't collapse to one letter per line. */
     overflow-wrap: break-word;
   }
-  /* Text marked flex:none (eyebrows beside a rule line) may shrink and wrap. */
-  .v3-page :is(p, span, a, button, h2, h3, h4)[style*="flex:none"] {
+  /* Text marked flex:none (eyebrows beside a rule line) may shrink and wrap.
+     Fixed-size shapes (step circles, icons, rule lines) carry a width and
+     keep it. */
+  .v3-page :is(p, span, a, button, h2, h3, h4):is([style*="flex:none"], [style*="flex: none"]):not([style*="width:"]) {
     flex-shrink: 1 !important;
   }
   /* Claim-stage rows (number | icon | title | summary | details button):
@@ -116,6 +121,137 @@
   }
   .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] > :nth-child(n + 4) {
     grid-column: 1 / -1;
+  }
+  /* Icon | label | value rows (truck deadlines): the value drops under the
+     label instead of squeezing it to nothing. */
+  .v3-page [style*="grid-template-columns:28px 1fr auto"] {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    row-gap: 4px !important;
+  }
+  .v3-page [style*="grid-template-columns:28px 1fr auto"] > :nth-child(3) {
+    grid-column: 2;
+  }
+  /* Number | divider | text rows (fee dialog). */
+  .v3-page [style*="grid-template-columns:70px 1px 1fr"] {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+  }
+  .v3-page [style*="grid-template-columns:70px 1px 1fr"] > :nth-child(2) {
+    display: none;
+  }
+  /* Dialogs: keep the heading clear of the 44px close button, give the text
+     the full width (icon above text, dividers dropped) and keep long titles
+     from breaking mid-word. */
+  .v3-page [role="dialog"] > button[aria-label="Close"] + * {
+    padding-right: 60px !important;
+  }
+  .v3-page [role="dialog"][style*="padding:40px clamp"] {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+  .v3-page [role="dialog"] :is(h2, h3)[id] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    font-size: clamp(24px, 7vw, 30px) !important;
+  }
+  .v3-page [role="dialog"] [style*="grid-template-columns"]:not([style*="repeat("]) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .v3-page [role="dialog"] [style*="grid-template-columns"]:not([style*="repeat("]) > span:empty {
+    display: none;
+  }
+  /* Outbound resource cards: "Read guide" drops to its own line. */
+  .v3-page a[target="_blank"][style*="display:flex"] {
+    flex-wrap: wrap;
+  }
+}
+
+/* Content that must never wrap or shrink, even inside the safety net above
+   (phone numbers, step numbers). Doubled class beats its specificity. */
+.v3-page .v3-keep.v3-keep {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  overflow-wrap: normal;
+}
+
+/* Tables that scroll sideways: focusable regions (tabindex in the page
+   body) with a swipe hint on narrow screens. */
+.v3-page .v3-scroll:focus-visible {
+  outline: 2px solid #987022;
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .v3-page .v3-scroll::before {
+    content: "Swipe to see the full table \2192";
+    display: block;
+    padding: 8px 12px 0;
+    font-size: 14px;
+    color: #6f4512;
+  }
+}
+
+/* Tabs whose selected state lives in aria-selected (kept in sync by
+   v3-runtime): style from the attribute, not the server-rendered inline
+   colours, so the highlight follows the visible panel. */
+.v3-page [role="tab"][data-v3-sel^="rsTabOn"][aria-selected="true"] {
+  background: #14263a !important;
+  color: #fbf8f1 !important;
+}
+.v3-page [role="tab"][data-v3-sel^="rsTabOn"][aria-selected="false"] {
+  background: #fffdf8 !important;
+  color: #14263a !important;
+}
+
+/* Fixed vertical "Free consultation" tab on the car / truck / motorcycle
+   hubs: below the desktop nav it covers body text, and the mobile dock and
+   header phone already carry the call to action. */
+@media (max-width: 1199px) {
+  .v3-page a[style*="writing-mode:vertical-rl"][style*="position:fixed"] {
+    display: none !important;
+  }
+}
+
+/* Car hub closing band: the hillside image and the 20vw left inset leave
+   the copy a narrow strip on phones. */
+@media (max-width: 767px) {
+  .v3-page [style*="width:min(46%,700px)"] {
+    width: 100% !important;
+    opacity: 0.18 !important;
+  }
+  .v3-page [style*="padding:40px clamp(20px,5.8vw,90px) 40px clamp(20px,20vw,310px)"] {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+/* Contact cards (aside, flex-basis ~440px) that wrap onto their own row
+   between tablet and wide desktop fill that row instead of leaving a large
+   empty area beside them. */
+@media (min-width: 768px) and (max-width: 1499px) {
+  .v3-page aside[style*="flex:0 1 4"][style*="min-width:min(100%,320px)"] {
+    flex-grow: 1 !important;
+  }
+}
+/* Attorney hero: portrait | bio, with the contact card under the bio
+   instead of alone on a row. */
+@media (min-width: 900px) and (max-width: 1499px) {
+  .v3-page .v3-att-hero {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 400px) minmax(0, 1fr);
+  }
+  .v3-page .v3-att-hero > :first-child {
+    grid-row: span 2;
+  }
+  .v3-page .v3-att-hero > aside {
+    max-width: 560px;
+  }
+}
+/* Reviews "Meet the attorney": portrait + text inside a two-column grid
+   leaves ~180px for the text below wide desktop; stack the outer grid. */
+@media (max-width: 1279px) {
+  .v3-page [style*="minmax(min(100%,420px),1fr))"]:has(> [style*="grid-template-columns:minmax(0,220px) 1fr"]) {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 

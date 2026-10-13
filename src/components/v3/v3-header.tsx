@@ -171,7 +171,7 @@ export async function V3Header() {
               <Link href="/attorneys/mihran-ghazaryan" className="v3h-m-top">
                 Our Attorney
               </Link>
-              <details open>
+              <details>
                 <summary>Accident Cases</summary>
                 {SPECIALTIES.map((s) => (
                   <div key={s.key} className="v3h-m-group">

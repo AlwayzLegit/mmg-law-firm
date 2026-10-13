@@ -32,8 +32,9 @@
   padding: 10px 0;
 }
 .v3h-logo img {
-  width: clamp(150px, calc(30vw - 160px), 320px);
-  min-width: 150px;
+  /* 180px floor: at 150px the "LAW FIRM" line was ~6px tall. */
+  width: clamp(180px, calc(30vw - 160px), 320px);
+  min-width: 180px;
   height: auto;
 }
 .v3h-nav {
@@ -499,7 +500,7 @@
 .v3f-cols {
   padding: 30px 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 26px 20px;
   border-bottom: 1px solid rgba(230, 226, 216, 0.2);
 }
