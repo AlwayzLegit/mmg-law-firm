@@ -27,6 +27,9 @@
 .v3h-logo {
   flex: none;
   display: block;
+  /* The wordmark image is only ~18px tall on phones; pad the link so the
+     tap target clears WCAG 2.2's 24px minimum without moving the logo. */
+  padding: 10px 0;
 }
 .v3h-logo img {
   width: clamp(150px, calc(30vw - 160px), 320px);
@@ -412,6 +415,14 @@
 @media (max-width: 1199px) {
   .v3h-phone {
     margin-left: auto;
+  }
+}
+/* Icon-only phone link on small screens: give it a 44px touch target. */
+@media (max-width: 639px) {
+  .v3h-phone {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
   }
 }
 

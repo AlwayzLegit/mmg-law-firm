@@ -26,8 +26,9 @@ export async function generateMetadata() {
     title: `${profile.full_name} — California Personal-Injury Attorney`,
     description:
       profile.short_bio ??
-      `${profile.full_name} (CA Bar #${profile.bar_number}) leads ${FIRM.legalName}, a personal-injury practice based in ${FIRM.address.city} serving California statewide.${
-        langs ? ` Bilingual representation in ${langs}.` : ""
+      // Kept under ~160 characters so search results don't truncate it.
+      `${profile.full_name} (CA Bar #${profile.bar_number}) leads ${FIRM.legalName}, a ${FIRM.address.city} personal-injury practice serving California.${
+        langs ? ` Counsel in ${langs}.` : ""
       }`,
     path: PATH,
     ogType: "profile",
