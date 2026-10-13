@@ -96,7 +96,7 @@ export default async function PracticeAreaPage({ params }: Props) {
       <V3PageShell pageKey={v3} page={V3_PRACTICE_PAGES[v3]}>
         <V3CityLinks
           heading={`${area.name} representation by city`}
-          intro={`MMG Law Firm handles ${area.nounSingular} cases across California. Explore the cities where we have detailed our local experience:`}
+          intro={`${FIRM.legalName} handles ${area.nounPlural} across California. Explore the cities where we have detailed our local experience:`}
           links={links}
         />
       </V3PageShell>
@@ -341,7 +341,7 @@ export default async function PracticeAreaPage({ params }: Props) {
             ) : null}
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside>
             <LeadForm
               variant="compact"
               defaultPracticeArea={area.slug}
@@ -359,7 +359,7 @@ export default async function PracticeAreaPage({ params }: Props) {
               {area.name} representation by city
             </h2>
             <p className="text-muted-foreground mt-3 max-w-2xl">
-              We handle {area.nounSingular} cases across California. Explore the
+              We handle {area.nounPlural} across California. Explore the
               cities where we&apos;ve detailed our local experience:
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -392,7 +392,7 @@ export default async function PracticeAreaPage({ params }: Props) {
 
       <CtaBand
         heading={area.ctaHeading ?? `Injured in a ${area.nounSingular}?`}
-        body="Free consultation. Bilingual counsel. No fee unless we win your case."
+        body="Free consultation. Bilingual counsel. No recovery, no attorney fees or case expenses."
       />
     </>
   );

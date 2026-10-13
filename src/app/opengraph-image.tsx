@@ -10,6 +10,6 @@ export default function OpengraphImage() {
   return renderOgImage({
     title: "California personal-injury counsel.",
     subtitle:
-      "Free consultation. Bilingual representation. No fee unless we win.",
+      "Free consultation. Bilingual representation. No recovery, no attorney fees or case expenses.",
   });
 }

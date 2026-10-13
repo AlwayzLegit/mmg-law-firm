@@ -102,7 +102,7 @@ export async function AttorneyBioCard({
             )}
             <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-3">
               <div>
-                <p className="text-primary-foreground/80 text-[10px] font-semibold tracking-[0.22em] uppercase">
+                <p className="text-primary-foreground/80 text-xs font-semibold tracking-[0.22em] uppercase">
                   {profile.job_title?.split("&")[0]?.trim() ||
                     "Founding attorney"}
                 </p>
@@ -110,7 +110,7 @@ export async function AttorneyBioCard({
                   {profile.full_name}
                 </p>
               </div>
-              <span className="bg-primary-foreground/15 text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase backdrop-blur">
+              <span className="bg-primary-foreground/15 text-primary-foreground rounded-full px-2 py-0.5 text-xs font-semibold tracking-wider uppercase backdrop-blur">
                 CA #{profile.bar_number}
               </span>
             </div>

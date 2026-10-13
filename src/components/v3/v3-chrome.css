@@ -586,6 +586,13 @@
     display: none;
   }
 }
+/* Clearance for the dock sits in the footer, so the dark footer runs under
+   it instead of the page ending in an ivory strip. */
+@media (max-width: 767px) {
+  .v3f {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
 @media print {
   .v3h,
   .v3-dock {

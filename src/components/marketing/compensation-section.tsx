@@ -108,7 +108,7 @@ export function CompensationSection({ nounSingular, category }: Props) {
       <p className="mt-3 max-w-2xl text-muted-foreground">
         {isEmployment ? (
           <>
-            Every {nounSingular ?? "employment"} case is different, but
+            Every case is different, but
             California law lets wronged employees pursue several categories of
             relief. We document each one — pay records, performance reviews,
             communications — so nothing is left on the table.

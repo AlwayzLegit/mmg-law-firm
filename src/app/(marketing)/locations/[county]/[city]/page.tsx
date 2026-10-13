@@ -244,7 +244,7 @@ export default async function CityPage({ params }: Props) {
             <DeadlinesCallout />
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside>
             <LeadForm
               variant="compact"
               defaultCountySlug={c.county_slug}

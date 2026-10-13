@@ -82,7 +82,7 @@ export function PageHero({
                         {c.href ? (
                           <Link
                             href={c.href}
-                            className="hover:text-primary focus-visible:ring-ring rounded focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none"
+                            className="hover:text-primary focus-visible:ring-ring inline-flex min-h-6 items-center rounded focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none"
                           >
                             {c.label}
                           </Link>

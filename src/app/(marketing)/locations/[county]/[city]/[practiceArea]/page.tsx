@@ -368,7 +368,7 @@ export default async function CityPracticePage({ params }: Props) {
             ) : null}
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside>
             <LeadForm
               variant="compact"
               defaultCountySlug={row.county_slug}
@@ -396,7 +396,7 @@ export default async function CityPracticePage({ params }: Props) {
             ? `Mistreated at work in ${row.city_name}?`
             : `Injured in ${row.city_name}?`
         }
-        body="Free consultation. Bilingual counsel. No fee unless we win your case."
+        body="Free consultation. Bilingual counsel. No recovery, no attorney fees or case expenses."
       />
     </>
   );

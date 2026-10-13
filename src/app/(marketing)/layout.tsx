@@ -13,7 +13,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="theme-v3 flex min-h-full flex-1 flex-col">
       <V3Header />
-      <main id="main-content" className="flex-1 pb-20 md:pb-0">
+      <main id="main-content" className="flex-1">
         {children}
       </main>
       <V3Footer />

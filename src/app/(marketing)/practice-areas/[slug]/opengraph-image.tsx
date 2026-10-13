@@ -16,6 +16,6 @@ export default async function Image({
   return renderOgImage({
     title: area ? `${area.name} attorney.` : "Personal-injury attorney.",
     subtitle:
-      "California personal injury. Free consultation. No fee unless we win.",
+      "California personal injury. Free consultation. No recovery, no attorney fees or case expenses.",
   });
 }

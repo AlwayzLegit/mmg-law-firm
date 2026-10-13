@@ -69,7 +69,7 @@ export const TCPA_CONSENT_TEXT =
 export const SITE = {
   name: "MMG Law Firm",
   description:
-    "California personal-injury attorney based in Glendale. Free consultation. No fee unless we win.",
+    "California personal-injury attorney based in Glendale. Free consultation. No recovery, no attorney fees or case expenses.",
   /** Generated at build time by src/app/opengraph-image.tsx. */
   defaultOgImage: "/opengraph-image",
 } as const;

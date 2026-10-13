@@ -39,11 +39,11 @@ export function LocationsList({ className }: Props) {
                 className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[var(--color-gold-500)]/12 blur-3xl"
               />
               <div className="relative flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-gold-500)]/15 text-[var(--color-gold-700,#a98442)] ring-1 ring-inset ring-[var(--color-gold-500)]/30">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-gold-500)]/15 text-[var(--color-gold-700)] ring-1 ring-inset ring-[var(--color-gold-500)]/30">
                   <MapPin className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-gold-700,#a98442)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-gold-700)]">
                     Headquarters
                   </p>
                   <p className="mt-0.5 font-display text-lg font-medium tracking-tight">

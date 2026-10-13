@@ -128,6 +128,14 @@
 .theme-v3 {
   --font-inter: Georgia, var(--font-libre), "Times New Roman", serif;
   --font-fraunces: Georgia, var(--font-libre), "Times New Roman", serif;
+  /* <html> resolves font-sans against the Inter variable before these
+     overrides apply, so set the family here too or legacy pages inherit
+     Inter. */
+  font-family: var(--font-inter);
+  /* Squared-off corners and a brick red that sits with the gold palette;
+     the shadcn radius scale (rounded-lg … rounded-4xl) derives from these. */
+  --radius: 2px;
+  --destructive: #a12a1d;
 
   --background: #f8f4ed;
   --foreground: #131a20;
@@ -166,9 +174,12 @@
   background: var(--background);
   color: var(--foreground);
 }
-.theme-v3 :is(h1, h2, h3, h4):not(.v3-page *) {
-  font-weight: 400;
-  letter-spacing: -0.01em;
+/* Layered so a page's own font-weight / tracking utilities still win. */
+@layer base {
+  .theme-v3 :is(h1, h2, h3, h4):not(.v3-page *) {
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
 }
 .theme-v3 ::selection {
   background: #e8c384;

@@ -19,6 +19,6 @@ export default async function Image({
   return renderOgImage({
     title: `${titleCaseSlug(city)} personal-injury lawyer.`,
     subtitle:
-      "Free consultation. Bilingual representation. No fee unless we win.",
+      "Free consultation. Bilingual representation. No recovery, no attorney fees or case expenses.",
   });
 }

@@ -2,6 +2,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Styles the `prose` blocks used by blog posts, legal pages and the
+   DB-driven practice/location bodies (lists, spacing, headings). Without it
+   those classes were no-ops and lists rendered as run-on text. */
+@plugin "@tailwindcss/typography";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

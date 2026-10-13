@@ -156,7 +156,7 @@ function PostCard({ post: p }: { post: BlogPostSummary }) {
       </div>
       <div className="flex flex-1 flex-col p-6">
         {p.tags.length ? (
-          <p className="text-primary text-[11px] font-semibold tracking-[0.16em] uppercase">
+          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
             {p.tags.slice(0, 2).join(" · ")}
           </p>
         ) : null}

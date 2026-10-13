@@ -13,7 +13,7 @@ type Props = {
 
 export function CtaBand({
   heading = "Ready to talk?",
-  body = "Free consultation. Bilingual counsel. No fee unless we win your case.",
+  body = "Free consultation. Bilingual counsel. No recovery, no attorney fees or case expenses.",
   className,
 }: Props) {
   return (
