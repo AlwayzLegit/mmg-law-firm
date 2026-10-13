@@ -191,6 +191,41 @@ the converter):
 - A hydration warning seen in Playwright was a screenshot artifact
   (caret-color), not a code bug.
 
+## Pre-launch QA pass (Oct 13)
+
+End-to-end QA of every public page (93 URLs at 360/390/768/1024/1280/1536
+plus four visual reviews: chrome/core, practice hubs, 20 guides,
+resources/legal). Commits `2d7afe0` … on `redesign-v3`.
+
+Hand edits to generated page bodies (a converter rerun would overwrite them;
+re-apply or port to `convert.mjs`):
+
+- `className="v3-keep"` on step numbers, FAQ +/− glyphs; phone numbers render
+  as `<span className="v3-tel">(818) <span className="v3-keep">539-7969</span></span>`
+  (may break after the area code, never inside the number).
+- Table scrollers: `className="v3-scroll" tabIndex={0} role="region"`.
+- `faqs.tsx`: all seven groups visible, browse links → `#faq-g-*`,
+  "Expand all" opens all 24 answers. `rideshare.tsx`: stage tabs exclusive.
+- `attorney.tsx`: `.v3-att-hero` hook; `moto.tsx`: photo placeholder removed,
+  card grid min 280px; `privacy.tsx` / `disclosures.tsx`: hero-card h3 → h2;
+  description placeholders "(optional)"; 11.5px labels → 12.5px.
+
+CSS fixes live in `v3.css` (safety net matches React's spaced style form;
+dialog, table, grid and tap-target rules; see the comments) and
+`v3-chrome.css` (dock clearance on the footer, logo floor, footer columns).
+`convert.mjs` now emits the FAQ three-column vars at 1360px.
+
+Result: 0 page-level horizontal overflow, 0 console errors, 0 duplicate IDs,
+0 heading skips, 0 descriptions >160 chars, all 96 internal links 200.
+Remaining crawl flags are false positives (clipped decorative blobs, checkbox
+internals) and one 21px-tall in-text link. Lighthouse mobile (local): CLS 0,
+SEO/BP 100, a11y 96–100 (only the gold CTA buttons fail contrast), perf 79–87.
+
+Still open before launch: attorney review (incl. the **draft Privacy Policy**,
+which shows "DESIGN REVIEW · Draft policy" and "CONFIRM BEFORE PUBLICATION"
+blocks), gold CTA contrast decision, migrations 0031/0032, FAQPage JSON-LD
+for the ~30 v3 pages that have FAQ sections but no entry in `v3-faqs.ts`.
+
 ## Starting the cloud session
 
 ```

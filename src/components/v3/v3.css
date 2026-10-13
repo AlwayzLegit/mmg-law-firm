@@ -168,11 +168,18 @@
 }
 
 /* Content that must never wrap or shrink, even inside the safety net above
-   (phone numbers, step numbers). Doubled class beats its specificity. */
-.v3-page .v3-keep.v3-keep {
+   (step numbers, glyphs, the last part of a phone number). The repeated
+   class outranks the safety net's attribute selectors. */
+.v3-page .v3-keep.v3-keep.v3-keep {
   white-space: nowrap !important;
   flex-shrink: 0 !important;
   overflow-wrap: normal;
+}
+
+/* A phone number may break after the area code, but its wrapper must not
+   shrink below "539-7969" inside a flex row. */
+.v3-page .v3-tel {
+  min-width: auto;
 }
 
 /* Tables that scroll sideways: focusable regions (tabindex in the page
@@ -351,8 +358,11 @@
 /* Inline text CTAs ("View details", "Learn more", source links) get a 24px
    tap target. */
 .v3-page :is(a, button):is([style*="display:inline-flex"], [style*="display:inline-block"]),
-.v3-page nav[aria-label="Breadcrumb"] a {
+.v3-page nav[aria-label="Breadcrumb"] a,
+.v3-page a[target="_blank"],
+.v3-page button {
   min-height: 24px;
+  align-content: center;
 }
 .v3-page nav[aria-label="Breadcrumb"] a {
   display: inline-flex !important;
@@ -406,10 +416,6 @@
   /* A short rule line beside a wrapped heading reads as a stray dash. */
   .v3-page span:empty[style*="flex:none"]:has(+ :is(h2, h3)) {
     display: none;
-  }
-  /* 11.5px uppercase taglines and captions → 12.5px floor. */
-  .v3-page [style*="font-size:11.5px"] {
-    font-size: 12.5px !important;
   }
 }
 
