@@ -74,6 +74,8 @@ in order. Paste the contents of each file into a new query and click
 | 10 | `0010_restore_is_admin_execute.sql` | Restores `is_admin()` EXECUTE for `anon`/`authenticated` (RLS policies need it). |
 | 11 | `0011_firm_stats.sql` | Adds `years_practicing`, `settlements_total_display`, `cases_handled_display`, `consultations_display` to `firm_settings` (homepage "by the numbers" band). |
 | 12 | `0012_rate_limits.sql` | Postgres-backed cross-instance rate limiter (`rate_limits` table + `bump_rate_limit()` RPC). Service-role-only writes. |
+| 13–30 | `0013_…` → `0030_…` | Incremental features (trusted devices, follow-ups, redirects, media bucket, saved views, messages, tasks, content health, templates, lead merge/tags, redirects). Apply in order. |
+| 31 | `0031_content_agent.sql` | Content-agent API: `api_keys` (scoped tokens), `agent_instructions`, `content_topics`, `agent_runs`, `agent_questions`, `api_idempotency`; blog review/keyword columns; `claim_content_topics()` RPC; service-role content-health function; seeds instructions v1. |
 
 If you prefer the CLI:
 

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { authorizeAdminApi, json } from "@/lib/api/auth";
+import { authenticateApi, json } from "@/lib/api/auth";
 import {
   deleteImage,
   IMAGE_BUCKET,
@@ -24,8 +24,8 @@ function decodeName(raw: string): string {
 
 /** GET /api/admin/images/:name — public URL + metadata for one object. */
 export async function GET(req: Request, ctx: Ctx): Promise<Response> {
-  const denied = authorizeAdminApi(req);
-  if (denied) return denied;
+  const auth = await authenticateApi(req, ["images:read"]);
+  if (!auth.ok) return auth.response;
   const name = decodeName((await ctx.params).name);
 
   const supabase = getServiceSupabase();
@@ -52,14 +52,14 @@ export async function GET(req: Request, ctx: Ctx): Promise<Response> {
 
 /** DELETE /api/admin/images/:name — remove one object. */
 export async function DELETE(req: Request, ctx: Ctx): Promise<Response> {
-  const denied = authorizeAdminApi(req);
-  if (denied) return denied;
+  const auth = await authenticateApi(req, ["images:write"]);
+  if (!auth.ok) return auth.response;
   const name = decodeName((await ctx.params).name);
   if (!name) return json(400, { error: "Missing image name." });
 
   const result = await deleteImage(name);
   if (!result.ok) return json(500, { error: result.error });
 
-  await logImageAudit("delete", { name });
+  await logImageAudit("delete", { name }, auth.principal);
   return json(200, { deleted: true, name });
 }

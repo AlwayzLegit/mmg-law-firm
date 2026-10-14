@@ -1,6 +1,6 @@
 import "server-only";
 
-import { authorizeAdminApi, json } from "@/lib/api/auth";
+import { authenticateApi, json } from "@/lib/api/auth";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
  * post's `practice_area_ids` / `related_county_ids` expect.
  */
 export async function GET(req: Request): Promise<Response> {
-  const denied = authorizeAdminApi(req);
-  if (denied) return denied;
+  const auth = await authenticateApi(req, ["blog:read"]);
+  if (!auth.ok) return auth.response;
 
   const supabase = getServiceSupabase();
   const [pa, co] = await Promise.all([
