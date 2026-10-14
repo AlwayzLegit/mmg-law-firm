@@ -60,7 +60,7 @@ export function HowWeWork({ className }: { className?: string }) {
                 Bilingual representation in English, Armenian, and Russian.
               </Bullet>
               <Bullet>
-                No fee unless we win — contingency from intake to recovery.
+                No recovery, no attorney fees or case expenses.
               </Bullet>
             </ul>
           </div>

@@ -21,7 +21,7 @@ export function GET(): Response {
 
   const body = `# ${FIRM.legalName}
 
-> California personal-injury law firm led by ${FIRM.attorneyName} (CA State Bar #${FIRM.barNumber}), based in ${FIRM.address.city}, ${FIRM.address.state}. Free consultation, contingency fees (no fee unless we win), and bilingual representation (${FIRM.languages.join(", ")}). Attorney Advertising.
+> California personal-injury law firm led by ${FIRM.attorneyName} (CA State Bar #${FIRM.barNumber}), based in ${FIRM.address.city}, ${FIRM.address.state}. Free consultation; no recovery, no attorney fees or case expenses; bilingual representation (${FIRM.languages.join(", ")}). Attorney Advertising.
 
 ## Firm
 - [Home](${canonicalUrl("/")}): Overview of the firm and how we help injured Californians.

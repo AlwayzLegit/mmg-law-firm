@@ -108,7 +108,7 @@ export function Hero({ className }: HeroProps) {
 
             <div className="text-muted-foreground mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm">
               <InlineSignal icon={ShieldCheck}>
-                No fee unless we win
+                No recovery, no attorney fees
               </InlineSignal>
               <InlineSignal icon={Globe2}>
                 Counsel in {FIRM.languages.join(", ")}
