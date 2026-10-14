@@ -54,7 +54,7 @@ function PracticeAreaCard({
   return (
     <Link
       href={`/practice-areas/${area.slug}`}
-      className="group border-border bg-card ring-border/40 hover:border-primary/40 focus-visible:ring-ring relative flex h-full flex-col overflow-hidden rounded-3xl border p-7 ring-1 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-25px_rgba(20,30,80,0.3)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:p-8"
+      className="group border-border bg-card ring-border/40 hover:border-primary/40 focus-visible:ring-ring relative flex h-full flex-col overflow-hidden rounded-3xl border p-7 ring-1 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-25px_rgba(18,23,27,0.3)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:p-8"
     >
       {/* Top rule — appears only on hover, so gold stays signature-rare. */}
       <span
@@ -68,7 +68,7 @@ function PracticeAreaCard({
       />
 
       <div className="relative flex items-start justify-between gap-4">
-        <span className="from-primary/15 to-primary/5 text-primary ring-primary/15 group-hover:from-primary group-hover:text-primary-foreground group-hover:ring-primary relative inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 transition-all duration-300 ring-inset group-hover:scale-110 group-hover:to-[var(--color-brand-700,#18298c)] group-hover:shadow-[0_12px_30px_-12px_rgba(43,70,216,0.6)]">
+        <span className="from-primary/15 to-primary/5 text-primary ring-primary/15 group-hover:from-primary group-hover:text-primary-foreground group-hover:ring-primary relative inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 transition-all duration-300 ring-inset group-hover:scale-110 group-hover:to-[var(--color-brand-700,#18298c)] group-hover:shadow-[0_12px_30px_-12px_rgba(18,23,27,0.6)]">
           {createElement(resolveIcon(area.icon), {
             className: "h-7 w-7",
             "aria-hidden": true,

@@ -18,6 +18,6 @@ export default async function Image({
   const { city, practiceArea } = await params;
   return renderOgImage({
     title: `${titleCaseSlug(city)} ${titleCaseSlug(practiceArea)} lawyer.`,
-    subtitle: "Local representation, statewide reach. No fee unless we win.",
+    subtitle: "Local representation, statewide reach. No recovery, no attorney fees or case expenses.",
   });
 }

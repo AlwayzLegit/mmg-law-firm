@@ -45,3 +45,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local browser-test artifacts
+.playwright-mcp/
+
+# v3 design converter: deps + run artifacts
+/tools/v3-design/node_modules/
+/tools/v3-design/out/

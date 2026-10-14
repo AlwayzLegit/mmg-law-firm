@@ -76,7 +76,8 @@ describe("getWebAnalytics", () => {
     mutableEnv.POSTHOG_PERSONAL_API_KEY = "phx_test";
     mutableEnv.POSTHOG_PROJECT_ID = "467881";
 
-    // Four queries fire in order: KPIs, daily, top pages, top referrers.
+    // Queries fire in order: KPIs, daily, top pages, top referrers, then the
+    // funnel and recent-activity feed.
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonRes({ results: [[12, 50, 9, 30]] }))
@@ -96,7 +97,9 @@ describe("getWebAnalytics", () => {
           ],
         }),
       )
-      .mockResolvedValueOnce(jsonRes({ results: [["google.com", 6]] }));
+      .mockResolvedValueOnce(jsonRes({ results: [["google.com", 6]] }))
+      // Funnel + recent-activity queries (added later) — empty results.
+      .mockResolvedValue(jsonRes({ results: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await getWebAnalytics();

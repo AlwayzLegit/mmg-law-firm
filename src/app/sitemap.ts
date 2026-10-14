@@ -10,6 +10,7 @@ import {
   getPublishedLocationPages,
 } from "@/lib/data/queries";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+import { V3_GUIDES } from "@/lib/v3/pages";
 
 /** Normalize a possibly-relative image URL to absolute for the sitemap. */
 function absImage(url: string | null | undefined): string | null {
@@ -50,14 +51,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Don't advertise content index pages that have nothing published yet —
   // they 404, so listing them would be a soft-404 in Search Console.
   const flags = await getPublicContentFlags();
+  // /case-results and /reviews always render the v3 guide content now.
   const staticRoutes = STATIC_ROUTES.filter((r) =>
-    r.path === "/case-results"
-      ? flags.hasCaseResults
-      : r.path === "/reviews"
-        ? flags.hasTestimonials
-        : r.path === "/blog"
-          ? flags.hasBlogPosts
-          : true,
+    r.path === "/blog" ? flags.hasBlogPosts : true,
   );
 
   // Attorney headshot, attached to the bio route as an indexable image.
@@ -78,6 +74,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? { images: [attorneyHeadshot] }
       : {}),
   }));
+
+  // Guide pages from the v3 design (root-level slugs).
+  for (const g of V3_GUIDES) {
+    entries.push({
+      url: canonicalUrl(g.path),
+      lastModified,
+      changeFrequency: "monthly",
+      priority: ["car", "truck", "moto", "injury"].includes(g.group) ? 0.8 : 0.6,
+    });
+  }
 
   // Practice areas. Static seed is canonical for these — listed even when
   // DB has them unpublished, since the static content is what renders.

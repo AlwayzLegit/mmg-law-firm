@@ -1,8 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useForm, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import {
+  lazyLeadResolver,
+  preloadLeadValidation,
+} from "@/lib/validation/lazy-lead-resolver";
+import { leadFormDefaults, type LeadFormValues } from "@/lib/validation/lead-form-values";
 import {
   ArrowRight,
   CheckCircle2,
@@ -36,12 +41,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
+import { track } from "@/lib/analytics/track";
 import { cn } from "@/lib/utils";
-import {
-  LeadSchema,
-  leadFormDefaults,
-  type LeadFormValues,
-} from "@/lib/validation/lead";
 
 import { Turnstile } from "./turnstile";
 
@@ -73,16 +74,10 @@ export function LeadForm({
 }: LeadFormProps) {
   const isFull = variant === "full";
 
-  // LeadSchema uses .preprocess() / .transform(), so zodResolver's inferred
-  // input type collapses to `unknown` and conflicts with LeadFormValues used
-  // by Controller. The cast narrows the resolver to the form's value shape
-  // — types are still checked at the call sites that read field.value.
+  // Validation (Zod + schema + phone parsing) loads on first focus; see
+  // lazy-lead-resolver.ts.
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
-    resolver: zodResolver(LeadSchema) as unknown as Resolver<
-      LeadFormValues,
-      unknown,
-      LeadFormValues
-    >,
+    resolver: lazyLeadResolver,
     mode: "onBlur",
     defaultValues: {
       ...leadFormDefaults,
@@ -217,7 +212,7 @@ export function LeadForm({
     return (
       <div
         className={cn(
-          "border-success/30 bg-card ring-success/10 relative overflow-hidden rounded-3xl border p-7 shadow-[0_40px_80px_-40px_rgba(34,179,128,0.35)] ring-1 md:p-9",
+          "border-success/30 bg-card ring-success/10 relative overflow-hidden rounded-3xl border p-7 shadow-[0_40px_80px_-40px_rgba(18,23,27,0.25)] ring-1 md:p-9",
           className,
         )}
       >
@@ -233,7 +228,7 @@ export function LeadForm({
           <span className="bg-success/15 text-success ring-success/5 inline-flex h-9 w-9 items-center justify-center rounded-full ring-4">
             <CheckCircle2 className="h-5 w-5" aria-hidden />
           </span>
-          <p className="text-success text-[11px] font-semibold tracking-[0.22em] uppercase">
+          <p className="text-success text-xs font-semibold tracking-[0.22em] uppercase">
             Received
           </p>
         </div>
@@ -273,7 +268,7 @@ export function LeadForm({
   return (
     <div
       className={cn(
-        "border-border/80 bg-card ring-border/30 relative overflow-hidden rounded-3xl border p-7 shadow-[0_40px_80px_-40px_rgba(20,30,80,0.28)] ring-1 md:p-9",
+        "@container border-border/80 bg-card ring-border/30 relative overflow-hidden rounded-3xl border p-6 shadow-[0_40px_80px_-40px_rgba(18,23,27,0.28)] ring-1 sm:p-7 md:p-9",
         className,
       )}
     >
@@ -289,8 +284,8 @@ export function LeadForm({
 
       <div className="relative mb-7 flex items-start justify-between gap-3">
         <div>
-          <p className="text-primary inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] uppercase">
-            <span className="bg-success inline-flex h-1.5 w-1.5 animate-pulse rounded-full" />
+          <p className="text-primary inline-flex items-center gap-2 text-xs font-semibold tracking-[0.22em] uppercase">
+            <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-gold-500)]" />
             Free consultation
           </p>
           <h3 className="font-display mt-3 text-2xl leading-tight font-medium tracking-tight md:text-3xl">
@@ -305,6 +300,8 @@ export function LeadForm({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
+          // Load the validation chunk as soon as the visitor engages.
+          onFocus={() => void preloadLeadValidation().catch(() => {})}
           noValidate
           className="relative grid gap-6"
         >
@@ -326,13 +323,13 @@ export function LeadForm({
             />
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 @md:grid-cols-2">
             <FormField
               control={form.control}
               name="full_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                  <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                     Full name
                   </FormLabel>
                   <div className="relative mt-1.5">
@@ -359,7 +356,7 @@ export function LeadForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                  <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                     Phone
                   </FormLabel>
                   <div className="relative mt-1.5">
@@ -387,7 +384,7 @@ export function LeadForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                   Email{" "}
                   <span className="text-muted-foreground/70 font-normal normal-case">
                     (optional)
@@ -417,13 +414,13 @@ export function LeadForm({
 
           {isFull ? (
             <>
-              <div className="grid gap-6 sm:grid-cols-2">
+              <div className="grid gap-6 @md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="practice_area"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                      <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                         Type of matter
                       </FormLabel>
                       <Select
@@ -454,7 +451,7 @@ export function LeadForm({
                   name="city_slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                      <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                         Where did it happen?
                       </FormLabel>
                       <Select
@@ -494,7 +491,7 @@ export function LeadForm({
                 name="incident_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                    <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                       Date of incident{" "}
                       <span className="text-muted-foreground/70 font-normal normal-case">
                         (if known)
@@ -521,7 +518,7 @@ export function LeadForm({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
+                <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                   What happened?
                 </FormLabel>
                 <FormControl
@@ -611,7 +608,7 @@ export function LeadForm({
             type="submit"
             size="marketing"
             disabled={form.formState.isSubmitting}
-            className="group/cta from-primary via-primary relative w-full justify-between overflow-hidden bg-gradient-to-r to-[var(--color-brand-700,#18298c)] py-4 text-base shadow-[0_10px_30px_-10px_rgba(43,70,216,0.55)] transition-all hover:translate-y-[-1px] hover:shadow-[0_18px_40px_-12px_rgba(43,70,216,0.65)]"
+            className="group/cta from-primary via-primary to-primary relative h-auto min-h-12 w-full justify-center gap-2 overflow-hidden bg-gradient-to-r py-3.5 text-base whitespace-normal shadow-[0_10px_30px_-10px_rgba(18,23,27,0.5)] transition-all hover:translate-y-[-1px] hover:shadow-[0_18px_40px_-12px_rgba(18,23,27,0.6)]"
           >
             <span className="relative z-10 flex items-center gap-2 text-base font-medium">
               {form.formState.isSubmitting ? (
@@ -624,7 +621,7 @@ export function LeadForm({
               )}
             </span>
             <ArrowRight
-              className="relative z-10 h-5 w-5 transition-transform group-hover/cta:translate-x-1"
+              className="relative z-10 h-5 w-5 flex-none transition-transform group-hover/cta:translate-x-1"
               aria-hidden
             />
             <span
@@ -634,22 +631,22 @@ export function LeadForm({
           </Button>
 
           {/* Trust strip below the CTA — three short, scannable proofs */}
-          <div className="border-border/60 text-muted-foreground grid grid-cols-3 gap-2 border-t pt-5 text-[11px] leading-snug sm:gap-3">
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
+          <div className="border-border/60 text-muted-foreground grid grid-cols-1 gap-2 border-t pt-5 text-xs leading-snug @md:grid-cols-3 @md:gap-3">
+            <div className="flex flex-row items-center gap-2 text-left @md:flex-col @md:gap-1 @md:text-center">
               <ShieldCheck
                 className="text-primary h-4 w-4 flex-none"
                 aria-hidden
               />
-              <span>No fee unless we win</span>
+              <span>No recovery, no attorney fees or case expenses.</span>
             </div>
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
+            <div className="flex flex-row items-center gap-2 text-left @md:flex-col @md:gap-1 @md:text-center">
               <CheckCircle2
                 className="text-primary h-4 w-4 flex-none"
                 aria-hidden
               />
               <span>Reply in 1 business hr</span>
             </div>
-            <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:text-left">
+            <div className="flex flex-row items-center gap-2 text-left @md:flex-col @md:gap-1 @md:text-center">
               <Phone className="text-primary h-4 w-4 flex-none" aria-hidden />
               <span>Confidential intake</span>
             </div>
@@ -657,12 +654,12 @@ export function LeadForm({
 
           <p className="text-muted-foreground text-xs">
             By submitting, you confirm you have read and agreed to our{" "}
-            <a
+            <Link
               href="/legal/privacy"
               className="hover:text-primary underline underline-offset-2"
             >
               Privacy Policy
-            </a>
+            </Link>
             . Submitting this form does not create an attorney-client
             relationship.
           </p>
@@ -680,11 +677,5 @@ function safeJson(
 
 /** Fire a PostHog event if the SDK is loaded. Never sends PII. */
 function captureEvent(event: string, props?: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  const posthog = (
-    window as unknown as {
-      posthog?: { capture: (e: string, p?: Record<string, unknown>) => void };
-    }
-  ).posthog;
-  posthog?.capture(event, props);
+  track(event, props); // queued until PostHog loads (see lib/analytics/track)
 }

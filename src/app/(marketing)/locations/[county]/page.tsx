@@ -10,7 +10,7 @@ import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { PracticeAreaGrid } from "@/components/marketing/practice-area-grid";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
 import { localFaqItems } from "@/lib/data/local-faq";
@@ -121,7 +121,7 @@ export default async function CountyPage({ params }: Props) {
         title={`${c.name} Personal Injury Lawyer`}
         description={
           c.intro_md ??
-          `${FIRM.legalName} represents ${c.name} clients across the full range of personal-injury matters. Free consultation. Bilingual counsel. No fee unless we win your case.`
+          `${FIRM.legalName} represents ${c.name} clients across the full range of personal-injury matters. Free consultation. Bilingual counsel. No recovery, no attorney fees or case expenses.`
         }
         actions={
           <div className="flex flex-wrap items-center gap-3">
@@ -255,7 +255,7 @@ export default async function CountyPage({ params }: Props) {
             ) : null}
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside>
             <LeadForm
               variant="compact"
               defaultCountySlug={c.slug}

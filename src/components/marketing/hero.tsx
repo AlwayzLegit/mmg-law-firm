@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { SectionEyebrow } from "@/components/marketing/section-eyebrow";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM } from "@/lib/constants";
 import { ATTORNEY_IMAGES, mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ export function Hero({ className }: HeroProps) {
       {/* Subtle grid — fades into the page */}
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-[linear-gradient(to_right,rgba(43,70,216,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(43,70,216,0.06)_1px,transparent_1px)] bg-[size:36px_36px]"
+        className="absolute inset-x-0 top-0 -z-10 h-[480px] bg-[linear-gradient(to_right,rgba(18,23,27,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(18,23,27,0.06)_1px,transparent_1px)] bg-[size:36px_36px]"
         style={{
           maskImage:
             "radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.7), transparent 70%)",
@@ -156,7 +156,7 @@ function CredentialsCard() {
         aria-hidden
         className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-[var(--color-gold-500)]/25"
       />
-      <article className="border-border bg-card relative overflow-hidden rounded-2xl border shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(20,30,80,0.35)] backdrop-blur">
+      <article className="border-border bg-card relative overflow-hidden rounded-2xl border shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_30px_60px_-30px_rgba(18,23,27,0.35)] backdrop-blur">
         <div className="bg-secondary relative aspect-[5/4] w-full overflow-hidden">
           <Image
             src={mediaUrl(ATTORNEY_IMAGES.homepageHero)}

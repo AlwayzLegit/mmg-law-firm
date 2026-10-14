@@ -9,7 +9,7 @@ import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { pickLocationImage } from "@/lib/media";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
@@ -24,6 +24,13 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { V3GlendalePage } from "@/components/v3/pages/glendale";
+import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
+import { V3CityLinks } from "@/components/v3/v3-city-links";
+
+/** Glendale is the firm's office city; its page uses the v3 office design. */
+const isGlendale = (county: string, city: string) =>
+  county === "los-angeles-county" && city === "glendale";
 
 export const dynamicParams = true;
 export const revalidate = 86400;
@@ -37,6 +44,7 @@ type Props = { params: Promise<{ county: string; city: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { county, city } = await params;
+  if (isGlendale(county, city)) return v3Metadata("glendale");
   const c = await getCityBySlug(county, city);
   if (!c) {
     return buildMetadata({
@@ -58,6 +66,27 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function CityPage({ params }: Props) {
   const { county, city } = await params;
+  if (isGlendale(county, city)) {
+    const slugs = await getPublishedPracticeSlugsForCity(county, city);
+    const links = PRACTICE_AREAS.filter((p) => slugs.has(p.slug)).map((p) => ({
+      href: `/locations/${county}/${city}/${p.slug}`,
+      label: `Glendale ${p.shortName}`,
+    }));
+    return (
+      <V3PageShell
+        pageKey="glendale"
+        page={V3GlendalePage}
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Locations", path: "/locations" },
+          { name: "Los Angeles County", path: "/locations/los-angeles-county" },
+          { name: "Glendale", path: "/locations/los-angeles-county/glendale" },
+        ]}
+      >
+        <V3CityLinks heading="Glendale accident representation" links={links} />
+      </V3PageShell>
+    );
+  }
   const c = await getCityBySlug(county, city);
   if (!c) notFound();
 
@@ -215,7 +244,7 @@ export default async function CityPage({ params }: Props) {
             <DeadlinesCallout />
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside>
             <LeadForm
               variant="compact"
               defaultCountySlug={c.county_slug}

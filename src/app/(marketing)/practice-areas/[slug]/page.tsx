@@ -15,7 +15,7 @@ import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
 import { RelatedPracticeAreas } from "@/components/marketing/related-practice-areas";
 import { SubjectImage } from "@/components/marketing/subject-image";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
 import { PRACTICE_AREA_IMAGE, pickLocationImage } from "@/lib/media";
 import {
@@ -33,6 +33,16 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { V3_PRACTICE_PAGES } from "@/components/v3/practice-pages";
+import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
+import { V3CityLinks } from "@/components/v3/v3-city-links";
+import { V3_BY_PATH } from "@/lib/v3/pages";
+
+/** Practice areas rebuilt from the v3 design handoff → registry key. */
+function v3KeyFor(slug: string): string | undefined {
+  const key = V3_BY_PATH[`/practice-areas/${slug}`]?.key;
+  return key && V3_PRACTICE_PAGES[key] ? key : undefined;
+}
 
 export const dynamicParams = false;
 export const revalidate = 86400;
@@ -45,6 +55,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
+  const v3 = v3KeyFor(slug);
+  if (v3) return v3Metadata(v3);
   const area = findPracticeArea(slug);
   if (!area) {
     return buildMetadata({
@@ -69,6 +81,27 @@ export default async function PracticeAreaPage({ params }: Props) {
   const { slug } = await params;
   const area = findPracticeArea(slug);
   if (!area) notFound();
+
+  const v3 = v3KeyFor(slug);
+  if (v3) {
+    const pages = await getPublishedLocationPages();
+    const links = pages
+      .filter((p) => p.practice_area_slug === slug)
+      .sort((a, b) => a.city_name.localeCompare(b.city_name))
+      .map((p) => ({
+        href: `/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`,
+        label: `${p.city_name} ${area.shortName}`,
+      }));
+    return (
+      <V3PageShell pageKey={v3} page={V3_PRACTICE_PAGES[v3]}>
+        <V3CityLinks
+          heading={`${area.name} representation by city`}
+          intro={`${FIRM.legalName} handles ${area.nounPlural} across California. Explore the cities where we have detailed our local experience:`}
+          links={links}
+        />
+      </V3PageShell>
+    );
+  }
 
   const [content, inlineResults, locationPages] = await Promise.all([
     getPracticeAreaContent(slug),
@@ -308,7 +341,7 @@ export default async function PracticeAreaPage({ params }: Props) {
             ) : null}
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside>
             <LeadForm
               variant="compact"
               defaultPracticeArea={area.slug}
@@ -326,7 +359,7 @@ export default async function PracticeAreaPage({ params }: Props) {
               {area.name} representation by city
             </h2>
             <p className="text-muted-foreground mt-3 max-w-2xl">
-              We handle {area.nounSingular} cases across California. Explore the
+              We handle {area.nounPlural} across California. Explore the
               cities where we&apos;ve detailed our local experience:
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -359,7 +392,7 @@ export default async function PracticeAreaPage({ params }: Props) {
 
       <CtaBand
         heading={area.ctaHeading ?? `Injured in a ${area.nounSingular}?`}
-        body="Free consultation. Bilingual counsel. No fee unless we win your case."
+        body="Free consultation. Bilingual counsel. No recovery, no attorney fees or case expenses."
       />
     </>
   );

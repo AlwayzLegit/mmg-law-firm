@@ -18,6 +18,27 @@ type BuildOpts = {
   ogType?: "website" | "article" | "profile";
 };
 
+/**
+ * Search results cut meta descriptions at roughly 155–160 characters. Keep
+ * whole sentences that fit; if even the first sentence is too long, cut it
+ * at a word boundary and add an ellipsis.
+ */
+export function fitMetaDescription(text: string, max = 160): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const sentences = clean.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) ?? [clean];
+  let out = "";
+  for (const raw of sentences) {
+    const next = out ? `${out} ${raw.trim()}` : raw.trim();
+    if (next.length > max) break;
+    out = next;
+  }
+  if (out) return out;
+  const cut = clean.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.-]+$/, "")}…`;
+}
+
 export function buildMetadata({
   title,
   description,
@@ -26,6 +47,7 @@ export function buildMetadata({
   noindex = false,
   ogType = "website",
 }: BuildOpts): Metadata {
+  description = fitMetaDescription(description);
   const url = canonicalUrl(path);
   // The root layout's title.template provides the " | MMG Law Firm" suffix —
   // pass the bare title here so we don't double it.

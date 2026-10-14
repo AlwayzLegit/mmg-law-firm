@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Phone } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM } from "@/lib/constants";
 import { getPublicContentFlags } from "@/lib/data/public-content";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ export async function SiteHeader() {
         <div className="flex items-center gap-3">
           <a
             href={`tel:${FIRM.phoneTel}`}
-            className="group border-border/70 bg-card/60 text-foreground hover:border-primary/30 hover:bg-card hidden items-center gap-2.5 rounded-full border py-1.5 pr-3.5 pl-1.5 text-sm font-semibold tracking-tight shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_1px_2px_rgba(20,30,80,0.05)] transition-all hover:shadow-[0_8px_20px_-12px_rgba(20,30,80,0.25)] md:inline-flex"
+            className="group border-border/70 bg-card/60 text-foreground hover:border-primary/30 hover:bg-card hidden items-center gap-2.5 rounded-full border py-1.5 pr-3.5 pl-1.5 text-sm font-semibold tracking-tight shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_1px_2px_rgba(18,23,27,0.05)] transition-all hover:shadow-[0_8px_20px_-12px_rgba(18,23,27,0.25)] md:inline-flex"
           >
             <span className="bg-primary text-primary-foreground inline-flex h-7 w-7 items-center justify-center rounded-full transition-transform group-hover:scale-105">
               <Phone className="h-3.5 w-3.5" aria-hidden />

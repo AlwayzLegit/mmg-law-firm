@@ -82,7 +82,7 @@ function FeaturedCard({ post: p }: { post: BlogPostSummary }) {
   return (
     <Link
       href={`/blog/${p.slug}`}
-      className="group border-border bg-card hover:border-primary/30 grid overflow-hidden rounded-3xl border transition-all duration-200 hover:shadow-[0_24px_60px_-28px_rgba(20,30,80,0.25)] md:grid-cols-2"
+      className="group border-border bg-card hover:border-primary/30 grid overflow-hidden rounded-3xl border transition-all duration-200 hover:shadow-[0_24px_60px_-28px_rgba(18,23,27,0.25)] md:grid-cols-2"
     >
       <div className="bg-secondary relative aspect-[16/10] md:aspect-auto md:min-h-[22rem]">
         {p.hero_image_url ? (
@@ -139,7 +139,7 @@ function PostCard({ post: p }: { post: BlogPostSummary }) {
   return (
     <Link
       href={`/blog/${p.slug}`}
-      className="group border-border bg-card hover:border-primary/30 relative flex h-full flex-col overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_20px_40px_-24px_rgba(20,30,80,0.2)]"
+      className="group border-border bg-card hover:border-primary/30 relative flex h-full flex-col overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_20px_40px_-24px_rgba(18,23,27,0.2)]"
     >
       <div className="bg-secondary relative aspect-[16/9] overflow-hidden">
         {p.hero_image_url ? (
@@ -156,7 +156,7 @@ function PostCard({ post: p }: { post: BlogPostSummary }) {
       </div>
       <div className="flex flex-1 flex-col p-6">
         {p.tags.length ? (
-          <p className="text-primary text-[11px] font-semibold tracking-[0.16em] uppercase">
+          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
             {p.tags.slice(0, 2).join(" · ")}
           </p>
         ) : null}

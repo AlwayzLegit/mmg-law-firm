@@ -29,6 +29,9 @@ export const FIRM = {
   },
   geo: { lat: 34.1466, lng: -118.2553 },
   hours: "Mon–Fri 9:00 AM–6:00 PM",
+  /** Display variants used by the v3 design pages. */
+  hoursShort: "Mon–Fri, 9am–6pm Pacific",
+  hoursLong: "Monday–Friday, 9am–6pm Pacific",
   /** Languages — seed fallback. Canonical source: attorney_profiles.languages. */
   languages: ["English", "Armenian", "Russian"],
   /** Founding year — seed fallback. Canonical source: firm_settings.founded_year. */
@@ -66,7 +69,7 @@ export const TCPA_CONSENT_TEXT =
 export const SITE = {
   name: "MMG Law Firm",
   description:
-    "California personal-injury attorney based in Glendale. Free consultation. No fee unless we win.",
+    "California personal-injury attorney based in Glendale. Free consultation. No recovery, no attorney fees or case expenses.",
   /** Generated at build time by src/app/opengraph-image.tsx. */
   defaultOgImage: "/opengraph-image",
 } as const;

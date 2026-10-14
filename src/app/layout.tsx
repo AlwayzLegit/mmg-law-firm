@@ -1,34 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import dynamic from "next/dynamic";
 import Script from "next/script";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, Fraunces, Lato, Libre_Baskerville } from "next/font/google";
 
+import { PostHogLoader } from "@/components/analytics/posthog-loader";
 import { SchemaGraph } from "@/components/seo/schema-graph";
+import { DeferredToaster } from "@/components/ui/deferred-toaster";
 import { FIRM, SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { siteUrl } from "@/lib/seo/canonical";
 
 import "./globals.css";
 
-// Sonner ships its own CSS-in-JS + portal; nothing renders until a toast
-// fires, so the runtime can defer the chunk entirely.
-const Toaster = dynamic(() =>
-  import("@/components/ui/sonner").then((m) => m.Toaster),
-);
-
-// PostHog runs entirely client-side; lazy-loaded so the analytics chunk
-// doesn't block hydration. When NEXT_PUBLIC_POSTHOG_KEY isn't set the
-// provider passes children through unchanged.
-const PostHogProvider = dynamic(() =>
-  import("@/components/analytics/posthog-provider").then(
-    (m) => m.PostHogProvider,
-  ),
-);
-
+// Inter and Fraunces only render in the admin: the public site's
+// `.theme-v3` maps both variables to the Georgia stack. Not preloading them
+// saves ~115 KB of font downloads competing with every public page's LCP;
+// the admin fetches them on first use (display: swap).
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  preload: false,
 });
 
 const fraunces = Fraunces({
@@ -36,8 +27,31 @@ const fraunces = Fraunces({
   variable: "--font-fraunces",
   display: "swap",
   // Only opsz is actually referenced from CSS. SOFT added a second
-  // preload woff2 with no visual effect — dropped.
+  // woff2 with no visual effect — dropped.
   axes: ["opsz"],
+  preload: false,
+});
+
+// Public-site typefaces (v3 design): Georgia first with Libre Baskerville
+// as the web fallback for systems without Georgia (Android, Linux), and Lato
+// for small uppercase eyebrows. Libre is only a stand-in for Georgia, so it
+// uses display "optional" (preloaded): used if it's ready at first paint,
+// otherwise that visit keeps the metric-matched fallback. With "swap", a late
+// Libre re-wrapped phone-width text after first paint (CLS 0.17 on the car
+// hub on Android-like devices). Devices with Georgia download ~34 KB they
+// don't render.
+const libre = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-libre",
+  display: "optional",
+});
+
+const lato = Lato({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-lato",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -76,8 +90,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0c10" },
+    { media: "(prefers-color-scheme: light)", color: "#12171b" },
+    { media: "(prefers-color-scheme: dark)", color: "#12171b" },
   ],
 };
 
@@ -89,7 +103,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${inter.variable} ${fraunces.variable} ${libre.variable} ${lato.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <a href="#main-content" className="skip-link">
@@ -98,9 +112,11 @@ export default function RootLayout({
 
         <SchemaGraph />
 
-        <PostHogProvider>{children}</PostHogProvider>
+        {children}
+        {/* Analytics loads after the page is idle — never on the critical path. */}
+        <PostHogLoader />
 
-        <Toaster richColors closeButton />
+        <DeferredToaster richColors closeButton />
 
         {gaId ? (
           <>

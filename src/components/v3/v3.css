@@ -1,0 +1,437 @@
+/* Base styles for pages generated from the "Redesign v3" design handoff.
+   The design is authored with inline styles; this file only restores the
+   prototype's document defaults inside .v3-page and powers interactive
+   regions (see v3-runtime.tsx). */
+
+[data-v3-r][data-off] {
+  display: none !important;
+}
+
+.v3-page {
+  font-family: Georgia, var(--font-libre), "Times New Roman", serif;
+  color: #131a20;
+  background: #f8f4ed;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+  text-size-adjust: 100%;
+}
+
+/* Undo the site's global heading defaults (display font / weight / leading)
+   so the design's inline type settings render exactly as authored. */
+.v3-page :is(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+}
+
+.v3-page a {
+  color: #e8c384;
+  text-decoration: none;
+}
+.v3-page a:hover {
+  color: #f0d29c;
+}
+.v3-page button {
+  cursor: pointer;
+}
+.v3-page [id] {
+  scroll-margin-top: 120px;
+}
+.v3-page ::selection {
+  background: #e8c384;
+  color: #12171b;
+}
+.v3-page :focus-visible {
+  outline: 2px solid #987022;
+  outline-offset: 2px;
+}
+.v3-page .v3-field {
+  outline: none;
+}
+.v3-page .v3-field:focus,
+.v3-page .v3-field:focus-visible {
+  border-color: #987022 !important;
+  box-shadow: 0 0 0 1px #987022;
+}
+.v3-page .v3-field[aria-invalid="true"] {
+  border-color: #a12a1d !important;
+}
+
+@media print {
+  .v3-page [role="dialog"] {
+    position: static !important;
+  }
+}
+
+/* Small-phone safety net (≤480px). The design's inline styles keep some
+   eyebrows, CTA buttons and grid "auto" columns on one line
+   (white-space: nowrap) and let flex/grid items size to their content, which
+   pushed 33 of 57 pages wider than a 375px screen. Here those may wrap and
+   shrink instead. !important is needed to override the inline styles; wider
+   screens are untouched. */
+@media (max-width: 480px) {
+  /* Each selector also matches the spaced form ("white-space: nowrap"):
+     React writes that form when a client component re-renders a style
+     prop (e.g. the lead form after a failed submit). */
+  .v3-page :is([style*="white-space:nowrap"], [style*="white-space: nowrap"]) {
+    white-space: normal !important;
+  }
+  /* Fixed-height buttons/links that can now wrap grow instead of clipping. */
+  .v3-page :is(a, button):is([style*="white-space:nowrap"], [style*="white-space: nowrap"])[style*="height:"] {
+    height: auto !important;
+    /* Explicit line-height + min-height keep the button's height the same
+       whichever font is showing; with line-height: normal the swap from the
+       fallback to Libre Baskerville resized the hero CTAs (CLS 0.17). */
+    min-height: 54px;
+    line-height: 1.25 !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    text-align: center;
+    max-width: 100%;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  /* Tracked-out uppercase button labels: tighten so long words fit. */
+  .v3-page :is(a, button):is([style*="white-space:nowrap"], [style*="white-space: nowrap"])[style*="letter-spacing"] {
+    letter-spacing: 0.06em !important;
+  }
+  /* Label | content grids with a fixed-width label column stack instead. */
+  .v3-page :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns:minmax(0,210px) 1fr"]) {
+    grid-template-columns: 1fr !important;
+  }
+  .v3-page :is(div, p, a, button, label, span, li, form, section, h1, h2, h3, h4) {
+    min-width: 0;
+    /* break-word, not anywhere: long words may break, but a squeezed
+       column doesn't collapse to one letter per line. */
+    overflow-wrap: break-word;
+  }
+  /* Text marked flex:none (eyebrows beside a rule line) may shrink and wrap.
+     Fixed-size shapes (step circles, icons, rule lines) carry a width and
+     keep it. */
+  .v3-page :is(p, span, a, button, h2, h3, h4):is([style*="flex:none"], [style*="flex: none"]):not([style*="width:"]) {
+    flex-shrink: 1 !important;
+  }
+  /* Claim-stage rows (number | icon | title | summary | details button):
+     five columns can't fit a phone. Keep number, icon and title on one line
+     and give the summary and button full-width rows below. */
+  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] {
+    grid-template-columns: 44px 48px 1fr !important;
+    row-gap: 8px !important;
+  }
+  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] > :nth-child(n + 4) {
+    grid-column: 1 / -1;
+  }
+  /* Icon | label | value rows (truck deadlines): the value drops under the
+     label instead of squeezing it to nothing. */
+  .v3-page [style*="grid-template-columns:28px 1fr auto"] {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    row-gap: 4px !important;
+  }
+  .v3-page [style*="grid-template-columns:28px 1fr auto"] > :nth-child(3) {
+    grid-column: 2;
+  }
+  /* Number | divider | text rows (fee dialog). */
+  .v3-page [style*="grid-template-columns:70px 1px 1fr"] {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+  }
+  .v3-page [style*="grid-template-columns:70px 1px 1fr"] > :nth-child(2) {
+    display: none;
+  }
+  /* Dialogs: keep the heading clear of the 44px close button, give the text
+     the full width (icon above text, dividers dropped) and keep long titles
+     from breaking mid-word. */
+  .v3-page [role="dialog"] > button[aria-label="Close"] + * {
+    padding-right: 60px !important;
+  }
+  .v3-page [role="dialog"][style*="padding:40px clamp"] {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+  .v3-page [role="dialog"] :is(h2, h3)[id] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    font-size: clamp(24px, 7vw, 30px) !important;
+  }
+  .v3-page [role="dialog"] [style*="grid-template-columns"]:not([style*="repeat("]) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .v3-page [role="dialog"] [style*="grid-template-columns"]:not([style*="repeat("]) > span:empty {
+    display: none;
+  }
+  /* Outbound resource cards: "Read guide" drops to its own line. */
+  .v3-page a[target="_blank"][style*="display:flex"] {
+    flex-wrap: wrap;
+  }
+}
+
+/* Content that must never wrap or shrink, even inside the safety net above
+   (step numbers, glyphs, the last part of a phone number). The repeated
+   class outranks the safety net's attribute selectors. */
+.v3-page .v3-keep.v3-keep.v3-keep {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  overflow-wrap: normal;
+}
+
+/* A phone number may break after the area code, but its wrapper must not
+   shrink below "539-7969" inside a flex row. */
+.v3-page .v3-tel {
+  min-width: auto;
+}
+
+/* Tables that scroll sideways: focusable regions (tabindex in the page
+   body) with a swipe hint on narrow screens. */
+.v3-page .v3-scroll:focus-visible {
+  outline: 2px solid #987022;
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .v3-page .v3-scroll::before {
+    content: "Swipe to see the full table \2192";
+    display: block;
+    padding: 8px 12px 0;
+    font-size: 14px;
+    color: #6f4512;
+  }
+}
+
+/* Tabs whose selected state lives in aria-selected (kept in sync by
+   v3-runtime): style from the attribute, not the server-rendered inline
+   colours, so the highlight follows the visible panel. */
+.v3-page [role="tab"][data-v3-sel^="rsTabOn"][aria-selected="true"] {
+  background: #14263a !important;
+  color: #fbf8f1 !important;
+}
+.v3-page [role="tab"][data-v3-sel^="rsTabOn"][aria-selected="false"] {
+  background: #fffdf8 !important;
+  color: #14263a !important;
+}
+
+/* Fixed vertical "Free consultation" tab on the car / truck / motorcycle
+   hubs: below the desktop nav it covers body text, and the mobile dock and
+   header phone already carry the call to action. */
+@media (max-width: 1199px) {
+  .v3-page a[style*="writing-mode:vertical-rl"][style*="position:fixed"] {
+    display: none !important;
+  }
+}
+
+/* Car hub closing band: the hillside image and the 20vw left inset leave
+   the copy a narrow strip on phones. */
+@media (max-width: 767px) {
+  .v3-page [style*="width:min(46%,700px)"] {
+    width: 100% !important;
+    opacity: 0.18 !important;
+  }
+  .v3-page [style*="padding:40px clamp(20px,5.8vw,90px) 40px clamp(20px,20vw,310px)"] {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+/* Contact cards (aside, flex-basis ~440px) that wrap onto their own row
+   between tablet and wide desktop fill that row instead of leaving a large
+   empty area beside them. */
+@media (min-width: 768px) and (max-width: 1499px) {
+  .v3-page aside[style*="flex:0 1 4"][style*="min-width:min(100%,320px)"] {
+    flex-grow: 1 !important;
+  }
+}
+/* Attorney hero: portrait | bio, with the contact card under the bio
+   instead of alone on a row. */
+@media (min-width: 900px) and (max-width: 1499px) {
+  .v3-page .v3-att-hero {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 400px) minmax(0, 1fr);
+  }
+  .v3-page .v3-att-hero > :first-child {
+    grid-row: span 2;
+  }
+  .v3-page .v3-att-hero > aside {
+    max-width: 560px;
+  }
+}
+/* Reviews "Meet the attorney": portrait + text inside a two-column grid
+   leaves ~180px for the text below wide desktop; stack the outer grid. */
+@media (max-width: 1279px) {
+  .v3-page [style*="minmax(min(100%,420px),1fr))"]:has(> [style*="grid-template-columns:minmax(0,220px) 1fr"]) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Brand tokens for every public page (v3: charcoal, gold, ivory, serif).
+   Pages still on the shared shadcn components (blog, locations, remaining
+   practice areas, legal) pick these up through the design tokens; the
+   admin app keeps the original palette because it sits outside .theme-v3.
+   ------------------------------------------------------------------------ */
+.theme-v3 {
+  --font-inter: Georgia, var(--font-libre), "Times New Roman", serif;
+  --font-fraunces: Georgia, var(--font-libre), "Times New Roman", serif;
+  /* <html> resolves font-sans against the Inter variable before these
+     overrides apply, so set the family here too or legacy pages inherit
+     Inter. */
+  font-family: var(--font-inter);
+  /* Squared-off corners and a brick red that sits with the gold palette;
+     the shadcn radius scale (rounded-lg … rounded-4xl) derives from these. */
+  --radius: 2px;
+  --destructive: #a12a1d;
+
+  --background: #f8f4ed;
+  --foreground: #131a20;
+  --card: #fffdf8;
+  --card-foreground: #131a20;
+  --popover: #fffdf8;
+  --popover-foreground: #131a20;
+  --primary: #8a5a1c;
+  --primary-foreground: #fff8e8;
+  --secondary: #f4ecdb;
+  --secondary-foreground: #131a20;
+  --muted: #f2eadb;
+  --muted-foreground: #4a5157;
+  --accent: #f1e6cf;
+  --accent-foreground: #131a20;
+  --border: #e3d6bb;
+  --input: #e3d3b2;
+  --ring: #987022;
+
+  --color-brand-50: #fbf8f1;
+  --color-brand-100: #f4ecdb;
+  --color-brand-200: #e9d9b8;
+  --color-brand-300: #d5b174;
+  --color-brand-400: #b98b35;
+  --color-brand-500: #8a5a1c;
+  --color-brand-600: #6f4512;
+  --color-brand-700: #1b2228;
+  --color-brand-800: #12202a;
+  --color-brand-900: #12171b;
+  --color-gold-50: #fbf8f1;
+  --color-gold-300: #e8c384;
+  --color-gold-500: #c9a35a;
+  --color-gold-600: #a8813f;
+  --color-gold-700: #987022;
+
+  background: var(--background);
+  color: var(--foreground);
+}
+/* Layered so a page's own font-weight / tracking utilities still win. */
+@layer base {
+  .theme-v3 :is(h1, h2, h3, h4):not(.v3-page *) {
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+}
+.theme-v3 ::selection {
+  background: #e8c384;
+  color: #12171b;
+}
+
+/* ------------------------------------------------------------------------
+   QA pass (resources, legal, guides).
+   ------------------------------------------------------------------------ */
+
+/* Dialogs centred in a scrolling overlay: a dialog taller than the screen
+   must start at the top (title and Close reachable), not be centred past
+   the top edge. Auto margins centre it only when it fits, and a dialog with
+   overflow:hidden must not shrink below its content. */
+.v3-page [style*="position:fixed"][style*="place-items:center"] > [role="dialog"] {
+  margin-block: auto;
+  min-height: max-content;
+}
+
+/* Fault calculator output ("30 %") stays on one line. */
+.v3-page [data-tool-out="fault"] {
+  white-space: nowrap;
+}
+
+/* Sideways tables: wide enough screens fit them in their column instead of
+   clipping the last column (three-column layouts at 1360–1500px). */
+@media (min-width: 701px) {
+  .v3-page .v3-scroll > table[style*="min-width"] {
+    min-width: 0 !important;
+  }
+}
+
+/* Inline text CTAs ("View details", "Learn more", source links) get a 24px
+   tap target. */
+.v3-page :is(a, button):is([style*="display:inline-flex"], [style*="display:inline-block"]),
+.v3-page nav[aria-label="Breadcrumb"] a,
+.v3-page a[target="_blank"],
+.v3-page button {
+  min-height: 24px;
+  align-content: center;
+}
+.v3-page nav[aria-label="Breadcrumb"] a {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+/* Legal pages below the three-column layout: content (and the H1) first,
+   the contact card and table of contents after it. */
+@media (max-width: 1239px) {
+  .theme-v3 {
+    --v3r-pvAsideOrder: 1;
+  }
+}
+
+/* Resources "What compensation can cover" (5 cards): 3 + 2 instead of a
+   lone card beside a khaki block at tablet widths. */
+@media (min-width: 700px) and (max-width: 1279px) {
+  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) > li {
+    grid-column: span 2;
+  }
+  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) > li:nth-child(n + 4) {
+    grid-column: span 3;
+  }
+}
+
+/* Claim-stage rows (number | icon | title | summary | button) also stack
+   the summary on tablets, where it was squeezed to ~16 characters a line. */
+@media (min-width: 481px) and (max-width: 900px) {
+  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] {
+    grid-template-columns: 44px 48px minmax(0, 1fr) auto !important;
+    row-gap: 8px !important;
+  }
+  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] > :nth-child(4) {
+    grid-column: 3 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Deadline cards (number | claim | detail). */
+  .v3-page [style*="grid-template-columns:56px minmax(130px,170px) 1fr"] {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    row-gap: 8px !important;
+  }
+  .v3-page [style*="grid-template-columns:56px minmax(130px,170px) 1fr"] > :nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+  /* A short rule line beside a wrapped heading reads as a stray dash. */
+  .v3-page span:empty[style*="flex:none"]:has(+ :is(h2, h3)) {
+    display: none;
+  }
+}
+
+/* Legal pages: below tablet the "On this page" rail would sit above the
+   H1; the page's own headings carry the structure there. */
+@media (max-width: 767px) {
+  .v3-page aside:has(> nav[aria-label="On this page"]) {
+    display: none;
+  }
+}
+
+/* An auto-fit grid that collapses to one column on phones must not keep a
+   "span 2" header: it creates an implicit ~40px second column that the
+   following cards fall into. */
+@media (max-width: 700px) {
+  .v3-page [style*="grid-template-columns:repeat(auto-fit"] > [style*="grid-column:span 2"] {
+    grid-column: 1 / -1 !important;
+  }
+}
