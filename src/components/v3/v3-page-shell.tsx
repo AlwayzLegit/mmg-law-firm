@@ -9,6 +9,7 @@ import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { V3_BY_KEY, v3Crumbs } from "@/lib/v3/pages";
 
 import { V3_FAQS } from "./v3-faqs";
+import { V3_FAQS_EXTRACTED } from "./v3-faqs-extracted";
 
 export function v3Metadata(key: string) {
   const m = V3_BY_KEY[key];
@@ -42,7 +43,9 @@ export function V3PageShell({
   const m = V3_BY_KEY[pageKey];
   if (!m) throw new Error(`Unknown v3 page: ${pageKey}`);
   const crumbs = crumbsOverride ?? v3Crumbs(pageKey);
-  const faqs = V3_FAQS[pageKey] ?? [];
+  // Converter-captured FAQs first, else the ones extracted from the rendered
+  // accordions (tools/v3-design/extract-faqs.mjs).
+  const faqs = V3_FAQS[pageKey] ?? V3_FAQS_EXTRACTED[pageKey] ?? [];
   const graphs: object[] = [];
   if (faqs.length) graphs.push(buildFaqPage(faqs));
   if (m.practiceArea && ["car", "truck", "moto", "injury"].includes(m.group)) {
