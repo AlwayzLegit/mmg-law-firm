@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
+import { V3_FAQS } from "@/components/v3/v3-faqs";
+import { V3_FAQS_EXTRACTED } from "@/components/v3/v3-faqs-extracted";
+
 import { V3_GUIDES, V3_PAGES } from "./pages";
 
 /**
@@ -31,6 +34,22 @@ describe("v3 page maps", () => {
     const pagesDir = path.resolve(__dirname, "../../components/v3/pages");
     for (const key of [...mapKeys("guide-pages.ts"), ...mapKeys("practice-pages.ts")]) {
       expect(fs.existsSync(path.join(pagesDir, `${key}.tsx`))).toBe(true);
+    }
+  });
+
+  it("has FAQPage data for every page that shows FAQ accordions", () => {
+    // One Q&A per FAQ trigger (state key naming a FAQ). Re-run
+    // tools/v3-design/extract-faqs.mjs when this drifts.
+    const pagesDir = path.resolve(__dirname, "../../components/v3/pages");
+    for (const p of V3_PAGES) {
+      const file = path.join(pagesDir, `${p.key}.tsx`);
+      if (!fs.existsSync(file)) continue;
+      const src = fs.readFileSync(file, "utf8");
+      const triggers = new Set(
+        [...src.matchAll(/data-v3-aria="([^"]*)"/g)].map((m) => m[1]).filter((k) => /[Ff]aq|^fq[A-Z]/.test(k)),
+      );
+      const faqs = V3_FAQS[p.key] ?? V3_FAQS_EXTRACTED[p.key] ?? [];
+      expect({ page: p.key, count: faqs.length }).toEqual({ page: p.key, count: triggers.size });
     }
   });
 });

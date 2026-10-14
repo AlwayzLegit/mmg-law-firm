@@ -5,6 +5,7 @@ import LeadsChart from "@/components/admin/leads-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { describeAuditAction } from "@/lib/admin/audit-label";
+import { actorLabel } from "@/components/admin/content-history";
 import { getLeadAnalytics } from "@/lib/data/lead-analytics";
 import { getWebAnalytics } from "@/lib/data/web-analytics";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -139,14 +140,37 @@ export default async function AdminDashboardPage() {
         r.action as string,
         (r.diff as Record<string, unknown> | null) ?? null,
       ),
-      actor: r.actor_id
-        ? (names[r.actor_id as string] ?? "Admin")
-        : "System / API",
+      actor: actorLabel(
+        r.actor_id as string | null,
+        (r.diff as Record<string, unknown> | null) ?? null,
+        new Map(Object.entries(names)),
+      ),
       ts: r.ts as string,
     }));
   }
 
+  const [{ count: agentQuestions }, { count: draftsToReview }] = await Promise.all([
+    supabase
+      .from("agent_questions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open"),
+    supabase
+      .from("blog_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("review_status", "needs_review"),
+  ]);
+
   const attention: Array<{ label: string; href: string; count: number }> = [
+    {
+      label: "question(s) from the content agent",
+      href: "/admin/content/agent#questions",
+      count: agentQuestions ?? 0,
+    },
+    {
+      label: "agent draft(s) awaiting your review",
+      href: "/admin/content/blog?status=needs_review",
+      count: draftsToReview ?? 0,
+    },
     {
       label: "task(s) due or overdue",
       href: "/admin/today",

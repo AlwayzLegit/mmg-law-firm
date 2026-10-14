@@ -89,7 +89,8 @@ These are not required for the site to run, but each unlocks a feature when set 
 | Var             | Enables                                                                                                                                                                | When unset                                  |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `CRON_SECRET`   | Weekly lead-digest email (`/api/cron/weekly-digest`, scheduled in `vercel.json` for Mondays 14:00 UTC). Vercel Cron sends it as `Authorization: Bearer <CRON_SECRET>`. | Endpoint returns `503 cron-not-configured`. |
-| `ADMIN_API_KEY` | Programmatic admin REST API at `/api/admin/*` (full blog CRUD), bearer-authenticated.                                                                                  | Routes return `503`.                        |
+| `ADMIN_API_KEY` | **Legacy** shared token for the admin REST API at `/api/admin/*` (all scopes). Prefer scoped keys from `/admin/settings/api-keys`; see `docs/admin-api.md` and `docs/content-agent-runbook.md`. | Only scoped keys are accepted.             |
+| `CONTENT_NOTIFY_EMAIL` | Where content-agent run reports / questions are emailed.                                                                                                        | Falls back to `LEAD_NOTIFY_EMAIL`.         |
 
 Manually test the digest after setting `CRON_SECRET` (requires `LEAD_NOTIFY_EMAIL` + Resend, already configured):
 
