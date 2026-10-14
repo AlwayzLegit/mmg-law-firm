@@ -221,6 +221,12 @@ Remaining crawl flags are false positives (clipped decorative blobs, checkbox
 internals) and one 21px-tall in-text link. Lighthouse mobile (local): CLS 0,
 SEO/BP 100, a11y 96–100 (only the gold CTA buttons fail contrast), perf 79–87.
 
+Launch decisions (Oct 14): `/legal/privacy` serves the production policy
+(`getLegalPage` → `LegalPagePresentation`, same as `main`); the v3 draft body
+`src/components/v3/pages/privacy.tsx` is parked until the attorney signs it off
+(switch the route back to `V3PageShell pageKey="privacy"`). Gold buttons with
+light text use `#86662f` (5.0:1), hovers `#755829`; `convert.mjs` maps them.
+
 Still open before launch: attorney review (incl. the **draft Privacy Policy**,
 which shows "DESIGN REVIEW · Draft policy" and "CONFIRM BEFORE PUBLICATION"
 blocks), gold CTA contrast decision, migrations 0031/0032, FAQPage JSON-LD

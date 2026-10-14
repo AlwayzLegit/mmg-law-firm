@@ -12,6 +12,7 @@ These could not be verified from the repository, and the sandbox that produced t
 - [ ] **Review excerpts.** `/reviews` quotes "The team was responsive, kept me updated" (Steve Shag) and "…clearly explain every step…" (David Dzharatanyan), sourced to the Birdeye listing as Google reviews. Confirm both are real, quoted accurately, and approved for use, with the testimonial disclaimer nearby (CRPC 7.1).
 - [ ] **Fee claim.** "No recovery, no attorney fees or case expenses" was approved by the firm. Confirm it matches the actual fee agreement on every page that uses it (see the "Promise / absolute statement" rows below).
 - [ ] **Languages.** Pages state service in English, Armenian and Russian. CLAUDE.md §18 still lists the attorney's languages as an assumption to confirm.
+- [ ] **Privacy Policy (v3 draft).** `/legal/privacy` currently serves the production policy. The v3 draft in `src/components/v3/pages/privacy.tsx` still has a "DESIGN REVIEW" banner and six "CONFIRM BEFORE PUBLICATION" blocks; complete and approve it before switching the route to the v3 body.
 - [ ] **Statutes and deadlines.** Each cited code section and time period below should be checked once; many repeat across pages, so fixing the source wording in one place and re-running the converter is cheaper than editing pages by hand.
 
 ## Summary

@@ -144,6 +144,9 @@ lines.push(
   "- [ ] **Languages.** Pages state service in English, Armenian and Russian. CLAUDE.md §18 still lists the attorney's languages as an assumption to confirm.",
 );
 lines.push(
+  "- [ ] **Privacy Policy (v3 draft).** `/legal/privacy` currently serves the production policy. The v3 draft in `src/components/v3/pages/privacy.tsx` still has a \"DESIGN REVIEW\" banner and six \"CONFIRM BEFORE PUBLICATION\" blocks; complete and approve it before switching the route to the v3 body.",
+);
+lines.push(
   "- [ ] **Statutes and deadlines.** Each cited code section and time period below should be checked once; many repeat across pages, so fixing the source wording in one place and re-running the converter is cheaper than editing pages by hand.",
 );
 lines.push("");

@@ -274,9 +274,19 @@ function styleToObj(style, ctx) {
     if (key === "color" && AA_TEXT_COLORS[val.toLowerCase()]) val = AA_TEXT_COLORS[val.toLowerCase()];
     seen.set(key, val); // last declaration wins (matches CSS)
   }
+  // Gold buttons with light text: the design's golds give 2.3–4.1:1, so
+  // swap in an AA-safe gold (5.0:1 on #fff8e8).
+  const bg = seen.get("background")?.toLowerCase();
+  const fg = seen.get("color")?.toLowerCase();
+  if (bg && AA_GOLD_BG.has(bg) && fg && LIGHT_TEXT.has(fg)) seen.set("background", AA_GOLD);
   for (const [k, v] of seen) props.push(`${k}:${q(v)}`);
   return props;
 }
+const AA_GOLD = "#86662f";
+const AA_GOLD_BG = new Set(["#b68b3c", "#9a7330", "#a8813f", "#9c7a33", "#c9a03f"]);
+const LIGHT_TEXT = new Set(["#fff8e8", "#fffdf8", "#fbf8f1", "#f5f2ea", "#fff", "#ffffff"]);
+// Hover backgrounds of those buttons (all used with light text in the design).
+const AA_GOLD_HOVER = { "#b68f35": "#755829", "#a27a30": "#755829", "#94712f": "#755829" };
 
 /** Replace {{ expr }} inside an attribute/style string. In style context,
  *  values that differ by viewport become CSS custom properties. */
@@ -923,7 +933,9 @@ for (const [key, cls] of HOVER) {
     .split(";")
     .map((d) => d.trim())
     .filter(Boolean)
-    .map((d) => d.replace(/\s*!important\s*$/, "") + " !important")
+    .map((d) => d.replace(/\s*!important\s*$/, ""))
+    .map((d) => d.replace(/^(background\s*:\s*)(#[0-9a-fA-F]{6})$/, (m, k, hex) => (AA_GOLD_HOVER[hex.toLowerCase()] ? k + AA_GOLD_HOVER[hex.toLowerCase()] : m)))
+    .map((d) => d + " !important")
     .join(";");
   css += kind === "hover" ? `.${cls}:hover{${body}}\n` : `.${cls}:focus,.${cls}:focus-visible{${body}}\n`;
 }

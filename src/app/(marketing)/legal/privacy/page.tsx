@@ -1,8 +1,24 @@
-import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
-import { V3PrivacyPage } from "@/components/v3/pages/privacy";
+import { LegalPagePresentation } from "@/components/marketing/legal-page";
+import { getLegalPage } from "@/lib/data/legal-page-queries";
+import { buildMetadata } from "@/lib/seo/metadata";
 
-export const metadata = v3Metadata("privacy");
+// The v3 privacy body (src/components/v3/pages/privacy.tsx) is a draft with
+// "CONFIRM BEFORE PUBLICATION" blocks. Until the attorney signs it off, this
+// route serves the production policy (database row, or the in-code fallback).
+// TODO(human): attorney review required before switching to V3PrivacyPage.
+const SLUG = "privacy" as const;
+const PATH = "/legal/privacy";
 
-export default function LegalPrivacyPage() {
-  return <V3PageShell pageKey="privacy" page={V3PrivacyPage} />;
+export async function generateMetadata() {
+  const page = await getLegalPage(SLUG);
+  return buildMetadata({
+    title: page.title,
+    description: page.meta_description,
+    path: PATH,
+  });
+}
+
+export default async function PrivacyPage() {
+  const page = await getLegalPage(SLUG);
+  return <LegalPagePresentation page={page} />;
 }
