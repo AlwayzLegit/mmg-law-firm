@@ -27,7 +27,7 @@ const POINTS: { icon: LucideIcon; title: string; body: string }[] = [
   },
   {
     icon: HandCoins,
-    title: "No fee unless we win",
+    title: "No recovery, no attorney fees",
     body: "Legal representation at MMG Law Firm is on a contingency-fee basis. The firm does not collect a fee unless it achieves a successful result on your case. The initial consultation is always free.",
   },
   {

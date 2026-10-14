@@ -24,7 +24,7 @@ export const en = {
     freeConsultation: "Free Consultation",
     requestConsultation: "Request a free consultation",
     callNow: "Call now",
-    noFeeUnlessWeWin: "No fee unless we win",
+    noFeeUnlessWeWin: "No recovery, no attorney fees or case expenses",
   },
   common: {
     menu: "Menu",
