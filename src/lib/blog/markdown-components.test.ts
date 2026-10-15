@@ -8,12 +8,14 @@ import { BLOG_MARKDOWN_COMPONENTS } from "./markdown-components";
 describe("blog body heading hierarchy", () => {
   it("preserves body title wording and anchors without adding a second H1", () => {
     const html = renderToStaticMarkup(
-      createElement(ReactMarkdown, {
-        components: BLOG_MARKDOWN_COMPONENTS,
-        rehypePlugins: [rehypeSlug],
-        children:
-          "# California accident guidance\n\nExisting legal wording.\n\n## Evidence\n\n### Photos",
-      }),
+      createElement(
+        ReactMarkdown,
+        {
+          components: BLOG_MARKDOWN_COMPONENTS,
+          rehypePlugins: [rehypeSlug],
+        },
+        "# California accident guidance\n\nExisting legal wording.\n\n## Evidence\n\n### Photos",
+      ),
     );
     expect(html).not.toContain("<h1");
     expect(html).toContain(
