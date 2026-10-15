@@ -11,6 +11,7 @@ Preserve existing page addresses and all frozen meta titles/descriptions. Keep `
 - Fail sitemap generation on query errors rather than advertising a partial success. Existing non-sitemap query consumers retain their previous fallback behavior.
 - Remove unsupported robots Host directive; preserve crawl rules.
 - Refresh child sitemaps from existing blog and explicit sitemap revalidation hooks.
+- Refresh all sitemap partitions after successful location-page edits, publish toggles and bulk publishing changes. Individual publish toggles also invalidate the public location-page route pattern, clearing cached pages/404s. No mutation payloads or metadata generators are changed.
 
 ## Gates before production
 - Unit tests, TypeScript, scoped lint and production build.
