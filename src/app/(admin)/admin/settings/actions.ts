@@ -7,7 +7,6 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { siteUrl } from "@/lib/seo/canonical";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { revokeAllDevices, trustCurrentDevice } from "@/lib/auth/device-trust";
 import { logAudit } from "@/lib/audit";
 import { sendEmail } from "@/lib/email/resend";
 import { escapeHtml } from "@/lib/leads/intake";
@@ -147,9 +146,10 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
           </a>
         </p>
         <p style="font-size: 12px; line-height: 1.6; color: #888;">
-          This link signs you in and verifies this device. It expires after a
-          short time — if it stops working, ask the person who invited you to
-          resend it. If you weren't expecting this, you can ignore this email.
+          The link signs you in and asks you to choose a password. It works
+          once and expires after a short time; if it stops working, ask the
+          person who invited you to resend it. If you weren't expecting this,
+          you can ignore this email.
         </p>
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
         <p style="font-size: 12px; color: #aaa;">${FIRM.legalName}</p>
@@ -291,8 +291,8 @@ const PasswordInput = z
   .max(72, "Passwords can be at most 72 characters");
 
 /**
- * Set or change the signed-in admin's password. After this, the admin can use
- * password login instead of the magic link (new devices still need the code).
+ * Set or change the signed-in admin's password. Used by /onboarding (first
+ * sign-in and password reset) and the Security card in settings.
  */
 export async function setPassword(formData: FormData): Promise<ActionResult> {
   // allowUnonboarded: this is the action the /onboarding page calls, so the
@@ -315,15 +315,13 @@ export async function setPassword(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: error.message };
   }
 
-  // Mark onboarding complete (so requireAdmin stops sending them to /onboarding)
-  // and trust this device, both via the service-role client to bypass RLS on
-  // admin_profiles. Then the next sign-in is email + password, no link needed.
+  // Mark onboarding complete (so requireAdmin stops sending them to
+  // /onboarding) via the service-role client to bypass RLS on admin_profiles.
   const admin = getServiceSupabase();
   await admin
     .from("admin_profiles")
     .update({ password_set: true })
     .eq("user_id", user.id);
-  await trustCurrentDevice(user.id);
 
   logAudit({
     actor_id: user.id,
@@ -335,19 +333,19 @@ export async function setPassword(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
-/**
- * Forget every remembered device, then re-trust the current one. Other devices
- * will need the email code again on their next sign-in.
- */
+/** Sign the user out everywhere except this browser. */
 export async function signOutOtherDevices(): Promise<ActionResult> {
   const { user } = await requireAdmin();
-  await revokeAllDevices(user.id);
-  await trustCurrentDevice(user.id);
+  // Revoke every other session for this user; the current browser stays
+  // signed in. Anyone else holding a session has to sign in again.
+  const supabase = await getServerSupabase();
+  const { error } = await supabase.auth.signOut({ scope: "others" });
+  if (error) return { ok: false, error: error.message };
   logAudit({
     actor_id: user.id,
     entity: "admin_profiles",
     entity_id: user.id,
-    action: "revoke_devices",
+    action: "sign_out_others",
   });
   return { ok: true };
 }

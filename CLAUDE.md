@@ -122,7 +122,7 @@ Schema builders live in `lib/seo/schema.ts`. Sitemap in `app/sitemap.ts`. Robots
 
 ### 10. Admin
 
-- `/admin/*` gated by `requireAdmin()` (server-side) + Supabase magic-link auth.
+- `/admin/*` gated by `requireAdmin()` (server-side) + Supabase email + password auth. Invites and password resets are `token_hash` links generated server-side and sent through Resend (migration 0034 retired the device-code second factor).
 - Initial setup: insert into `admin_profiles` manually after first deploy.
 - Dashboard, leads (list + detail + kanban), content (counties, cities, location_pages, practice_areas, blog, testimonials, case_results), simple analytics from Postgres, settings.
 

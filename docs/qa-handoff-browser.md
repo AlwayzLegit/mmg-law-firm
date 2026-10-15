@@ -125,14 +125,15 @@ If Turnstile doesn't render: ad-blocker is on, or `NEXT_PUBLIC_TURNSTILE_SITE_KE
 
 ## 7. Admin
 
-Log in via magic link at `/login` with an email that exists in
-`admin_profiles`. First-time login bounces through `/onboarding` to set a
-password — then later sessions sign in via email + password.
+Log in at `/login` with the email and password of an account that exists in
+`admin_profiles`. A newly invited admin opens the invite link once, lands on
+`/onboarding` to set a password, and signs in with email + password from then
+on. "Forgot password" emails a one-time reset link through Resend.
 
 | # | Step | Expected |
 |---|---|---|
-| 7.1 | `/login` | Email field; sending an unknown email returns a generic "check your inbox" (no email enumeration) |
-| 7.2 | After verifying a device, hit `⌘K` | Command palette opens; type "today" → "Today" appears; Enter goes there |
+| 7.1 | `/login` → "Forgot password" | Submitting any address shows the same "if this belongs to an admin" message (no email enumeration) |
+| 7.2 | After signing in, hit `⌘K` | Command palette opens; type "today" → "Today" appears; Enter goes there |
 | 7.3 | `/admin` dashboard | KPIs, "Needs attention" cards, leads chart, recent activity. No 0-state errors |
 | 7.4 | `/admin/today` | Overdue / due-today / upcoming task buckets; Follow-ups due; New & unassigned. Adding a task works |
 | 7.5 | `/admin/leads` | Filter chips, bulk-select rows, "Mark reviewed" / Publish / Unpublish are visible when ≥1 row selected |
