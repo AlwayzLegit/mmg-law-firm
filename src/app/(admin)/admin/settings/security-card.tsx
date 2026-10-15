@@ -32,7 +32,7 @@ export default function SecurityCard() {
     try {
       const res = await signOutOtherDevices();
       if (!res.ok) toast.error(res.error);
-      else toast.success("Other devices signed out. They'll need a new code.");
+      else toast.success("Other devices signed out.");
     } finally {
       setBusy(false);
     }
@@ -77,16 +77,16 @@ export default function SecurityCard() {
             {busy ? "Saving..." : "Save password"}
           </Button>
           <p className="text-xs text-muted-foreground">
-            After setting a password you can sign in with email + password. New
-            devices still require a one-time email code.
+            At least 10 characters. You sign in with your email and this
+            password.
           </p>
         </form>
 
         <div className="border-t border-border pt-4">
-          <p className="text-sm font-medium">Trusted devices</p>
+          <p className="text-sm font-medium">Other sessions</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Verified devices skip the email code for 30 days. Sign out other
-            devices if you&apos;ve lost one or want to force re-verification.
+            Sign out every other browser and device that is signed in as you.
+            Use it if you lost a device or signed in somewhere shared.
           </p>
           <Button
             type="button"
