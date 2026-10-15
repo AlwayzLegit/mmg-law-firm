@@ -28,10 +28,9 @@ import { getAttorneyHelp } from "@/lib/data/practice-area-content";
 import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { getPublishedLocationPages } from "@/lib/data/queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
-import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
+import { buildFaqPage, buildService } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 import { V3_PRACTICE_PAGES } from "@/components/v3/practice-pages";
 import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
@@ -120,30 +119,13 @@ export default async function PracticeAreaPage({ params }: Props) {
 
   const path = `/practice-areas/${area.slug}`;
 
-  const legalService = {
-    "@context": "https://schema.org",
-    "@type": "LegalService",
-    "@id": `${canonicalUrl(path)}#legal-service`,
+  const legalService = buildService({
+    path,
     name: `${FIRM.legalName} — ${area.name}`,
-    url: canonicalUrl(path),
-    image: defaultOgImageUrl(),
     description: content.intro,
-    telephone: FIRM.phone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: FIRM.address.street,
-      addressLocality: FIRM.address.city,
-      addressRegion: FIRM.address.state,
-      postalCode: FIRM.address.zip,
-      addressCountry: FIRM.address.country,
-    },
     areaServed: { "@type": "State", name: "California" },
-    parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
-    // `knowsAbout` (valid on Organization/LegalService) carries the topical
-    // signal; `serviceType` is only valid on schema.org Service and was
-    // flagged NOT_RECOGNIZED in the site audit.
-    knowsAbout: area.lawyerPhrase,
-  };
+    serviceType: area.lawyerPhrase,
+  });
 
   const faqGraph = content.faqs.length > 0 ? buildFaqPage(content.faqs) : null;
 
