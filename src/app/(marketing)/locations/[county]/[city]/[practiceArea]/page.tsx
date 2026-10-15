@@ -105,7 +105,7 @@ export default async function CityPracticePage({ params }: Props) {
       p.practice_area_slug === row.practice_area_slug &&
       p.city_slug !== row.city_slug,
   );
-  const nearbyCities = [
+  const otherCaliforniaCities = [
     ...samePractice.filter((p) => p.county_slug === row.county_slug),
     ...samePractice.filter((p) => p.county_slug !== row.county_slug),
   ].slice(0, 6);
@@ -341,13 +341,13 @@ export default async function CityPracticePage({ params }: Props) {
               </section>
             ) : null}
 
-            {nearbyCities.length > 0 ? (
+            {otherCaliforniaCities.length > 0 ? (
               <section className="border-border mt-12 border-t pt-8">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  {row.practice_area_name} in nearby cities
+                  {row.practice_area_name} in other California cities
                 </h2>
                 <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {nearbyCities.map((p) => (
+                  {otherCaliforniaCities.map((p) => (
                     <li key={`${p.county_slug}/${p.city_slug}`}>
                       <Link
                         href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}
