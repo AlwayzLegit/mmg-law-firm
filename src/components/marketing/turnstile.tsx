@@ -63,7 +63,7 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
   }, [siteKey, onToken]);
 
   // A page can contain two forms. Do not run a second challenge far below the
-  // fold before its form is needed. Focus/pointer input also activates it, and
+  // fold before its form is visible. Focus/pointer input also activates it, and
   // the server still rejects every missing, expired or invalid token.
   React.useEffect(() => {
     if (!siteKey || !ref.current) return;
