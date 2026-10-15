@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
+import { startPhoneClickTracking } from "@/lib/analytics/phone-clicks";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
@@ -18,6 +19,13 @@ const PostHogRuntime = dynamic(
  */
 export function PostHogLoader() {
   const [ready, setReady] = React.useState(false);
+
+  // Capture early phone clicks into the same queue as form events. Waiting
+  // for the deferred SDK would miss visitors who immediately tap Call.
+  React.useEffect(() => {
+    if (!POSTHOG_KEY) return;
+    return startPhoneClickTracking();
+  }, []);
 
   React.useEffect(() => {
     if (!POSTHOG_KEY) return;
