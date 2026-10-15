@@ -10,6 +10,8 @@ type Props = {
   style?: CSSProperties;
   className?: string;
   priority?: boolean;
+  fetchPriority?: "high" | "low" | "auto";
+  loading?: "eager" | "lazy";
   sizes?: string;
   [key: `data-${string}`]: string | undefined;
 };
