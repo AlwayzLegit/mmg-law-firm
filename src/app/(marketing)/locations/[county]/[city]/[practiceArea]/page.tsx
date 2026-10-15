@@ -22,10 +22,9 @@ import {
 } from "@/lib/data/practice-area-content";
 import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
-import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
+import { buildFaqPage, buildService } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 import { practiceGuides } from "@/lib/v3/practice-guides";
 
@@ -111,28 +110,12 @@ export default async function CityPracticePage({ params }: Props) {
     ...samePractice.filter((p) => p.county_slug !== row.county_slug),
   ].slice(0, 6);
 
-  const legalService = {
-    "@context": "https://schema.org",
-    "@type": ["LegalService", "Attorney"],
-    "@id": `${canonicalUrl(path)}#legal-service`,
+  const legalService = buildService({
+    path,
     name: `${FIRM.legalName} — ${row.practice_area_name} in ${row.city_name}`,
-    url: canonicalUrl(path),
-    image: defaultOgImageUrl(),
-    telephone: FIRM.phone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: FIRM.address.street,
-      addressLocality: FIRM.address.city,
-      addressRegion: FIRM.address.state,
-      postalCode: FIRM.address.zip,
-      addressCountry: FIRM.address.country,
-    },
     areaServed: { "@type": "City", name: row.city_name },
-    parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
-    // `knowsAbout` is valid on Organization/LegalService; `serviceType` is
-    // only valid on schema.org Service (flagged NOT_RECOGNIZED in the audit).
-    knowsAbout: area?.lawyerPhrase ?? row.practice_area_name,
-  };
+    serviceType: area?.lawyerPhrase ?? row.practice_area_name,
+  });
 
   const faqGraph = row.faq_json?.length
     ? buildFaqPage(row.faq_json)

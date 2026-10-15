@@ -8,14 +8,37 @@ import { canonicalUrl, defaultOgImageUrl, siteUrl } from "@/lib/seo/canonical";
 
 type GraphNode = Record<string, unknown>;
 
-/** Canonical `@id` of the firm's single LegalService entity, defined in the
- *  sitewide graph (buildOrganizationGraph). Per-page LegalService nodes
- *  reference this via `parentOrganization` so search engines see one business
- *  serving many areas — not many competing businesses. */
+/** Canonical `@id` of the firm's single LegalService entity. Page-specific
+ *  Service nodes reference this provider; they are not additional businesses. */
 export const FIRM_LEGAL_SERVICE_ID = `${siteUrl()}#legal-service`;
 const FIRM_ID = FIRM_LEGAL_SERVICE_ID;
 const ATTORNEY_ID = `${siteUrl()}#attorney-mihran`;
 const WEBSITE_ID = `${siteUrl()}#website`;
+
+type ServiceOpts = {
+  path: string;
+  name: string;
+  description?: string;
+  serviceType?: string;
+  areaServed: { "@type": "State" | "City" | "AdministrativeArea"; name: string };
+};
+
+/** LegalService describes the firm, while Service describes what it offers.
+ *  Keep the single Glendale business/address in the sitewide graph. */
+export function buildService({ path, name, description, serviceType, areaServed }: ServiceOpts): GraphNode {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${canonicalUrl(path)}#service`,
+    name,
+    url: canonicalUrl(path),
+    image: defaultOgImageUrl(),
+    ...(description ? { description } : {}),
+    ...(serviceType ? { serviceType } : {}),
+    areaServed,
+    provider: { "@id": FIRM_LEGAL_SERVICE_ID },
+  };
+}
 
 function legalServiceNode(sameAs: string[]): GraphNode {
   return {
