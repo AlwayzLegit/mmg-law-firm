@@ -59,8 +59,12 @@ export type LocationPageRow = {
 // Counties
 // ---------------------------------------------------------------------------
 
-export async function getPublishedCounties(): Promise<CountyRow[]> {
+export async function getPublishedCounties(
+  strict = false,
+): Promise<CountyRow[]> {
   if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
     return ALL_COUNTIES.filter((c) => c.isPublished).map(toCountyRow);
   }
   const supabase = getStaticSupabase();
@@ -72,6 +76,7 @@ export async function getPublishedCounties(): Promise<CountyRow[]> {
     .eq("is_published", true);
   if (error) {
     console.warn("[queries] counties:", error.message);
+    if (strict) throw new Error("Cannot load counties for sitemap");
     return ALL_COUNTIES.filter((c) => c.isPublished).map(toCountyRow);
   }
   return (data ?? []) as CountyRow[];
@@ -118,7 +123,9 @@ function toCountyRow(c: CountySeed): CountyRow {
 // Cities
 // ---------------------------------------------------------------------------
 
-export async function getCitiesInCounty(countySlug: string): Promise<CityRow[]> {
+export async function getCitiesInCounty(
+  countySlug: string,
+): Promise<CityRow[]> {
   if (!isSupabaseConfigured()) {
     return TIER_1_LOCATIONS.filter((l) => l.countySlug === countySlug).map(
       toCityRow,
@@ -171,8 +178,12 @@ export async function getCityBySlug(
   return data ? flattenCity(data as unknown as DbCityWithCounty) : null;
 }
 
-export async function getAllPublishedCities(): Promise<CityRow[]> {
+export async function getAllPublishedCities(
+  strict = false,
+): Promise<CityRow[]> {
   if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
     return TIER_1_LOCATIONS.map(toCityRow);
   }
   const supabase = getStaticSupabase();
@@ -184,6 +195,7 @@ export async function getAllPublishedCities(): Promise<CityRow[]> {
     .eq("is_published", true);
   if (error) {
     console.warn("[queries] all-cities:", error.message);
+    if (strict) throw new Error("Cannot load cities for sitemap");
     return TIER_1_LOCATIONS.map(toCityRow);
   }
   return ((data ?? []) as unknown as DbCityWithCounty[]).map(flattenCity);
@@ -246,8 +258,12 @@ export async function getPracticeAreaBySlug(
 // local_angle_md to publish. RLS enforces this at the DB layer too.
 // ---------------------------------------------------------------------------
 
-export async function getPublishedLocationPages(): Promise<LocationPageRow[]> {
+export async function getPublishedLocationPages(
+  strict = false,
+): Promise<LocationPageRow[]> {
   if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
     return [];
   }
   const supabase = getStaticSupabase();
@@ -268,6 +284,7 @@ export async function getPublishedLocationPages(): Promise<LocationPageRow[]> {
     .not("local_angle_md", "is", null);
   if (error) {
     console.warn("[queries] location-pages:", error.message);
+    if (strict) throw new Error("Cannot load location pages for sitemap");
     return [];
   }
   return ((data ?? []) as unknown as DbLocationPage[]).map(flattenLocationPage);

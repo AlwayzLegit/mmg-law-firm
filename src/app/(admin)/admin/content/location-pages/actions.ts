@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit, logAuditMany } from "@/lib/audit";
+import { revalidateSitemaps } from "@/lib/seo/revalidate-sitemaps";
 
 const CreateInput = z.object({
   city_id: z.string().uuid(),
@@ -165,6 +166,7 @@ export async function updateLocationPage(
       `/locations/${r.cities.counties.slug}/${r.cities.slug}/${r.practice_areas.slug}`,
     );
   }
+  revalidateSitemaps();
 
   return { ok: true };
 }
@@ -223,6 +225,9 @@ export async function togglePublish(formData: FormData): Promise<ActionResult> {
   revalidatePath(`/admin/content/location-pages/${parsed.data.id}`);
   revalidatePath("/admin/content/location-pages");
   revalidatePath("/admin/content/pages");
+  revalidateSitemaps();
+  // Individual publish toggles must also clear cached public 404s/pages.
+  revalidatePath("/locations/[county]/[city]/[practiceArea]", "page");
 
   return { ok: true };
 }
@@ -313,6 +318,7 @@ export async function bulkSetLocationPagePublished(
       `/locations/${r.cities.counties.slug}/${r.cities.slug}/${r.practice_areas.slug}`,
     );
   }
+  revalidateSitemaps();
 
   return { ok: true, updated: targets.length, skipped };
 }

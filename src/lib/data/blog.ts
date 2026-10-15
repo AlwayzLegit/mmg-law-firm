@@ -16,8 +16,14 @@ export type BlogPostRow = BlogPostSummary & {
   body_md: string;
 };
 
-export async function getPublishedPosts(): Promise<BlogPostSummary[]> {
-  if (!isSupabaseConfigured()) return [];
+export async function getPublishedPosts(
+  strict = false,
+): Promise<BlogPostSummary[]> {
+  if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
+    return [];
+  }
   const supabase = getStaticSupabase();
   const { data, error } = await supabase
     .from("blog_posts")
@@ -29,6 +35,7 @@ export async function getPublishedPosts(): Promise<BlogPostSummary[]> {
     .order("published_at", { ascending: false });
   if (error) {
     console.warn("[queries] blog index:", error.message);
+    if (strict) throw new Error("Cannot load blog posts for sitemap");
     return [];
   }
   return (data ?? []) as BlogPostSummary[];

@@ -20,9 +20,12 @@ export async function POST(request: NextRequest) {
   const provided = secretHeader ?? secretQuery;
 
   if (!env.REVALIDATE_SECRET || provided !== env.REVALIDATE_SECRET) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, {
-      status: 401,
-    });
+    return NextResponse.json(
+      { ok: false, error: "unauthorized" },
+      {
+        status: 401,
+      },
+    );
   }
 
   let body: { paths?: string[]; tags?: string[] };
@@ -42,6 +45,18 @@ export async function POST(request: NextRequest) {
     if (typeof path === "string" && path.startsWith("/")) {
       revalidatePath(path);
       revalidatedPaths.push(path);
+      if (path === "/sitemap.xml") {
+        for (const group of [
+          "car-accidents",
+          "truck-accidents",
+          "motorcycle-accidents",
+          "other",
+        ]) {
+          const child = `/sitemaps/${group}.xml`;
+          revalidatePath(child);
+          revalidatedPaths.push(child);
+        }
+      }
     }
   }
   for (const tag of body.tags ?? []) {
