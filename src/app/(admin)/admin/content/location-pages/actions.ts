@@ -109,8 +109,8 @@ export async function createLocationPageAndRedirect(
   redirect(`/admin/content/location-pages/${result.id}`);
 }
 
-/** Update editorial fields on a location_pages row. Updating local_angle_md
- *  also bumps last_reviewed_at — that's the whole point of editing the page. */
+/** Update only supplied editorial fields. Saving an edit is not an attorney
+ *  review; the separate review action is the only review-date operation here. */
 export async function updateLocationPage(
   formData: FormData,
 ): Promise<ActionResult> {
@@ -118,9 +118,13 @@ export async function updateLocationPage(
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
-    intro_md: formData.get("intro_md"),
-    local_angle_md: formData.get("local_angle_md"),
-    meta_description: formData.get("meta_description"),
+    intro_md: formData.has("intro_md") ? formData.get("intro_md") : undefined,
+    local_angle_md: formData.has("local_angle_md")
+      ? formData.get("local_angle_md")
+      : undefined,
+    meta_description: formData.has("meta_description")
+      ? formData.get("meta_description")
+      : undefined,
   });
   if (!parsed.success) {
     return {
@@ -130,14 +134,26 @@ export async function updateLocationPage(
   }
 
   const supabase = await getServerSupabase();
+  const updates: {
+    intro_md?: string | null;
+    local_angle_md?: string | null;
+    meta_description?: string | null;
+  } = {};
+  for (const field of [
+    "intro_md",
+    "local_angle_md",
+    "meta_description",
+  ] as const) {
+    if (parsed.data[field] !== undefined) {
+      updates[field] = emptyToNull(parsed.data[field]);
+    }
+  }
+  if (Object.keys(updates).length === 0) {
+    return { ok: false, error: "No changes to save." };
+  }
   const { data: row, error } = await supabase
     .from("location_pages")
-    .update({
-      intro_md: emptyToNull(parsed.data.intro_md),
-      local_angle_md: emptyToNull(parsed.data.local_angle_md),
-      meta_description: emptyToNull(parsed.data.meta_description),
-      last_reviewed_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq("id", parsed.data.id)
     .select(
       `cities!inner(slug, counties!inner(slug)), practice_areas!inner(slug)`,
