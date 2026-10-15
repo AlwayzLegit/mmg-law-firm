@@ -1,4 +1,4 @@
-/** Start form-only work near the viewport or on the visitor's first interaction. */
+/** Start form-only work in the viewport or on the visitor's first interaction. */
 export function observeFormVisibility(
   widget: HTMLElement,
   activate: () => void,
@@ -35,7 +35,9 @@ export function observeFormVisibility(
     (entries) => {
       if (entries.some((entry) => entry.isIntersecting)) start();
     },
-    { rootMargin: "400px 0px" },
+    // Mobile hero forms sit just below the first screen. A preload margin starts
+    // their challenge during the hero paint; actual visibility avoids that.
+    { rootMargin: "0px" },
   );
   observer.observe(target);
   return cleanup;

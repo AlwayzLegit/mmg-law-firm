@@ -34,12 +34,12 @@ describe("form verification activation", () => {
   const start = () =>
     observeFormVisibility(widget as unknown as HTMLElement, activate);
 
-  it("defers a distant form and initializes once when it approaches view", () => {
+  it("defers an offscreen form and initializes once when it enters view", () => {
     start();
     expect(widget.closest).toHaveBeenCalledWith("form");
     expect(observe).toHaveBeenCalledWith(target);
     expect(observerConstructor.mock.calls[0][1]).toEqual({
-      rootMargin: "400px 0px",
+      rootMargin: "0px",
     });
     intersect([{ isIntersecting: false }]);
     expect(activate).not.toHaveBeenCalled();
