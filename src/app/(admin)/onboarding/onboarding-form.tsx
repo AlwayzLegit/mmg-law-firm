@@ -19,8 +19,8 @@ export default function OnboardingForm() {
         toast.error(res.error);
         return;
       }
-      toast.success("Password set. Welcome!");
-      // Full navigation so the server sees the refreshed session/device cookies.
+      toast.success("Password saved.");
+      // Full navigation so the server sees the refreshed session cookies.
       window.location.href = "/admin";
     } catch (err) {
       console.error(err);
@@ -65,8 +65,8 @@ export default function OnboardingForm() {
         {busy ? "Saving..." : "Set password & continue"}
       </Button>
       <p className="text-muted-foreground text-xs">
-        This device is remembered for 30 days. New devices will still need a
-        one-time email code in addition to your password.
+        Use at least 10 characters. From now on you sign in with your email
+        and this password.
       </p>
     </form>
   );

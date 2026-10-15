@@ -68,8 +68,9 @@ export default function InviteForm() {
         {pending ? "Sending invite..." : "Send invite"}
       </Button>
       <p className="text-xs text-muted-foreground">
-        The invitee will receive a one-time sign-in link from Supabase. They
-        get admin access as soon as they confirm.
+        The invitee gets an email with a one-time link. Opening it signs them
+        in and asks them to choose a password; after that they sign in with
+        email and password.
       </p>
     </form>
   );

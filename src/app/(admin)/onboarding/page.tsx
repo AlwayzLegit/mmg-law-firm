@@ -9,17 +9,24 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+type Props = { searchParams: Promise<{ reset?: string }> };
+
 /**
- * First-run onboarding. A newly invited admin lands here after signing in via
- * the invite link (requireAdmin redirects them when `password_set` is false).
- * They set a password once; afterward they sign in with email + password and
- * no longer depend on a one-time link every visit.
+ * Set-a-password page, reached two ways:
+ *
+ * 1. First run: a newly invited admin lands here after opening the invite
+ *    link (requireAdmin redirects them while `password_set` is false).
+ * 2. Password reset: the "Forgot password" link in the email signs them in
+ *    and sends them here with `?reset=1`, so an admin who already has a
+ *    password can choose a new one.
  */
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }: Props) {
+  const { reset } = await searchParams;
   // allowUnonboarded so this page doesn't bounce the very user it's meant for.
   const { profile } = await requireAdmin({ allowUnonboarded: true });
-  if (profile.password_set) redirect("/admin");
+  if (profile.password_set && !reset) redirect("/admin");
 
+  const isReset = Boolean(reset);
   return (
     <main className="bg-secondary/40 flex min-h-screen flex-col items-center justify-center px-4 py-16">
       <div className="border-border bg-card w-full max-w-md rounded-2xl border p-8 shadow-sm">
@@ -27,12 +34,12 @@ export default async function OnboardingPage() {
           MMG Law Firm
         </p>
         <h1 className="font-display mt-3 text-2xl font-medium tracking-tight">
-          Set your password
+          {isReset ? "Choose a new password" : "Set your password"}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Welcome{profile.full_name ? `, ${profile.full_name}` : ""}. Create a
-          password to finish setting up your account. Next time you can sign in
-          with your email and password — no one-time link needed.
+          {isReset
+            ? "You're signed in through the reset link. Pick a new password to finish."
+            : `Welcome${profile.full_name ? `, ${profile.full_name}` : ""}. Create a password to finish setting up your account. Next time you sign in with your email and password.`}
         </p>
         <OnboardingForm />
       </div>
