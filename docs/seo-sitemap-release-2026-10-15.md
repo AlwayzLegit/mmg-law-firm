@@ -11,6 +11,7 @@ Preserve existing page addresses and all frozen meta titles/descriptions. Keep `
 - Fail sitemap generation on query errors rather than advertising a partial success. Existing non-sitemap query consumers retain their previous fallback behavior.
 - Remove unsupported robots Host directive; preserve crawl rules.
 - Refresh child sitemaps from existing blog and explicit sitemap revalidation hooks.
+- Admin blog edits and publish/unpublish toggles now also invalidate the sitemap partitions. Publish toggles clear cached blog detail pages. A live published article (`/blog/slip-and-fall-lawyer-california-5`) was linked internally but absent from the 955-URL production sitemap on October 15; preview inventory checks must account for legitimate newly published content rather than require exactly 955 URLs.
 - Refresh all sitemap partitions after successful location-page edits, publish toggles and bulk publishing changes. Individual publish toggles also invalidate the public location-page route pattern, clearing cached pages/404s. No mutation payloads or metadata generators are changed.
 
 ## Gates before production
