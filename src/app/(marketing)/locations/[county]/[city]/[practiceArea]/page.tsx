@@ -27,6 +27,7 @@ import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { practiceGuides } from "@/lib/v3/practice-guides";
 
 // Spec §17 hard rule #1: city × practice pages require unique local_angle_md
 // to publish. We never auto-generate filler. dynamicParams=true so a freshly
@@ -224,6 +225,23 @@ export default async function CityPracticePage({ params }: Props) {
                 </ReactMarkdown>
               </div>
             </section>
+
+            {practiceGuides(row.practice_area_slug).length > 0 ? (
+              <section className="mt-12" aria-labelledby="related-guides-heading">
+                <h2 id="related-guides-heading" className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+                  Related California accident guides
+                </h2>
+                <ul className="mt-4 space-y-2">
+                  {practiceGuides(row.practice_area_slug).map((guide) => (
+                    <li key={guide.path}>
+                      <Link href={guide.path} className="text-primary underline underline-offset-4">
+                        {guide.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             <AttorneyHelpSection
               practiceLabel={
