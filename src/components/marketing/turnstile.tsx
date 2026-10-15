@@ -156,6 +156,9 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
         <Script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
           strategy="afterInteractive"
+          // A second widget can mount while the shared script is still loading;
+          // Next calls its onLoad when that in-flight request completes.
+          onLoad={() => setLoaded(true)}
           // onReady also runs when another form/navigation already loaded the
           // shared script. onLoad alone can leave later widgets uninitialized.
           onReady={() => setLoaded(true)}

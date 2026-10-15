@@ -92,6 +92,7 @@ describe("form verification activation", () => {
     );
     const route = readFileSync("src/app/api/leads/route.ts", "utf8");
     expect(component).toContain("onReady={() => setLoaded(true)}");
+    expect(component).toContain("onLoad={() => setLoaded(true)}");
     expect(component).toContain('"expired-callback": () => onToken("")');
     expect(component).toContain('onToken("")');
     expect(route).toContain("verifyTurnstile(");
