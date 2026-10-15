@@ -48,7 +48,9 @@ function buildCsp(): string {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self' data:`,
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com`,
+    // The wildcard excludes analytics.google.com itself. Permit only the two
+    // observed GA collection paths; keep advertising/DoubleClick hosts blocked.
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.google.com/g/collect https://www.google.com/g/collect https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com`,
     // Turnstile widget + Google Maps embed render in iframes.
     `frame-src 'self' https://challenges.cloudflare.com https://www.google.com`,
     `worker-src 'self' blob:`,
