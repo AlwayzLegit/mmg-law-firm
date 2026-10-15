@@ -31,10 +31,14 @@ export default function EditForm(props: Props) {
   function onSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    // Body edits must not rewrite frozen metadata or unrelated fields.
+    if (intro === props.intro_md) fd.delete("intro_md");
+    if (angle === props.local_angle_md) fd.delete("local_angle_md");
+    if (meta === props.meta_description) fd.delete("meta_description");
     startTransition(async () => {
       const result = await updateLocationPage(fd);
       if (result.ok) {
-        toast.success("Changes saved. last_reviewed_at bumped to now.");
+        toast.success("Changes saved. Review date unchanged.");
       } else {
         toast.error(result.error);
       }
@@ -99,7 +103,7 @@ export default function EditForm(props: Props) {
       </Card>
 
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {dirty ? "You have unsaved changes." : "All changes saved."}
         </p>
         <Button type="submit" disabled={pending || !dirty}>
