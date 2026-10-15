@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 
 import { getAttorneyProfile } from "@/lib/data/attorney";
 import { getPublishedPosts } from "@/lib/data/blog";
-import { getPublicContentFlags } from "@/lib/data/public-content";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
   getAllPublishedCities,
@@ -48,10 +47,10 @@ const STATIC_ROUTES: Array<{
 export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   // Don't advertise content index pages that have nothing published yet —
   // they 404, so listing them would be a soft-404 in Search Console.
-  const flags = await getPublicContentFlags();
+  const posts = await getPublishedPosts(true);
   // /case-results and /reviews always render the v3 guide content now.
   const staticRoutes = STATIC_ROUTES.filter((r) =>
-    r.path === "/blog" ? flags.hasBlogPosts : true,
+    r.path === "/blog" ? posts.length > 0 : true,
   );
 
   // Attorney headshot, attached to the bio route as an indexable image.
@@ -147,7 +146,6 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
 
   // Published blog posts.
   try {
-    const posts = await getPublishedPosts(true);
     for (const post of posts) {
       const hero = absImage(post.hero_image_url);
       entries.push({

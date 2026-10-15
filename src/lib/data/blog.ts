@@ -19,7 +19,11 @@ export type BlogPostRow = BlogPostSummary & {
 export async function getPublishedPosts(
   strict = false,
 ): Promise<BlogPostSummary[]> {
-  if (!isSupabaseConfigured()) return [];
+  if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
+    return [];
+  }
   const supabase = getStaticSupabase();
   const { data, error } = await supabase
     .from("blog_posts")

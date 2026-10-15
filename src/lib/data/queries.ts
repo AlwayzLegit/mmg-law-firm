@@ -63,6 +63,8 @@ export async function getPublishedCounties(
   strict = false,
 ): Promise<CountyRow[]> {
   if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
     return ALL_COUNTIES.filter((c) => c.isPublished).map(toCountyRow);
   }
   const supabase = getStaticSupabase();
@@ -180,6 +182,8 @@ export async function getAllPublishedCities(
   strict = false,
 ): Promise<CityRow[]> {
   if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
     return TIER_1_LOCATIONS.map(toCityRow);
   }
   const supabase = getStaticSupabase();
@@ -258,6 +262,8 @@ export async function getPublishedLocationPages(
   strict = false,
 ): Promise<LocationPageRow[]> {
   if (!isSupabaseConfigured()) {
+    if (strict)
+      throw new Error("Sitemap requires the published content database");
     return [];
   }
   const supabase = getStaticSupabase();
