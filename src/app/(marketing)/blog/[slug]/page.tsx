@@ -13,6 +13,7 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { FIRM } from "@/lib/constants";
 import { readingTime } from "@/lib/blog/reading-time";
+import { BLOG_MARKDOWN_COMPONENTS } from "@/lib/blog/markdown-components";
 import { relatedPosts } from "@/lib/blog/related";
 import { extractToc } from "@/lib/blog/toc";
 import { getPostBySlug, getPublishedPosts } from "@/lib/data/blog";
@@ -157,6 +158,7 @@ export default async function BlogPostPage({ params }: Props) {
                 react-markdown — links/images sanitized by default. */}
             <div className="prose prose-neutral max-w-none [&_h2]:font-display [&_h3]:font-display [&_p]:text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline [&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:scroll-mt-24 [&_h2]:text-2xl [&_h2]:font-medium [&_h3]:mt-8 [&_h3]:scroll-mt-24 [&_h3]:text-xl [&_h3]:font-medium [&_p]:leading-relaxed [&_li]:text-muted-foreground [&_li]:leading-relaxed [&_strong]:text-foreground [&_blockquote]:border-l-primary/40 [&_blockquote]:bg-secondary/40 [&_blockquote]:not-italic [&_blockquote_p]:text-foreground">
               <ReactMarkdown
+                components={BLOG_MARKDOWN_COMPONENTS}
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[
                   rehypeSlug,
