@@ -47,6 +47,20 @@ vi.mock("@/lib/data/queries", () => ({
       practice_area_slug: "car-accidents",
       local_angle_md: "   ",
     },
+    {
+      county_slug: "example-county",
+      city_slug: "moto-city",
+      practice_area_slug: "motorcycle-accidents",
+      local_angle_md: "Unique motorcycle context",
+      updated_at: "2026-01-02",
+    },
+    {
+      county_slug: "example-county",
+      city_slug: "recent-moto-city",
+      practice_area_slug: "motorcycle-accidents",
+      local_angle_md: "Recently approved local motorcycle body",
+      updated_at: "2026-10-16T04:24:45Z",
+    },
   ],
 }));
 import { getSitemapEntries, validSitemapDate } from "./sitemap-entries";
@@ -126,6 +140,15 @@ describe("sitemap integrity", () => {
       expect(xml).toContain(
         `https://www.mmg-lawfirm.com/sitemaps/${group}.xml`,
       );
+  });
+  it("uses the motorcycle city revision but preserves a later CMS edit and excludes its hub", async () => {
+    const entries = await getSitemapEntries();
+    expect(entries.find((e) => e.url.endsWith("/moto-city/motorcycle-accidents"))?.lastModified)
+      .toEqual(new Date("2026-10-16T04:22:42Z"));
+    expect(entries.find((e) => e.url.endsWith("/recent-moto-city/motorcycle-accidents"))?.lastModified)
+      .toEqual(new Date("2026-10-16T04:24:45Z"));
+    expect(entries.find((e) => e.url.endsWith("/practice-areas/motorcycle-accidents"))?.lastModified)
+      .toBeUndefined();
   });
   it("escapes XML and retains image discovery", () => {
     const xml = sitemapXml([

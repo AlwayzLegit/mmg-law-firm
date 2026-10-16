@@ -159,20 +159,20 @@ export const PRACTICE_AREA_CONTENT: Record<string, PracticeAreaContent> = {
       },
       {
         title: "Lane-change and unsafe-merging crashes",
-        body: "California lane-splitting is legal — but reasonable. We document compliance with CHP guidelines to defeat shared-fault claims.",
+        body: "Lane-splitting is legal in California, but responsibility for a collision depends on the circumstances. We review the available evidence, including speed, visibility and vehicle movements, when evaluating a shared-fault allegation.",
       },
       {
         title: "Road-defect and dooring claims",
-        body: "Government-entity claims have a six-month presentation deadline. Dooring claims involve California Vehicle Code §22517.",
+        body: "An injury claim involving a California state or local government entity may require a separate written claim, often within six months. Exceptions and separate lawsuit deadlines may apply; ask an attorney to evaluate the specific dates promptly. Dooring claims involve California Vehicle Code §22517.",
       },
     ],
     process: COMMON_PROCESS,
     whatToDo: [
       "Get medical care immediately — adrenaline and gear can hide serious injury.",
-      "Photograph the bike, your gear, and the scene before anything moves.",
+      "Once you are safe and urgent medical needs are addressed, photograph the bike, gear and scene if you can do so safely. Do not delay emergency assistance or necessary movement to safety to take photographs.",
       "Preserve your gear — helmet, jacket, gloves — without cleaning it.",
       "Identify any witnesses; bystanders often vanish quickly after motorcycle crashes.",
-      "Call us before talking to either insurer.",
+      "Notify your own insurer as required by your policy. If you need advice about an insurer's request for a statement or settlement, contact an attorney promptly without delaying required notice or other deadlines.",
     ],
     faqs: [
       {
@@ -694,7 +694,7 @@ const ATTORNEY_HELP: Record<string, string> = {
   "truck-accidents":
     TRUCK_EVIDENCE_EXPLANATION,
   "motorcycle-accidents":
-    "Riders walk in facing a built-in bias, and Mihran M. Ghazaryan's job is to dismantle it. He documents the mechanics of the crash — often with reconstruction — to show what actually happened, presents your injuries in full, and pushes back hard when an insurer tries to blame the rider. You deal directly with the attorney building that narrative, not a rotating intake team.",
+    "Mihran M. Ghazaryan evaluates motorcycle claims using the available evidence about the collision and resulting injuries. Depending on the case, that evidence may include witness accounts, scene photographs, medical records and reconstruction analysis. MMG can address disputed fault allegations without assuming that the rider or another party was responsible.",
   "pedestrian-accidents":
     "Pedestrian injuries are usually severe, and the right-of-way analysis is everything. Mihran M. Ghazaryan investigates the crosswalk, signal timing, and roadway conditions, and where a city vehicle or dangerous public road is involved he protects the short six-month government-claim deadline that can otherwise end a case before it starts. He coordinates your care and documents the full extent of your losses.",
   "bicycle-accidents":
