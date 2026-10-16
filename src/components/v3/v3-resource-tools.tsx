@@ -2,10 +2,7 @@
 
 import { useEffect } from "react";
 
-import { FIRM } from "@/lib/constants";
-
-const DEFAULT_NOTE =
-  "Exceptions run in both directions — discovery rules, minors, continuing violations, out-of-state defendants — so don't assume your deadline has passed, or that you have time to spare.";
+import { INJURY_DEADLINE_NOTE } from "@/lib/data/approved-accident-copy";
 
 function addMonths(d: Date, m: number) {
   const x = new Date(d);
@@ -39,16 +36,11 @@ export function V3ResourceTools() {
       const inc = date.value ? new Date(`${date.value}T00:00:00`) : null;
       const gov = inc ? addMonths(inc, 6) : null;
       const gen = inc ? addMonths(inc, 24) : null;
-      const today = new Date();
       out("gov").forEach((e) => (e.textContent = gov ? `6 months → ${fmt(gov)}` : "6 months"));
       out("gen").forEach((e) => (e.textContent = gen ? `2 years → ${fmt(gen)}` : "2 years"));
-      let note = DEFAULT_NOTE;
-      if (gen && gen < today)
-        note = `The general two-year window for this date appears to have closed. Exceptions exist — call ${FIRM.phone} now and we'll check whether one applies to you.`;
-      else if (gov && gov < today)
-        note =
-          "The six-month government-claim window for this date appears to have closed; the general two-year window may still be open. Call and we'll confirm which rule applies.";
-      out("note").forEach((e) => (e.textContent = note));
+      // Date examples cannot determine a visitor's legal deadline. Preserve
+      // the approved qualification for every input, including past dates.
+      out("note").forEach((e) => (e.textContent = INJURY_DEADLINE_NOTE));
     };
 
     fault?.addEventListener("input", onFault);

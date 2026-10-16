@@ -11,6 +11,7 @@ import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
+import { PracticeChecklistText } from "@/components/marketing/practice-checklist-text";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
@@ -304,7 +305,7 @@ export default async function CityPracticePage({ params }: Props) {
                         className="text-primary mt-0.5 h-4 w-4 flex-none"
                         aria-hidden
                       />
-                      <span className="text-foreground">{line}</span>
+                      <span className="text-foreground"><PracticeChecklistText text={line} /></span>
                     </li>
                   ))}
                 </ul>

@@ -9,6 +9,7 @@ import {
   getPublishedLocationPages,
 } from "@/lib/data/queries";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+import { sharedContentRevision } from "@/lib/seo/content-revisions";
 import { V3_GUIDES } from "@/lib/v3/pages";
 
 /** Normalize a possibly-relative image URL to absolute for the sitemap. */
@@ -162,7 +163,14 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     throw err;
   }
 
-  return [...new Map(entries.map((entry) => [entry.url, entry])).values()];
+  const revisedEntries = entries.map((entry) => {
+    const revision = validSitemapDate(sharedContentRevision(new URL(entry.url).pathname));
+    if (!revision) return entry;
+    const stored = entry.lastModified instanceof Date
+      ? entry.lastModified : validSitemapDate(entry.lastModified);
+    return { ...entry, lastModified: stored && stored > revision ? stored : revision };
+  });
+  return [...new Map(revisedEntries.map((entry) => [entry.url, entry])).values()];
 }
 
 export function validSitemapDate(value?: string | null): Date | undefined {
