@@ -1,26 +1,20 @@
-// Client-side Sentry. The runtime is imported dynamically so it never sits in the
-// startup bundle every page parses before it becomes interactive. When
-// NEXT_PUBLIC_SENTRY_DSN is unset at build time the branch below is dead code
-// and the SDK isn't shipped at all. Trade-off: an error thrown before the SDK
-// finishes loading (typically well under a second) isn't reported.
+import {
+  getLoadedClientMonitoring,
+  loadClientMonitoring,
+  reportMonitoringLoadFailure,
+} from "./src/lib/monitoring/load-client-monitoring";
+
+// Begin loading at startup as before. Public error boundaries await the same
+// initialization instead of pulling another static SDK chunk into every page.
+// Uncaught errors before the SDK loads retain the existing monitoring gap;
+// errors handled by the public boundaries can now wait for SDK readiness.
 type CaptureTransition =
   (typeof import("@sentry/nextjs"))["captureRouterTransitionStart"];
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
-let captureTransition: CaptureTransition | null = null;
 
 if (dsn) {
-  // Keep the SDK namespace inside a named-import adapter. Retaining the
-  // entire dynamic SDK namespace also retains unused integrations (including
-  // Replay) in the browser bundle even though recording is disabled.
-  void import("./src/lib/monitoring/sentry-client").then(
-    ({ initializeClientMonitoring }) => {
-      captureTransition = initializeClientMonitoring(
-        dsn,
-        process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
-      );
-    },
-  );
+  void loadClientMonitoring().catch(reportMonitoringLoadFailure);
 }
 
 // Next.js 16 hands router transition spans to this hook for tracing. It is a
@@ -28,5 +22,5 @@ if (dsn) {
 export function onRouterTransitionStart(
   ...args: Parameters<CaptureTransition>
 ): void {
-  captureTransition?.(...args);
+  getLoadedClientMonitoring()?.captureRouterTransitionStart(...args);
 }

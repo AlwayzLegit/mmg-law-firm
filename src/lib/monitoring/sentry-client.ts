@@ -1,7 +1,9 @@
 import { captureRouterTransitionStart, init } from "@sentry/nextjs";
 
-// Only these named exports are needed by the lazy browser runtime. Keeping
-// this adapter separate lets the bundler omit unused optional integrations.
+export { captureException, captureRouterTransitionStart } from "@sentry/nextjs";
+
+// Only the named initialization, tracing and boundary-capture exports are used.
+// A separate adapter lets the bundler omit unused optional integrations.
 export function initializeClientMonitoring(
   dsn: string,
   environment: string | undefined,

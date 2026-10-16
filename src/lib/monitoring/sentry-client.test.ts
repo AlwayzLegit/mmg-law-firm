@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const sdk = vi.hoisted(() => ({
   init: vi.fn(),
   captureRouterTransitionStart: vi.fn(),
+  captureException: vi.fn(),
 }));
 vi.mock("@sentry/nextjs", () => sdk);
 
