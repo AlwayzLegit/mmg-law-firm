@@ -26,6 +26,7 @@ on:
           - applied-throttling
           - toast-comparison
           - google-priority-comparison
+          - hero-quality-comparison
   pull_request:
     branches: [main]
 
@@ -89,6 +90,8 @@ jobs:
         run: node --test tools/performance/toast-comparison.test.mjs
       - name: Test resource-priority diagnostic safeguards
         run: node --test tools/performance/google-priority-comparison.test.mjs
+      - name: Test image-quality diagnostic safeguards
+        run: node --test tools/performance/hero-quality-comparison.test.mjs
       - name: Compare nine isolated, unauthenticated mobile loads
         if: inputs.target == 'live-car-diagnostics'
         run: node tools/performance/live-diagnostic.mjs
@@ -104,6 +107,9 @@ jobs:
       - name: Compare fixed resource-priority previews with all services
         if: inputs.target == 'google-priority-comparison'
         run: node tools/performance/google-priority-comparison.mjs
+      - name: Compare fixed hero-quality previews with all services
+        if: inputs.target == 'hero-quality-comparison'
+        run: node tools/performance/hero-quality-comparison.mjs
       - name: Retain every result, including failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -115,4 +121,5 @@ jobs:
             outputs/applied-throttling/
             outputs/toast-comparison-131/
             outputs/google-priority-comparison-132/
+            outputs/hero-quality-comparison-134/
           retention-days: 7
