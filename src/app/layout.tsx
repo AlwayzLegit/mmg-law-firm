@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { preload } from "react-dom";
 import { Inter, Fraunces, Lato, Libre_Baskerville } from "next/font/google";
 
 import { PostHogLoader } from "@/components/analytics/posthog-loader";
@@ -100,6 +101,16 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const gaId = env.NEXT_PUBLIC_GA_ID;
 
+  // Next's afterInteractive Script also emits a server-side preload. Give
+  // that download a lower priority than visible content without postponing
+  // initialization, changing events, or waiting for user interaction.
+  if (gaId) {
+    preload(`https://www.googletagmanager.com/gtag/js?id=${gaId}`, {
+      as: "script",
+      fetchPriority: "low",
+    });
+  }
+
   return (
     <html
       lang="en"
@@ -123,6 +134,7 @@ export default function RootLayout({
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
               strategy="afterInteractive"
+              fetchPriority="low"
             />
             <Script id="ga-init" strategy="afterInteractive">
               {`window.dataLayer = window.dataLayer || [];
