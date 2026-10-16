@@ -82,15 +82,24 @@ export async function run() {
       writeFileSync(`${path}.log`, `${result.stdout ?? ''}\n${result.stderr ?? ''}`);
       if (result.error || result.status !== 0) throw new Error(result.error?.message ?? `Lighthouse exit ${result.status}`);
       Object.assign(record, summarize(JSON.parse(readFileSync(`${path}.report.json`, 'utf8'))));
-      record.after = await verifyDeployment();
       if (record.runtimeError || record.url !== TARGET || record.performance == null) throw new Error('Invalid Lighthouse result');
     } catch (error) {
       record.error = error.message;
       failed = true;
+    } finally {
+      if (record.before) {
+        try {
+          record.after = await verifyDeployment();
+        } catch (error) {
+          record.afterError = error.message;
+          failed = true;
+        }
+      }
     }
     writeFileSync(resolve(out, 'summary.json'), JSON.stringify({ target: TARGET, expectedDeployment: EXPECTED_DEPLOYMENT, results }, null, 2));
     console.log(JSON.stringify(record));
-    // Never continue comparing different deployments or an unavailable site.
+    // Preserve failed audits and still run independent cases, but never
+    // continue comparing different deployments or an unavailable site.
     if (!record.before || !record.after) break;
   }
   if (failed || results.length !== 9) process.exitCode = 1;
