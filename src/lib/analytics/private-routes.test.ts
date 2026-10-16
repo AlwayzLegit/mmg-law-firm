@@ -5,6 +5,7 @@ import {
   isPrivateAnalyticsPath,
   isPrivateAnalyticsUrl,
   withoutPrivateAnalyticsUrls,
+  filterPublicAnalyticsEvent,
 } from "./private-routes";
 import { googleAnalyticsInit } from "./google-init";
 import { track, drainTrackQueue } from "./track";
@@ -24,6 +25,40 @@ const internal = [
 
 describe("private analytics boundary", () => {
   afterEach(() => vi.unstubAllGlobals());
+  it("rejects private pageviews/pageleaves and stale explicit events after navigation", () => {
+    for (const event of ["$pageview", "$pageleave", "phone_click"]) {
+      expect(
+        filterPublicAnalyticsEvent(
+          { event, properties: { $current_url: origin + "/admin?q=dummy" } },
+          { origin, pathname: "/contact" },
+        ),
+      ).toBeNull();
+      expect(
+        filterPublicAnalyticsEvent(
+          { event, properties: { $current_url: origin + "/contact" } },
+          { origin, pathname: "/admin" },
+        ),
+      ).toBeNull();
+    }
+    expect(
+      filterPublicAnalyticsEvent(null, { origin, pathname: "/contact" }),
+    ).toBeNull();
+  });
+  it("keeps public survey/custom properties and event identity unchanged", () => {
+    const event = {
+      event: "survey sent",
+      uuid: "dummy",
+      properties: {
+        token: "phc_dummy",
+        $current_url: origin + "/contact",
+        $survey_response: "dummy public response",
+        $set_once: { $initial_referrer: origin + "/admin?q=dummy" },
+      },
+    };
+    expect(
+      filterPublicAnalyticsEvent(event, { origin, pathname: "/contact" }),
+    ).toEqual({ ...event, properties: { ...event.properties, $set_once: {} } });
+  });
   it.each(internal)("excludes %s", (path) =>
     expect(isPrivateAnalyticsPath(path)).toBe(true),
   );

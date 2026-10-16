@@ -7,7 +7,7 @@ import posthog from "posthog-js";
 import { TRACK_EVENT, drainTrackQueue } from "@/lib/analytics/track";
 import {
   isPrivateAnalyticsPath,
-  withoutPrivateAnalyticsUrls,
+  filterPublicAnalyticsEvent,
 } from "@/lib/analytics/private-routes";
 
 /**
@@ -38,17 +38,8 @@ export function PostHogRuntime() {
       autocapture: false,
       disable_session_recording: true,
       person_profiles: "identified_only",
-      before_send: (event) => {
-        if (!event || isPrivateAnalyticsPath(window.location.pathname))
-          return null;
-        return {
-          ...event,
-          properties: withoutPrivateAnalyticsUrls(
-            event.properties,
-            window.location.origin,
-          ),
-        };
-      },
+      before_send: (event) =>
+        filterPublicAnalyticsEvent(event, window.location),
       loaded: (ph) => {
         if (process.env.NODE_ENV !== "production") ph.debug(false);
       },

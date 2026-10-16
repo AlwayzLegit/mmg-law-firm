@@ -56,3 +56,23 @@ export function withoutPrivateAnalyticsUrls(
   };
   return clean(properties) as Record<string, unknown>;
 }
+
+/** Also reject a queued event explicitly attributed to an internal page,
+ * even if a caller attempts to flush it after returning to a public page. */
+export function filterPublicAnalyticsEvent<
+  T extends { properties: Record<string, unknown> },
+>(event: T | null, location: { pathname: string; origin: string }): T | null {
+  if (!event || isPrivateAnalyticsPath(location.pathname)) return null;
+  for (const key of ["$current_url", "$pathname", "pathname"]) {
+    const value = event.properties[key];
+    if (
+      typeof value === "string" &&
+      isPrivateAnalyticsUrl(value, location.origin)
+    )
+      return null;
+  }
+  return {
+    ...event,
+    properties: withoutPrivateAnalyticsUrls(event.properties, location.origin),
+  };
+}
