@@ -14,11 +14,20 @@ name: Lighthouse
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: Local build or fixed public production measurement
+        type: choice
+        default: local
+        options:
+          - local
+          - public-release-139
   pull_request:
     branches: [main]
 
 jobs:
   lighthouse:
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'local'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -54,3 +63,30 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  public-release-audit:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'public-release-139'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install pinned public-page audit tool
+        run: npm install --global lighthouse@13.5.0
+      - name: Verify fixed-target safeguards
+        run: node --test tools/performance/public-release-audit.test.mjs
+      - name: Measure nine public mobile loads with all services
+        run: node tools/performance/public-release-audit.mjs
+      - name: Retain all results including failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mmg-public-release-139
+          path: outputs/public-release-139/
+          retention-days: 7
