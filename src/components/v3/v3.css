@@ -438,3 +438,12 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+/* The truck liability icon and copy cannot share a row on the narrowest
+   screens: the consultation control otherwise overflows its text column.
+   Keep the complete label, arrow and link; stack their containing panel. */
+@media (max-width: 359px) {
+  .v3-page :is([style*="grid-template-columns:auto 1fr"], [style*="grid-template-columns: auto 1fr"]):has(> div > a[href="#truck-form"]) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

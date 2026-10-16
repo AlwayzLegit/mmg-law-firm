@@ -427,6 +427,15 @@
   }
 }
 
+/* Keep the 180px wordmark and both 44px controls inside a 320px viewport,
+   including browsers with a classic scrollbar. Only spacing changes. */
+@media (max-width: 359px) {
+  .v3h-bar {
+    padding-inline: 10px;
+    gap: 8px;
+  }
+}
+
 /* ------------------------------------------------------------- footer ---- */
 .v3f {
   background: #12202a;
