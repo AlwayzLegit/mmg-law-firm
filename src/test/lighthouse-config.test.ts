@@ -36,3 +36,7 @@ it("keeps mobile and desktop as distinct measurement configurations", () => {
   expect(readConfig("mobile").ci.collect.settings?.preset).toBeUndefined();
   expect(readConfig("desktop").ci.collect.settings.preset).toBe("desktop");
 });
+
+it("uses three mobile samples so one favorable run does not define the result", () => {
+  expect(readConfig("mobile").ci.collect.numberOfRuns).toBe(3);
+});
