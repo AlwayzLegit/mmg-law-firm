@@ -24,6 +24,7 @@ on:
           - live-car-diagnostics
           - directory-comparison
           - applied-throttling
+          - toast-comparison
   pull_request:
     branches: [main]
 
@@ -83,6 +84,8 @@ jobs:
         run: npm install --global lighthouse@13.5.0
       - name: Test diagnostic safeguards
         run: node --test tools/performance/live-diagnostic.test.mjs
+      - name: Test paired toast diagnostic safeguards
+        run: node --test tools/performance/toast-comparison.test.mjs
       - name: Compare nine isolated, unauthenticated mobile loads
         if: inputs.target == 'live-car-diagnostics'
         run: node tools/performance/live-diagnostic.mjs
@@ -92,6 +95,9 @@ jobs:
       - name: Measure nine public mobile loads with applied throttling and all services
         if: inputs.target == 'applied-throttling'
         run: node tools/performance/applied-throttling.mjs
+      - name: Compare fixed toast previews with applied throttling and all services
+        if: inputs.target == 'toast-comparison'
+        run: node tools/performance/toast-comparison.mjs
       - name: Retain every result, including failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -101,4 +107,5 @@ jobs:
             outputs/live-car-diagnostics/
             outputs/directory-comparison/
             outputs/applied-throttling/
+            outputs/toast-comparison-131/
           retention-days: 7
