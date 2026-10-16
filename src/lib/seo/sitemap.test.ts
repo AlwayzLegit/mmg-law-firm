@@ -36,6 +36,13 @@ vi.mock("@/lib/data/queries", () => ({
     },
     {
       county_slug: "example-county",
+      city_slug: "recent-city",
+      practice_area_slug: "truck-accidents",
+      local_angle_md: "More recently verified local detail",
+      updated_at: "2026-10-16T00:01:00Z",
+    },
+    {
+      county_slug: "example-county",
       city_slug: "empty",
       practice_area_slug: "car-accidents",
       local_angle_md: "   ",
@@ -100,6 +107,17 @@ describe("sitemap integrity", () => {
   it("omits missing invalid and future dates", () => {
     for (const value of [null, undefined, "", "not a date", "2999-01-01"])
       expect(validSitemapDate(value)).toBeUndefined();
+  });
+  it("accounts for approved shared-copy edits without stamping unrelated pages", async () => {
+    const entries = await getSitemapEntries();
+    expect(entries.find((e) => e.url.endsWith("/example-county/city/truck-accidents"))?.lastModified)
+      .toEqual(new Date("2026-10-16"));
+    expect(entries.find((e) => e.url.endsWith("/practice-areas/bicycle-accidents"))?.lastModified)
+      .toEqual(new Date("2026-10-16"));
+    expect(entries.find((e) => e.url.endsWith("/practice-areas/employment-law"))?.lastModified)
+      .toBeUndefined();
+    expect(entries.find((e) => e.url.endsWith("/example-county/recent-city/truck-accidents"))?.lastModified)
+      .toEqual(new Date("2026-10-16T00:01:00Z"));
   });
   it("produces four absolute sitemap links", () => {
     const xml = sitemapIndexXml();

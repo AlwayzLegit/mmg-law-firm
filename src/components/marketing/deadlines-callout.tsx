@@ -1,6 +1,7 @@
 import { Clock } from "lucide-react";
 
 import { FIRM } from "@/lib/constants";
+import { INJURY_DEADLINE_NOTE } from "@/lib/data/approved-accident-copy";
 
 // TODO(human): attorney review required — statute-of-limitations summary,
 // AI-drafted. Confirm the framing of CCP §335.1 and Gov. Code §911.2 (injury)
@@ -74,7 +75,7 @@ export function DeadlinesCallout({ category }: Props) {
             </p>
           </>
         )}
-        <p>
+        {isEmployment ? <p>
           Exceptions exist in both directions — discovery rules, minors,
           continuing violations, out-of-state defendants — so don&apos;t assume
           your deadline has passed or that you have time to spare. Call{" "}
@@ -85,7 +86,7 @@ export function DeadlinesCallout({ category }: Props) {
             {FIRM.phone}
           </a>{" "}
           and we&apos;ll tell you exactly where you stand.
-        </p>
+        </p> : <p>{INJURY_DEADLINE_NOTE}</p>}
       </div>
     </section>
   );

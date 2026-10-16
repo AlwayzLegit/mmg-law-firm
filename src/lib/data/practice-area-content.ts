@@ -10,6 +10,7 @@
  */
 
 import type { FaqItem } from "@/lib/data/faqs";
+import { DMV_REPORT_CHECKLIST, TRUCK_EVIDENCE_EXPLANATION } from "./approved-accident-copy";
 
 export type Subtopic = { title: string; body: string };
 export type ProcessStep = { title: string; body: string };
@@ -89,7 +90,7 @@ export const PRACTICE_AREA_CONTENT: Record<string, PracticeAreaContent> = {
       "Document the scene with photos before anyone moves the vehicles, if it is safe.",
       "Get the other driver's name, license, plate, and insurance info.",
       "Write down what witnesses saw and how to reach them.",
-      "File a report with the responding agency (or, for minor crashes, with DMV via SR-1 within 10 days).",
+      DMV_REPORT_CHECKLIST,
       "Do not give a recorded statement to the other driver's insurance before talking to a lawyer.",
     ],
     faqs: [
@@ -691,7 +692,7 @@ const ATTORNEY_HELP: Record<string, string> = {
   "car-accidents":
     "When you hire MMG Law Firm, attorney Mihran M. Ghazaryan handles your case personally — not a case manager you never meet. He reviews the police report and your medical records himself, takes over every call with the adjuster, and looks for coverage others miss, including your own uninsured/underinsured-motorist policy. He also manages the medical liens that can quietly eat into a recovery, so more of any settlement stays with you.",
   "truck-accidents":
-    "Truck cases are won or lost in the first days, so Mihran M. Ghazaryan moves immediately to preserve the evidence — the electronic logging device, the driver's hours-of-service records, and the truck's onboard data — before it can be overwritten. He identifies every responsible party (driver, carrier, broker, and their separate insurers) and applies the federal motor-carrier rules that govern these cases, building the claim for the larger exposure a commercial policy carries.",
+    TRUCK_EVIDENCE_EXPLANATION,
   "motorcycle-accidents":
     "Riders walk in facing a built-in bias, and Mihran M. Ghazaryan's job is to dismantle it. He documents the mechanics of the crash — often with reconstruction — to show what actually happened, presents your injuries in full, and pushes back hard when an insurer tries to blame the rider. You deal directly with the attorney building that narrative, not a rotating intake team.",
   "pedestrian-accidents":
