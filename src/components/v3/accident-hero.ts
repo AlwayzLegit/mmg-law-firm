@@ -3,7 +3,7 @@ import { getImageProps } from "next/image";
 // Preserve each original asset, intrinsic dimensions, crop and background.
 // Matching density candidates let the preload and CSS request the same image.
 function optimizedBackground(src: string, width: number, height: number) {
-  const { props } = getImageProps({ src, alt: "", width, height, quality: 75 });
+  const { props } = getImageProps({ src, alt: "", width, height, quality: 65 });
   return {
     src: props.src,
     srcSet: props.srcSet,
