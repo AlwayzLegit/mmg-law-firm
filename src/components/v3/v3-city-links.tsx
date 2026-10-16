@@ -20,7 +20,7 @@ export function V3CityLinks({ heading, intro, links }: Props) {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ flex: "none", width: 44, height: 1.5, background: "#987022" }} />
-          <p style={{ fontSize: 14, letterSpacing: ".2em", color: "#987022" }}>SERVING CALIFORNIA</p>
+          <p style={{ fontSize: 14, letterSpacing: ".2em", color: "var(--color-brand-500)" }}>SERVING CALIFORNIA</p>
         </div>
         <h2
           style={{
