@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const route = readFileSync("src/app/(marketing)/practice-areas/[slug]/page.tsx", "utf8").replace(/\r\n/g, "\n");
 const legacy = readFileSync("src/components/marketing/legacy-practice-page.tsx", "utf8").replace(/\r\n/g, "\n");
+const controls = readFileSync("src/components/marketing/legacy-practice-controls.tsx", "utf8");
 const hash = (value: string) => createHash("sha256").update(value.trim()).digest("hex");
 
 describe("legacy practice template isolation", () => {
@@ -39,5 +40,15 @@ describe("legacy practice template isolation", () => {
     expect(route).toContain("export const revalidate = 86400;");
     expect(route).toContain("return PRACTICE_AREAS.map((p) => ({ slug: p.slug }));");
     expect(legacy).toContain("if (!content) notFound();");
+  });
+
+  it("splits the legacy controls inside a client boundary without disabling SSR", () => {
+    expect(controls).toMatch(/^"use client";/);
+    expect(controls).toContain('dynamic(() => import("./faq")');
+    expect(controls).toContain('import("./lead-form")');
+    expect(controls).not.toMatch(/ssr\s*:\s*false/);
+    expect(legacy).toContain('from "@/components/marketing/legacy-practice-controls"');
+    expect(legacy).not.toContain('from "@/components/marketing/faq"');
+    expect(legacy).not.toContain('from "@/components/marketing/lead-form"');
   });
 });
