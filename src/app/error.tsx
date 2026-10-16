@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import * as Sentry from "@sentry/nextjs";
+import { captureClientException } from "@/lib/monitoring/load-client-monitoring";
 import { Phone, RotateCcw } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -19,7 +19,7 @@ export default function GlobalError({
     // Report to Sentry. Without this, page-level errors caught here never
     // reach Sentry (only the root global-error boundary did) — so most real
     // route errors were going unreported.
-    Sentry.captureException(error);
+    void captureClientException(error);
     if (process.env.NODE_ENV !== "production") {
       console.error("App error:", error);
     }
