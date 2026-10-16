@@ -7,7 +7,7 @@ const { props } = getImageProps({
   alt: "",
   width: 1672,
   height: 941,
-  quality: 75,
+  quality: 65,
 });
 
 export const MOTO_HERO = {

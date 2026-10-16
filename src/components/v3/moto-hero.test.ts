@@ -1,15 +1,19 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/image", () => import("@/test/next-image-runtime-config"));
 import { MOTO_HERO } from "./moto-hero";
 
 describe("motorcycle hero image delivery", () => {
-  it("uses the existing optimizer for the unchanged artwork and default quality", () => {
+  it("uses the existing optimizer for the unchanged artwork and allowed quality65", () => {
     const src = new URL(MOTO_HERO.src, "https://www.mmg-lawfirm.com");
     expect(src.pathname).toBe("/_next/image");
     expect(src.searchParams.get("url")).toBe(
       "/v3/moto-photos/motorcycle-coastal-highway-hero.webp",
     );
-    expect(src.searchParams.get("q")).toBe("75");
+    expect(src.searchParams.get("q")).toBe("65");
+    expect(readFileSync("next.config.ts", "utf8")).toContain(
+      "qualities: [65, 75]",
+    );
     expect(MOTO_HERO.style.background).toContain("center/cover no-repeat");
   });
 
@@ -19,7 +23,12 @@ describe("motorcycle hero image delivery", () => {
     for (const candidate of candidates) {
       const [url, density] = candidate.split(" ");
       expect(density).toMatch(/^[12]x$/);
-      expect(MOTO_HERO.style.backgroundImage).toContain(`url("${url}") ${density}`);
+      expect(
+        new URL(url, "https://www.mmg-lawfirm.com").searchParams.get("q"),
+      ).toBe("65");
+      expect(MOTO_HERO.style.backgroundImage).toContain(
+        `url("${url}") ${density}`,
+      );
     }
     const page = readFileSync("src/components/v3/pages/moto.tsx", "utf8");
     expect(page).toContain("imageSrcSet: MOTO_HERO.srcSet");
