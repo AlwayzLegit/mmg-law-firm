@@ -31,6 +31,10 @@ describe("offscreen accident-page decoration", () => {
     expect(source("truck").match(/maskImage:"linear-gradient\(to right,transparent,#000 35%\)"/g)).toHaveLength(2);
   });
 
+  it("matches the hillside image's full-width phone layout", () => {
+    expect(source("car")).toContain('sizes="(max-width: 767px) 100vw, (max-width: 1522px) 46vw, 700px"');
+  });
+
   it.each(["car", "truck"])("keeps %s hero loading eager and prioritized", (page) => {
     const file = page === "car" ? "car-accident-hero" : "truck-highway-hero";
     const text = source(page);
