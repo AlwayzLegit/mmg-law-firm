@@ -3,6 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { startPhoneClickTracking } from "@/lib/analytics/phone-clicks";
+import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
@@ -23,19 +24,28 @@ export function PostHogLoader() {
   // Capture early phone clicks into the same queue as form events. Waiting
   // for the deferred SDK would miss visitors who immediately tap Call.
   React.useEffect(() => {
-    if (!POSTHOG_KEY) return;
+    if (!POSTHOG_KEY || isPrivateAnalyticsPath(window.location.pathname))
+      return;
     return startPhoneClickTracking();
   }, []);
 
   React.useEffect(() => {
-    if (!POSTHOG_KEY) return;
+    if (!POSTHOG_KEY || isPrivateAnalyticsPath(window.location.pathname))
+      return;
     let cancelled = false;
     const start = () => {
-      if (!cancelled) setReady(true);
+      if (!cancelled && !isPrivateAnalyticsPath(window.location.pathname))
+        setReady(true);
     };
     const schedule = () => {
-      const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
-      if (typeof w.requestIdleCallback === "function") w.requestIdleCallback(start, { timeout: 4000 });
+      const w = window as Window & {
+        requestIdleCallback?: (
+          cb: () => void,
+          opts?: { timeout: number },
+        ) => number;
+      };
+      if (typeof w.requestIdleCallback === "function")
+        w.requestIdleCallback(start, { timeout: 4000 });
       else window.setTimeout(start, 2500);
     };
     if (document.readyState === "complete") schedule();

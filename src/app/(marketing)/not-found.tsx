@@ -13,8 +13,8 @@ export const metadata = {
 
 /**
  * Public 404 body. Inside /(marketing) Next.js wraps it with the marketing
- * layout; the root src/app/not-found.tsx (unmatched URLs) wraps it in that
- * same layout itself. It must not render its own header or footer.
+ * layout; global-not-found.tsx (unmatched URLs) uses the same public shell.
+ * It must not render its own header or footer.
  */
 export default function NotFound() {
   return (

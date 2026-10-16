@@ -6,6 +6,8 @@
  * when it initialises and listens for later events — so callers never import
  * posthog-js and nothing is lost if the SDK arrives late or not at all.
  */
+import { isPrivateAnalyticsPath } from "./private-routes";
+
 export type TrackedEvent = [name: string, props?: Record<string, unknown>];
 
 declare global {
@@ -17,7 +19,11 @@ declare global {
 export const TRACK_EVENT = "mmg:track";
 
 export function track(name: string, props?: Record<string, unknown>): void {
-  if (typeof window === "undefined") return;
+  if (
+    typeof window === "undefined" ||
+    isPrivateAnalyticsPath(window.location.pathname)
+  )
+    return;
   (window.__mmgTrackQueue ??= []).push([name, props]);
   window.dispatchEvent(new CustomEvent(TRACK_EVENT));
 }
@@ -27,5 +33,6 @@ export function drainTrackQueue(): TrackedEvent[] {
   if (typeof window === "undefined") return [];
   const q = window.__mmgTrackQueue ?? [];
   window.__mmgTrackQueue = [];
+  if (isPrivateAnalyticsPath(window.location.pathname)) return [];
   return q;
 }
