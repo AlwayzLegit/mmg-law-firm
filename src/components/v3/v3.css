@@ -182,6 +182,37 @@
   min-width: auto;
 }
 
+/* The long city directory follows the complete accident-page body. Keep its
+   links in the initial HTML, but let supporting browsers skip off-screen
+   layout. Do not apply this to heroes, forms, accordions, dialogs or menus.
+   These are estimated placeholders, not fixed heights: `auto` remembers the
+   real rendered size. Breakpoints follow the directory's 260px auto-fill grid
+   and clamped side padding. Printing and unsupported browsers render normally. */
+@media screen {
+  .v3-city-directory-deferred {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto calc(var(--city-link-count) * 64px + 240px);
+  }
+  .v3-city-directory-deferred:focus-within {
+    content-visibility: visible;
+  }
+}
+@media screen and (min-width: 612px) {
+  .v3-city-directory-deferred {
+    contain-intrinsic-block-size: auto calc(var(--city-link-count) * 32px + 240px);
+  }
+}
+@media screen and (min-width: 925px) {
+  .v3-city-directory-deferred {
+    contain-intrinsic-block-size: auto calc(var(--city-link-count) * 24px + 260px);
+  }
+}
+@media screen and (min-width: 1237px) {
+  .v3-city-directory-deferred {
+    contain-intrinsic-block-size: auto calc(var(--city-link-count) * 18px + 280px);
+  }
+}
+
 /* Tables that scroll sideways: focusable regions (tabindex in the page
    body) with a swipe hint on narrow screens. */
 .v3-page .v3-scroll:focus-visible {

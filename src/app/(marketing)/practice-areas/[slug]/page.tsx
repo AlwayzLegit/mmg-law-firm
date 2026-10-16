@@ -83,6 +83,7 @@ export default async function PracticeAreaPage({ params }: Props) {
           heading={`${area.name} representation by city`}
           intro={`${FIRM.legalName} handles ${area.nounPlural} across California. Explore the cities where we have detailed our local experience:`}
           links={links}
+          deferOffscreen={["car-accidents", "truck-accidents", "motorcycle-accidents"].includes(slug)}
         />
       </V3PageShell>
     );

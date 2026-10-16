@@ -1,16 +1,26 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 type Props = {
   heading: string;
   intro?: string;
   links: { href: string; label: string }[];
+  /** Skip off-screen layout only; all content and links remain server-rendered. */
+  deferOffscreen?: boolean;
 };
 
 /** Live internal links (e.g. city × practice pages) in the v3 visual style. */
-export function V3CityLinks({ heading, intro, links }: Props) {
+export function V3CityLinks({ heading, intro, links, deferOffscreen = false }: Props) {
   if (links.length === 0) return null;
   return (
-    <section className="v3-page" style={{ background: "#fbf8f1", borderTop: "1px solid #ebe1cc" }}>
+    <section
+      className={deferOffscreen ? "v3-page v3-city-directory-deferred" : "v3-page"}
+      style={{
+        background: "#fbf8f1",
+        borderTop: "1px solid #ebe1cc",
+        ...(deferOffscreen ? { "--city-link-count": links.length } : {}),
+      } as CSSProperties}
+    >
       <div
         style={{
           maxWidth: 1536,
