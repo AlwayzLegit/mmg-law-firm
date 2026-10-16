@@ -8,7 +8,7 @@ import { Turnstile } from "@/components/marketing/turnstile";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { track } from "@/lib/analytics/track";
 import { recordStoredLead } from "@/lib/analytics/stored-lead";
-import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
+import { practiceFromLabel } from "@/lib/data/practice-area-options";
 import {
   lazyLeadResolver,
   preloadLeadValidation,
@@ -53,17 +53,6 @@ const DEFAULT_INPUT: CSSProperties = {
   color: "#131a20",
   fontSize: 16,
 };
-
-/** Map a design "type of accident" option label to a practice-area slug. */
-function practiceFromLabel(label: string): string | undefined {
-  const l = label.toLowerCase();
-  const hit = PRACTICE_AREAS.find(
-    (p) =>
-      l.includes(p.shortName.toLowerCase()) ||
-      l.includes(p.name.toLowerCase().replace(/ accidents?$/, "")),
-  );
-  return hit?.slug;
-}
 
 /**
  * Lead form rendered with the design handoff's field styling. Behaviour is
