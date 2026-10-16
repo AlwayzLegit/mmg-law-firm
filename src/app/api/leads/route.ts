@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
   let practiceAreaId: string | null = null;
   let countyId: string | null = null;
   let cityId: string | null = null;
+  let persisted = false;
 
   if (isSupabaseConfigured()) {
     const supabase = getServiceSupabase();
@@ -155,6 +156,7 @@ export async function POST(request: NextRequest) {
     }
 
     const leadId = insertResult.data?.id ?? null;
+    persisted = Boolean(leadId);
 
     // Audit log entry. Best-effort; don't fail the request on this.
     if (leadId) {
@@ -228,5 +230,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true });
+  // A non-personal acknowledgement, not a lead ID or spam classification.
+  // The development stub must never be counted as a stored submission.
+  return NextResponse.json({ ok: true, persisted });
 }
