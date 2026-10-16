@@ -3,6 +3,21 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { TARGET, EXPECTED_DEPLOYMENT, PROFILES, config, schedule, summarize } from './live-diagnostic.mjs';
 import { comparisonSchedule, PREVIEWS, SLUGS } from './directory-comparison.mjs';
+import { appliedSchedule, appliedConfig, ORIGIN, ROUTES } from './applied-throttling.mjs';
+
+test('alternate measurement keeps all services, nine fixed public loads, default slow-4G values', () => {
+  assert.equal(ORIGIN, 'https://www.mmg-lawfirm.com');
+  assert.deepEqual(ROUTES, SLUGS);
+  const jobs = appliedSchedule();
+  assert.equal(jobs.length,9);
+  for (const slug of ROUTES) assert.equal(jobs.filter(j=>j.slug===slug).length,3);
+  assert.equal(new Set([jobs[0].slug,jobs[3].slug,jobs[6].slug]).size,3);
+  const settings = appliedConfig().settings;
+  assert.equal(settings.throttlingMethod,'devtools');
+  assert.deepEqual(settings.blockedUrlPatterns,[]);
+  assert.equal(settings.throttling,undefined); // retain Lighthouse's documented mobile defaults
+  assert.equal(settings.formFactor,'mobile');
+});
 
 test('fixed public target, exact release and bounded rotated schedule', () => {
   assert.equal(TARGET, 'https://www.mmg-lawfirm.com/practice-areas/car-accidents');

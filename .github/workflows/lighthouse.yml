@@ -23,6 +23,7 @@ on:
           - local
           - live-car-diagnostics
           - directory-comparison
+          - applied-throttling
   pull_request:
     branches: [main]
 
@@ -88,6 +89,9 @@ jobs:
       - name: Compare fixed baseline and candidate previews without blocking services
         if: inputs.target == 'directory-comparison'
         run: node tools/performance/directory-comparison.mjs
+      - name: Measure nine public mobile loads with applied throttling and all services
+        if: inputs.target == 'applied-throttling'
+        run: node tools/performance/applied-throttling.mjs
       - name: Retain every result, including failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -96,4 +100,5 @@ jobs:
           path: |
             outputs/live-car-diagnostics/
             outputs/directory-comparison/
+            outputs/applied-throttling/
           retention-days: 7
