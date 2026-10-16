@@ -11,6 +11,7 @@ import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
+import { IntroEmphasis } from "@/components/marketing/intro-emphasis";
 import { PracticeChecklistText } from "@/components/marketing/practice-checklist-text";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -161,7 +162,7 @@ export default async function CityPracticePage({ params }: Props) {
           { label: row.practice_area_name },
         ]}
         title={`${row.city_name} ${area ? lawyerPhraseTitle(area) : row.practice_area_name}`}
-        description={row.intro_md ?? undefined}
+        description={row.intro_md ? <IntroEmphasis text={row.intro_md} /> : undefined}
         actions={
           <div className="flex flex-wrap items-center gap-3">
             <Link
