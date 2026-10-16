@@ -45,6 +45,11 @@ describe("responsive navigation selector contract", () => {
     expect(css).toContain(`@media (max-width: 480px) {\n  /* Deadline cards (number | claim | detail). */\n  ${deadlineSelector} {\n    grid-template-columns: 44px minmax(0, 1fr) !important;\n    row-gap: 8px !important;\n  }\n  ${deadlineSelector} > :nth-child(n + 3) {\n    grid-column: 1 / -1;\n  }`);
   });
 
+  it("keeps truck deadline labels readable and places values below them", () => {
+    const truckSelector = '.v3-page :is([style*="grid-template-columns:28px 1fr auto"], [style*="grid-template-columns: 28px 1fr auto"])';
+    expect(css).toContain(`${truckSelector} {\n    grid-template-columns: 28px minmax(0, 1fr) !important;\n    row-gap: 4px !important;\n  }\n  ${truckSelector} > :nth-child(3) {\n    grid-column: 2;\n  }`);
+  });
+
   it("matches independent parent and child serialization for the reviews tablet grid", () => {
     expect(css).toContain('@media (max-width: 1279px) {\n  .v3-page :is([style*="minmax(min(100%,420px),1fr))"], [style*="minmax(min(100%, 420px), 1fr))"]):has(> :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns: minmax(0px, 220px) 1fr"])) {\n    grid-template-columns: minmax(0, 1fr) !important;\n  }\n}');
   });

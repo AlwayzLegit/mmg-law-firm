@@ -125,11 +125,11 @@
   }
   /* Icon | label | value rows (truck deadlines): the value drops under the
      label instead of squeezing it to nothing. */
-  .v3-page [style*="grid-template-columns:28px 1fr auto"] {
+  .v3-page :is([style*="grid-template-columns:28px 1fr auto"], [style*="grid-template-columns: 28px 1fr auto"]) {
     grid-template-columns: 28px minmax(0, 1fr) !important;
     row-gap: 4px !important;
   }
-  .v3-page [style*="grid-template-columns:28px 1fr auto"] > :nth-child(3) {
+  .v3-page :is([style*="grid-template-columns:28px 1fr auto"], [style*="grid-template-columns: 28px 1fr auto"]) > :nth-child(3) {
     grid-column: 2;
   }
   /* Number | divider | text rows (fee dialog). */
