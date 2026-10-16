@@ -13,7 +13,8 @@ vi.mock("./load-client-monitoring", () => ({
   captureClientException: hooks.captureClientException,
 }));
 
-import AppError from "@/app/error";
+import AppError from "@/app/(marketing)/error";
+import AdminRootError from "@/app/(admin)/error";
 import RootError from "@/app/global-error";
 import { FIRM } from "@/lib/constants";
 
@@ -30,7 +31,7 @@ describe("public error boundary monitoring and recovery", () => {
     hooks.captureClientException.mockClear();
   });
 
-  for (const [name, Component] of [["app", AppError], ["root", RootError]] as const) {
+  for (const [name, Component] of [["app", AppError], ["admin-root", AdminRootError], ["root", RootError]] as const) {
     it(`${name} forwards the exact exception from its effect`, () => {
       const error = Object.assign(new Error("mocked boundary"), { digest: "unit-digest" });
       const warn = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -49,7 +50,7 @@ describe("public error boundary monitoring and recovery", () => {
       expect(retry).toBeDefined();
       (retry!.onClick as () => void)();
       expect(reset).toHaveBeenCalledTimes(1);
-      expect(props.some(p => p.href === (name === "app" ? `tel:${FIRM.phoneTel}` : "/"))).toBe(true);
+      expect(props.some(p => p.href === (name === "root" ? "/" : `tel:${FIRM.phoneTel}`))).toBe(true);
       expect(hooks.captureClientException).not.toHaveBeenCalled();
     });
   }
