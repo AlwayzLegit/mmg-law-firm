@@ -118,6 +118,12 @@ describe("private analytics boundary", () => {
   });
   it("keeps roots separate and private documents analytics-free by default", () => {
     expect(existsSync("src/app/layout.tsx")).toBe(false);
+    expect(existsSync("src/app/error.tsx")).toBe(false);
+    for (const group of ["(admin)", "(marketing)"]) {
+      expect(readFileSync(`src/app/${group}/error.tsx`, "utf8")).toContain(
+        "@/components/layout/route-error",
+      );
+    }
     const admin = readFileSync("src/app/(admin)/layout.tsx", "utf8");
     expect(admin).not.toContain("publicAnalytics");
     expect(readFileSync("src/app/(marketing)/layout.tsx", "utf8")).toContain(

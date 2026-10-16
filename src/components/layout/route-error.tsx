@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-export default function GlobalError({
+export default function RouteError({
   error,
   reset,
 }: {
