@@ -224,11 +224,11 @@
 /* Car hub closing band: the hillside image and the 20vw left inset leave
    the copy a narrow strip on phones. */
 @media (max-width: 767px) {
-  .v3-page [style*="width:min(46%,700px)"] {
+  .v3-page :is([style*="width:min(46%,700px)"], [style*="width: min(46%, 700px)"]) {
     width: 100% !important;
     opacity: 0.18 !important;
   }
-  .v3-page [style*="padding:40px clamp(20px,5.8vw,90px) 40px clamp(20px,20vw,310px)"] {
+  .v3-page :is([style*="padding:40px clamp(20px,5.8vw,90px) 40px clamp(20px,20vw,310px)"], [style*="padding: 40px clamp(20px, 5.8vw, 90px) 40px clamp(20px, 20vw, 310px)"]) {
     padding-left: 20px !important;
     padding-right: 20px !important;
   }
@@ -382,13 +382,13 @@
 /* Resources "What compensation can cover" (5 cards): 3 + 2 instead of a
    lone card beside a khaki block at tablet widths. */
 @media (min-width: 700px) and (max-width: 1279px) {
-  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) {
+  .v3-page ul:is([style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"], [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"]):is([style*="gap:1px"], [style*="gap: 1px"]):has(> li:nth-child(5):last-child) {
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
   }
-  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) > li {
+  .v3-page ul:is([style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"], [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"]):is([style*="gap:1px"], [style*="gap: 1px"]):has(> li:nth-child(5):last-child) > li {
     grid-column: span 2;
   }
-  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) > li:nth-child(n + 4) {
+  .v3-page ul:is([style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"], [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"]):is([style*="gap:1px"], [style*="gap: 1px"]):has(> li:nth-child(5):last-child) > li:nth-child(n + 4) {
     grid-column: span 3;
   }
 }
