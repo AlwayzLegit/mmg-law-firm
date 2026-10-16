@@ -36,9 +36,9 @@ describe("offscreen accident-page decoration", () => {
   });
 
   it.each(["car", "truck"])("keeps %s hero loading eager and prioritized", (page) => {
-    const file = page === "car" ? "car-accident-hero" : "truck-highway-hero";
+    const hero = page === "car" ? "CAR_HERO" : "TRUCK_HERO";
     const text = source(page);
-    expect(text).toContain(`preload("/v3/photos/${file}.webp", { as: "image", fetchPriority: "high" });`);
-    expect(text).toContain(`url('/v3/photos/${file}.webp') center/cover no-repeat`);
+    expect(text).toContain(`preload(${hero}.src, { as: "image", fetchPriority: "high", imageSrcSet: ${hero}.srcSet });`);
+    expect(text).toContain(`<section style={${hero}.style}>`);
   });
 });
