@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { Turnstile } from "@/components/marketing/turnstile";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { track } from "@/lib/analytics/track";
+import { recordStoredLead } from "@/lib/analytics/stored-lead";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
   lazyLeadResolver,
@@ -144,6 +145,7 @@ export function V3LeadForm({
         );
         return;
       }
+      void recordStoredLead(res);
       setSent(values.full_name.trim().split(/\s+/)[0] || "for reaching out");
       capture("lead_submitted", { variant: "v3", practice_area: values.practice_area || undefined });
       form.reset({ ...leadFormDefaults, practice_area: practiceArea });
