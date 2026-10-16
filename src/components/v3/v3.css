@@ -96,8 +96,9 @@
   .v3-page :is(a, button):is([style*="white-space:nowrap"], [style*="white-space: nowrap"])[style*="letter-spacing"] {
     letter-spacing: 0.06em !important;
   }
-  /* Label | content grids with a fixed-width label column stack instead. */
-  .v3-page :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns:minmax(0,210px) 1fr"]) {
+  /* Label | content grids with a fixed-width label column stack instead.
+     CSSOM navigation also expands function spacing and normalizes 0 to 0px. */
+  .v3-page :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns: minmax(0px, 220px) 1fr"], [style*="grid-template-columns:minmax(0,210px) 1fr"], [style*="grid-template-columns: minmax(0px, 210px) 1fr"]) {
     grid-template-columns: 1fr !important;
   }
   .v3-page :is(div, p, a, button, label, span, li, form, section, h1, h2, h3, h4) {
@@ -115,11 +116,11 @@
   /* Claim-stage rows (number | icon | title | summary | details button):
      five columns can't fit a phone. Keep number, icon and title on one line
      and give the summary and button full-width rows below. */
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) {
     grid-template-columns: 44px 48px 1fr !important;
     row-gap: 8px !important;
   }
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] > :nth-child(n + 4) {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) > :nth-child(n + 4) {
     grid-column: 1 / -1;
   }
   /* Icon | label | value rows (truck deadlines): the value drops under the
@@ -258,7 +259,7 @@
 /* Reviews "Meet the attorney": portrait + text inside a two-column grid
    leaves ~180px for the text below wide desktop; stack the outer grid. */
 @media (max-width: 1279px) {
-  .v3-page [style*="minmax(min(100%,420px),1fr))"]:has(> [style*="grid-template-columns:minmax(0,220px) 1fr"]) {
+  .v3-page :is([style*="minmax(min(100%,420px),1fr))"], [style*="minmax(min(100%, 420px), 1fr))"]):has(> :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns: minmax(0px, 220px) 1fr"])) {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
@@ -395,11 +396,11 @@
 /* Claim-stage rows (number | icon | title | summary | button) also stack
    the summary on tablets, where it was squeezed to ~16 characters a line. */
 @media (min-width: 481px) and (max-width: 900px) {
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) {
     grid-template-columns: 44px 48px minmax(0, 1fr) auto !important;
     row-gap: 8px !important;
   }
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] > :nth-child(4) {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) > :nth-child(4) {
     grid-column: 3 / -1;
     grid-row: 2;
   }
@@ -407,11 +408,11 @@
 
 @media (max-width: 480px) {
   /* Deadline cards (number | claim | detail). */
-  .v3-page [style*="grid-template-columns:56px minmax(130px,170px) 1fr"] {
+  .v3-page :is([style*="grid-template-columns:56px minmax(130px,170px) 1fr"], [style*="grid-template-columns: 56px minmax(130px, 170px) 1fr"]) {
     grid-template-columns: 44px minmax(0, 1fr) !important;
     row-gap: 8px !important;
   }
-  .v3-page [style*="grid-template-columns:56px minmax(130px,170px) 1fr"] > :nth-child(n + 3) {
+  .v3-page :is([style*="grid-template-columns:56px minmax(130px,170px) 1fr"], [style*="grid-template-columns: 56px minmax(130px, 170px) 1fr"]) > :nth-child(n + 3) {
     grid-column: 1 / -1;
   }
   /* A short rule line beside a wrapped heading reads as a stray dash. */
