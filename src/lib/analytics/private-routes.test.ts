@@ -118,6 +118,9 @@ describe("private analytics boundary", () => {
   });
   it("keeps roots separate and private documents analytics-free by default", () => {
     expect(existsSync("src/app/layout.tsx")).toBe(false);
+    expect(existsSync("src/app/(marketing)/page.tsx")).toBe(false);
+    expect(readFileSync("src/app/(marketing)/(home)/page.tsx", "utf8")).toContain('metadata = v3Metadata("home")');
+    expect(existsSync("src/app/(marketing)/(home)/layout.tsx")).toBe(true);
     expect(existsSync("src/app/error.tsx")).toBe(false);
     for (const group of ["(admin)", "(marketing)"]) {
       expect(readFileSync(`src/app/${group}/error.tsx`, "utf8")).toContain(
