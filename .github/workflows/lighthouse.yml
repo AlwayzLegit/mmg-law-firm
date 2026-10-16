@@ -22,12 +22,13 @@ on:
         options:
           - local
           - live-car-diagnostics
+          - directory-comparison
   pull_request:
     branches: [main]
 
 jobs:
   lighthouse:
-    if: github.event_name != 'workflow_dispatch' || inputs.target != 'live-car-diagnostics'
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'local'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -65,7 +66,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
   live-car-diagnostics:
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'live-car-diagnostics'
+    if: github.event_name == 'workflow_dispatch' && inputs.target != 'local'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -82,11 +83,17 @@ jobs:
       - name: Test diagnostic safeguards
         run: node --test tools/performance/live-diagnostic.test.mjs
       - name: Compare nine isolated, unauthenticated mobile loads
+        if: inputs.target == 'live-car-diagnostics'
         run: node tools/performance/live-diagnostic.mjs
+      - name: Compare fixed baseline and candidate previews without blocking services
+        if: inputs.target == 'directory-comparison'
+        run: node tools/performance/directory-comparison.mjs
       - name: Retain every result, including failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mmg-live-car-diagnostics
-          path: outputs/live-car-diagnostics/
+          path: |
+            outputs/live-car-diagnostics/
+            outputs/directory-comparison/
           retention-days: 7

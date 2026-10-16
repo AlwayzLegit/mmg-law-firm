@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { TARGET, EXPECTED_DEPLOYMENT, PROFILES, config, schedule, summarize } from './live-diagnostic.mjs';
+import { comparisonSchedule, PREVIEWS, SLUGS } from './directory-comparison.mjs';
 
 test('fixed public target, exact release and bounded rotated schedule', () => {
   assert.equal(TARGET, 'https://www.mmg-lawfirm.com/practice-areas/car-accidents');
@@ -24,6 +25,16 @@ test('missing metrics stay unknown rather than being recorded as a pass', () => 
   assert.equal(summary.performance, null);
   assert.equal(summary.seo, null);
   assert.equal(summary.cls, null);
+});
+
+test('preview comparison is bounded, paired and fixed to three priority routes', () => {
+  const jobs = comparisonSchedule();
+  assert.equal(jobs.length, 18);
+  assert.deepEqual(Object.keys(PREVIEWS), ['baseline', 'candidate']);
+  assert.deepEqual(SLUGS, ['car-accidents', 'truck-accidents', 'motorcycle-accidents']);
+  for (const slug of SLUGS) for (const profile of Object.keys(PREVIEWS)) {
+    assert.equal(jobs.filter(j => j.slug === slug && j.profile === profile).length, 3);
+  }
 });
 
 test('manual diagnostic job has no secrets, deployment commands or public report upload', () => {
