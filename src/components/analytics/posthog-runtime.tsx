@@ -4,7 +4,7 @@ import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 
-import { TRACK_EVENT, drainTrackQueue } from "@/lib/analytics/track";
+import { TRACK_EVENT, drainTrackQueue, track } from "@/lib/analytics/track";
 import {
   isPrivateAnalyticsPath,
   filterPublicAnalyticsEvent,
@@ -27,23 +27,31 @@ const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 
+// Client-document state: StrictMode and runtime remounts must not reinitialize
+// the singleton SDK or count the same current route twice.
+let initialized = false;
+let lastPageviewUrl: string | null = null;
+
 export function PostHogRuntime() {
   React.useEffect(() => {
     if (!POSTHOG_KEY || isPrivateAnalyticsPath(window.location.pathname))
       return;
-    posthog.init(POSTHOG_KEY, {
-      api_host: POSTHOG_HOST,
-      capture_pageview: false, // we send these manually below
-      capture_pageleave: true,
-      autocapture: false,
-      disable_session_recording: true,
-      person_profiles: "identified_only",
-      before_send: (event) =>
-        filterPublicAnalyticsEvent(event, window.location),
-      loaded: (ph) => {
-        if (process.env.NODE_ENV !== "production") ph.debug(false);
-      },
-    });
+    if (!initialized) {
+      posthog.init(POSTHOG_KEY, {
+        api_host: POSTHOG_HOST,
+        capture_pageview: false, // we send these manually below
+        capture_pageleave: true,
+        autocapture: false,
+        disable_session_recording: true,
+        person_profiles: "identified_only",
+        before_send: (event) =>
+          filterPublicAnalyticsEvent(event, window.location),
+        loaded: (ph) => {
+          if (process.env.NODE_ENV !== "production") ph.debug(false);
+        },
+      });
+      initialized = true;
+    }
 
     // Drain events fired before the SDK loaded, then keep listening.
     const flush = () => {
@@ -71,14 +79,25 @@ export function PostHogRuntime() {
 function PageviewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const query = searchParams?.toString() ?? "";
 
   React.useEffect(() => {
-    if (!POSTHOG_KEY || !pathname || isPrivateAnalyticsPath(pathname)) return;
+    if (!POSTHOG_KEY || !pathname) return;
+    if (
+      isPrivateAnalyticsPath(pathname) ||
+      isPrivateAnalyticsPath(window.location.pathname)
+    ) {
+      lastPageviewUrl = null;
+      return;
+    }
     let url = window.origin + pathname;
-    const q = searchParams?.toString();
-    if (q) url = `${url}?${q}`;
-    posthog.capture("$pageview", { $current_url: url });
-  }, [pathname, searchParams]);
+    if (query) url = `${url}?${query}`;
+    if (url === lastPageviewUrl) return;
+    // Child effects run before the parent initializer. Queue the first view
+    // just like other early public events; the SDK otherwise drops it.
+    track("$pageview", { $current_url: url });
+    lastPageviewUrl = url;
+  }, [pathname, query]);
 
   return null;
 }
