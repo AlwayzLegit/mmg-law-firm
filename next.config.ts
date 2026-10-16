@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
   // Next's built-in optimized list.)
   experimental: {
     optimizePackageImports: ["recharts"],
+    // Preview-only experiment: compare against the external-CSS control in CI.
+    // Do not merge without checking repeated results, payload and rendering.
+    inlineCss:
+      process.env.MMG_CSS_MODE === "inline" ||
+      (process.env.VERCEL_ENV === "preview" &&
+        process.env.VERCEL_GIT_COMMIT_REF === "test/mmg-css-loading-comparison"),
   },
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot

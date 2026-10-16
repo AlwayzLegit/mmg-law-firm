@@ -14,7 +14,7 @@
         "http://localhost:3000/practice-areas/motorcycle-accidents",
         "http://localhost:3000/locations"
       ],
-      "numberOfRuns": 1
+      "numberOfRuns": 3
     },
     "assert": {
       "assertions": {

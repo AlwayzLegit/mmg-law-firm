@@ -23,7 +23,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        formfactor: [mobile, desktop]
+        # Isolated experiment only: repeated, equal mobile control/treatment.
+        formfactor: [mobile]
+        cssmode: [external, inline]
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +44,7 @@ jobs:
       - name: Build
         run: pnpm build
         env:
+          MMG_CSS_MODE: ${{ matrix.cssmode }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
@@ -52,5 +55,6 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
         env:
+          MMG_CSS_MODE: ${{ matrix.cssmode }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
