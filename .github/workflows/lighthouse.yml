@@ -27,6 +27,7 @@ on:
           - toast-comparison
           - google-priority-comparison
           - hero-quality-comparison
+          - monitoring-comparison
   pull_request:
     branches: [main]
 
@@ -92,6 +93,8 @@ jobs:
         run: node --test tools/performance/google-priority-comparison.test.mjs
       - name: Test image-quality diagnostic safeguards
         run: node --test tools/performance/hero-quality-comparison.test.mjs
+      - name: Test monitoring-loader diagnostic safeguards
+        run: node --test tools/performance/monitoring-comparison.test.mjs
       - name: Compare nine isolated, unauthenticated mobile loads
         if: inputs.target == 'live-car-diagnostics'
         run: node tools/performance/live-diagnostic.mjs
@@ -110,6 +113,9 @@ jobs:
       - name: Compare fixed hero-quality previews with all services
         if: inputs.target == 'hero-quality-comparison'
         run: node tools/performance/hero-quality-comparison.mjs
+      - name: Compare fixed monitoring-loader previews with all services
+        if: inputs.target == 'monitoring-comparison'
+        run: node tools/performance/monitoring-comparison.mjs
       - name: Retain every result, including failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -122,4 +128,5 @@ jobs:
             outputs/toast-comparison-131/
             outputs/google-priority-comparison-132/
             outputs/hero-quality-comparison-134/
+            outputs/monitoring-comparison-135/
           retention-days: 7
