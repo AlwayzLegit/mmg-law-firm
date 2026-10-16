@@ -1,15 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Inter, Fraunces, Lato, Libre_Baskerville } from "next/font/google";
 
-import { PostHogLoader } from "@/components/analytics/posthog-loader";
+import { PublicAnalytics } from "@/components/analytics/public-analytics";
 import { SchemaGraph } from "@/components/seo/schema-graph";
 import { DeferredToaster } from "@/components/ui/deferred-toaster";
 import { FIRM, SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { siteUrl } from "@/lib/seo/canonical";
 
-import "./globals.css";
+import "@/app/globals.css";
 
 // Inter and Fraunces only render in the admin: the public site's
 // `.theme-v3` maps both variables to the Georgia stack. Not preloading them
@@ -95,11 +94,10 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default function RootDocument({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
-  const gaId = env.NEXT_PUBLIC_GA_ID;
-
+  publicAnalytics = false,
+}: Readonly<{ children: React.ReactNode; publicAnalytics?: boolean }>) {
   return (
     <html
       lang="en"
@@ -113,24 +111,9 @@ export default function RootLayout({
         <SchemaGraph />
 
         {children}
-        {/* Analytics loads after the page is idle — never on the critical path. */}
-        <PostHogLoader />
-
         <DeferredToaster richColors closeButton />
-
-        {gaId ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga-init" strategy="afterInteractive">
-              {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${gaId}', { send_page_view: true });`}
-            </Script>
-          </>
+        {publicAnalytics ? (
+          <PublicAnalytics gaId={env.NEXT_PUBLIC_GA_ID} />
         ) : null}
       </body>
     </html>

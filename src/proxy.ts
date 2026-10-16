@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import { env } from "@/lib/env";
+import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
 
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` and pinned it to the
@@ -119,6 +120,11 @@ export async function proxy(request: NextRequest) {
     res.headers.set(cspHeader, csp);
     // Modern reporting channel for the `report-to csp-endpoint` directive.
     res.headers.set("reporting-endpoints", 'csp-endpoint="/api/csp-report"');
+    // Private URLs can include searches or auth state. Do not pass them to
+    // public-page analytics (or external destinations) as document.referrer.
+    if (isPrivateAnalyticsPath(request.nextUrl.pathname)) {
+      res.headers.set("referrer-policy", "no-referrer");
+    }
     return res;
   }
 
@@ -141,7 +147,7 @@ export async function proxy(request: NextRequest) {
       const dest = /^https?:\/\//.test(rule.destination)
         ? rule.destination
         : new URL(rule.destination, request.url).toString();
-      return NextResponse.redirect(dest, rule.permanent ? 308 : 307);
+      return withCsp(NextResponse.redirect(dest, rule.permanent ? 308 : 307));
     }
   }
 
@@ -152,7 +158,7 @@ export async function proxy(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("next", request.nextUrl.pathname);
-      return NextResponse.redirect(url);
+      return withCsp(NextResponse.redirect(url));
     }
     return withCsp(response);
   }
@@ -190,7 +196,7 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    return withCsp(NextResponse.redirect(url));
   }
 
   // Redirect already-signed-in admins away from /login. We verify
@@ -206,7 +212,7 @@ export async function proxy(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
       url.searchParams.delete("next");
-      return NextResponse.redirect(url);
+      return withCsp(NextResponse.redirect(url));
     }
   }
 

@@ -5,6 +5,10 @@ import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 
 import { TRACK_EVENT, drainTrackQueue } from "@/lib/analytics/track";
+import {
+  isPrivateAnalyticsPath,
+  withoutPrivateAnalyticsUrls,
+} from "@/lib/analytics/private-routes";
 
 /**
  * PostHog client init + pageview capture. Loaded lazily by `PostHogLoader`
@@ -25,7 +29,8 @@ const POSTHOG_HOST =
 
 export function PostHogRuntime() {
   React.useEffect(() => {
-    if (!POSTHOG_KEY) return;
+    if (!POSTHOG_KEY || isPrivateAnalyticsPath(window.location.pathname))
+      return;
     posthog.init(POSTHOG_KEY, {
       api_host: POSTHOG_HOST,
       capture_pageview: false, // we send these manually below
@@ -33,6 +38,17 @@ export function PostHogRuntime() {
       autocapture: false,
       disable_session_recording: true,
       person_profiles: "identified_only",
+      before_send: (event) => {
+        if (!event || isPrivateAnalyticsPath(window.location.pathname))
+          return null;
+        return {
+          ...event,
+          properties: withoutPrivateAnalyticsUrls(
+            event.properties,
+            window.location.origin,
+          ),
+        };
+      },
       loaded: (ph) => {
         if (process.env.NODE_ENV !== "production") ph.debug(false);
       },
@@ -40,7 +56,8 @@ export function PostHogRuntime() {
 
     // Drain events fired before the SDK loaded, then keep listening.
     const flush = () => {
-      for (const [name, props] of drainTrackQueue()) posthog.capture(name, props);
+      for (const [name, props] of drainTrackQueue())
+        posthog.capture(name, props);
     };
     flush();
     window.addEventListener(TRACK_EVENT, flush);
@@ -65,7 +82,7 @@ function PageviewTracker() {
   const searchParams = useSearchParams();
 
   React.useEffect(() => {
-    if (!POSTHOG_KEY || !pathname) return;
+    if (!POSTHOG_KEY || !pathname || isPrivateAnalyticsPath(pathname)) return;
     let url = window.origin + pathname;
     const q = searchParams?.toString();
     if (q) url = `${url}?${q}`;

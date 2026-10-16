@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   // bundles only pull the chart pieces they use. (lucide-react is already in
   // Next's built-in optimized list.)
   experimental: {
+    // Separate public/private roots need an explicit unmatched-URL document.
+    globalNotFound: true,
     optimizePackageImports: ["recharts"],
   },
   images: {
