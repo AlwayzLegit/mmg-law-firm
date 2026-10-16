@@ -1,14 +1,14 @@
 import { z } from "zod";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
-import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
+import { PRACTICE_AREA_OPTIONS } from "@/lib/data/practice-area-options";
 
 // Zod 4 probes `Function("")` to decide whether it may JIT-compile object
 // parsers. Under our CSP (no `unsafe-eval`) that probe is a logged violation
 // on every page with a lead form, so opt out of the JIT path.
 z.config({ jitless: true });
 
-const PRACTICE_SLUGS = PRACTICE_AREAS.map((p) => p.slug);
+const PRACTICE_SLUGS = PRACTICE_AREA_OPTIONS.map((p) => p.slug);
 
 const PreferredContact = z.enum(["phone", "email", "text"]);
 
