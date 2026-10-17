@@ -1,6 +1,6 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
+import { captureClientException } from "@/lib/monitoring/load-client-monitoring";
 import Link from "next/link";
 import * as React from "react";
 
@@ -15,7 +15,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   React.useEffect(() => {
-    Sentry.captureException(error);
+    void captureClientException(error);
   }, [error]);
 
   return (

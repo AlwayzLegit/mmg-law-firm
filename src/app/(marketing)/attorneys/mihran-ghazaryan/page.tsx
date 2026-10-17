@@ -7,6 +7,7 @@ import { FIRM } from "@/lib/constants";
 import { attorneySameAs, getAttorneyProfile } from "@/lib/data/attorney";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
 import { buildMetadata } from "@/lib/seo/metadata";
+import { FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
 
 const PATH = "/attorneys/mihran-ghazaryan";
 const SLUG = "mihran-ghazaryan";
@@ -47,18 +48,7 @@ export default async function AttorneyBioPage() {
     url: canonicalUrl(PATH),
     image: profile.headshot_url ?? `${siteUrl()}/opengraph-image`,
     worksFor: {
-      "@type": "LegalService",
-      name: FIRM.legalName,
-      url: siteUrl(),
-      telephone: FIRM.phone,
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: FIRM.address.street,
-        addressLocality: FIRM.address.city,
-        addressRegion: FIRM.address.state,
-        postalCode: FIRM.address.zip,
-        addressCountry: FIRM.address.country,
-      },
+      "@id": FIRM_LEGAL_SERVICE_ID,
     },
     memberOf: {
       "@type": "Organization",

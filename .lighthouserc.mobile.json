@@ -9,9 +9,12 @@
         "http://localhost:3000/contact",
         "http://localhost:3000/attorneys/mihran-ghazaryan",
         "http://localhost:3000/practice-areas",
+        "http://localhost:3000/practice-areas/car-accidents",
+        "http://localhost:3000/practice-areas/truck-accidents",
+        "http://localhost:3000/practice-areas/motorcycle-accidents",
         "http://localhost:3000/locations"
       ],
-      "numberOfRuns": 1
+      "numberOfRuns": 3
     },
     "assert": {
       "assertions": {

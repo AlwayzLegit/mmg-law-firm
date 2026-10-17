@@ -19,10 +19,9 @@ import {
   getCityBySlug,
   getPublishedPracticeSlugsForCity,
 } from "@/lib/data/queries";
-import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
+import { buildFaqPage, buildService } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 import { V3GlendalePage } from "@/components/v3/pages/glendale";
 import { V3PageShell, v3Metadata } from "@/components/v3/v3-page-shell";
@@ -97,25 +96,11 @@ export default async function CityPage({ params }: Props) {
 
   const path = `/locations/${c.county_slug}/${c.slug}`;
 
-  const legalService = {
-    "@context": "https://schema.org",
-    "@type": "LegalService",
-    "@id": `${canonicalUrl(path)}#legal-service`,
+  const legalService = buildService({
+    path,
     name: `${FIRM.legalName} — ${c.name}`,
-    url: canonicalUrl(path),
-    image: defaultOgImageUrl(),
-    telephone: FIRM.phone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: FIRM.address.street,
-      addressLocality: FIRM.address.city,
-      addressRegion: FIRM.address.state,
-      postalCode: FIRM.address.zip,
-      addressCountry: FIRM.address.country,
-    },
     areaServed: { "@type": "City", name: c.name },
-    parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
-  };
+  });
 
   const faqItems = localFaqItems({ place: c.name, countyName: c.county_name });
   const faqGraph = buildFaqPage(faqItems);

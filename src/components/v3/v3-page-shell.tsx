@@ -2,10 +2,9 @@ import type { ComponentType, ReactNode } from "react";
 
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { FIRM } from "@/lib/constants";
-import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
+import { buildFaqPage, buildService } from "@/lib/seo/schema";
 import { V3_BY_KEY, v3Crumbs } from "@/lib/v3/pages";
 
 import { V3_FAQS } from "./v3-faqs";
@@ -19,7 +18,7 @@ export function v3Metadata(key: string) {
 /**
  * Renders a page from the v3 design handoff together with its structured
  * data: breadcrumb trail, FAQPage (when the page shows Q&A pairs) and a
- * LegalService node for practice pages. `children` render after the design
+ * Service node for practice pages. `children` render after the design
  * content (e.g. live DB sections such as city links).
  *
  * Callers pass the page body component directly (`page`) rather than this
@@ -49,27 +48,13 @@ export function V3PageShell({
   const graphs: object[] = [];
   if (faqs.length) graphs.push(buildFaqPage(faqs));
   if (m.practiceArea && ["car", "truck", "moto", "injury"].includes(m.group)) {
-    graphs.push({
-      "@context": "https://schema.org",
-      "@type": "LegalService",
-      "@id": `${canonicalUrl(m.path)}#legal-service`,
+    graphs.push(buildService({
+      path: m.path,
       name: `${FIRM.legalName} — ${m.label}`,
-      url: canonicalUrl(m.path),
-      image: defaultOgImageUrl(),
       description: m.description,
-      telephone: FIRM.phone,
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: FIRM.address.street,
-        addressLocality: FIRM.address.city,
-        addressRegion: FIRM.address.state,
-        postalCode: FIRM.address.zip,
-        addressCountry: FIRM.address.country,
-      },
       areaServed: { "@type": "State", name: "California" },
-      parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
-      knowsAbout: m.label,
-    });
+      serviceType: m.label,
+    }));
   }
   return (
     <>

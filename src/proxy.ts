@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import { env } from "@/lib/env";
+import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
 
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` and pinned it to the
@@ -48,7 +49,9 @@ function buildCsp(): string {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self' data:`,
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com`,
+    // The wildcard excludes analytics.google.com itself. Permit only the two
+    // observed GA collection paths; keep advertising/DoubleClick hosts blocked.
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://analytics.google.com/g/collect https://www.google.com/g/collect https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com`,
     // Turnstile widget + Google Maps embed render in iframes.
     `frame-src 'self' https://challenges.cloudflare.com https://www.google.com`,
     `worker-src 'self' blob:`,
@@ -117,6 +120,11 @@ export async function proxy(request: NextRequest) {
     res.headers.set(cspHeader, csp);
     // Modern reporting channel for the `report-to csp-endpoint` directive.
     res.headers.set("reporting-endpoints", 'csp-endpoint="/api/csp-report"');
+    // Private URLs can include searches or auth state. Do not pass them to
+    // public-page analytics (or external destinations) as document.referrer.
+    if (isPrivateAnalyticsPath(request.nextUrl.pathname)) {
+      res.headers.set("referrer-policy", "no-referrer");
+    }
     return res;
   }
 
@@ -139,7 +147,7 @@ export async function proxy(request: NextRequest) {
       const dest = /^https?:\/\//.test(rule.destination)
         ? rule.destination
         : new URL(rule.destination, request.url).toString();
-      return NextResponse.redirect(dest, rule.permanent ? 308 : 307);
+      return withCsp(NextResponse.redirect(dest, rule.permanent ? 308 : 307));
     }
   }
 
@@ -150,7 +158,7 @@ export async function proxy(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("next", request.nextUrl.pathname);
-      return NextResponse.redirect(url);
+      return withCsp(NextResponse.redirect(url));
     }
     return withCsp(response);
   }
@@ -188,7 +196,7 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    return withCsp(NextResponse.redirect(url));
   }
 
   // Redirect already-signed-in admins away from /login. We verify
@@ -204,7 +212,7 @@ export async function proxy(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
       url.searchParams.delete("next");
-      return NextResponse.redirect(url);
+      return withCsp(NextResponse.redirect(url));
     }
   }
 

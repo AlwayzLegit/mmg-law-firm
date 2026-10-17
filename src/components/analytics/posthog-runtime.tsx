@@ -4,7 +4,11 @@ import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 
-import { TRACK_EVENT, drainTrackQueue } from "@/lib/analytics/track";
+import { TRACK_EVENT, drainTrackQueue, track } from "@/lib/analytics/track";
+import {
+  isPrivateAnalyticsPath,
+  filterPublicAnalyticsEvent,
+} from "@/lib/analytics/private-routes";
 
 /**
  * PostHog client init + pageview capture. Loaded lazily by `PostHogLoader`
@@ -23,44 +27,40 @@ const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 
+// Client-document state: StrictMode and runtime remounts must not reinitialize
+// the singleton SDK or count the same current route twice.
+let initialized = false;
+let lastPageviewUrl: string | null = null;
+
 export function PostHogRuntime() {
   React.useEffect(() => {
-    if (!POSTHOG_KEY) return;
-    posthog.init(POSTHOG_KEY, {
-      api_host: POSTHOG_HOST,
-      capture_pageview: false, // we send these manually below
-      capture_pageleave: true,
-      autocapture: false,
-      disable_session_recording: true,
-      person_profiles: "identified_only",
-      loaded: (ph) => {
-        if (process.env.NODE_ENV !== "production") ph.debug(false);
-      },
-    });
+    if (!POSTHOG_KEY || isPrivateAnalyticsPath(window.location.pathname))
+      return;
+    if (!initialized) {
+      posthog.init(POSTHOG_KEY, {
+        api_host: POSTHOG_HOST,
+        capture_pageview: false, // we send these manually below
+        capture_pageleave: true,
+        autocapture: false,
+        disable_session_recording: true,
+        person_profiles: "identified_only",
+        before_send: (event) =>
+          filterPublicAnalyticsEvent(event, window.location),
+        loaded: (ph) => {
+          if (process.env.NODE_ENV !== "production") ph.debug(false);
+        },
+      });
+      initialized = true;
+    }
 
     // Drain events fired before the SDK loaded, then keep listening.
     const flush = () => {
-      for (const [name, props] of drainTrackQueue()) posthog.capture(name, props);
+      for (const [name, props] of drainTrackQueue())
+        posthog.capture(name, props);
     };
     flush();
     window.addEventListener(TRACK_EVENT, flush);
     return () => window.removeEventListener(TRACK_EVENT, flush);
-  }, []);
-
-  // Site-wide phone-click capture. `tel:` links live in the header, footer,
-  // every page hero, and CTA bands — a delegated listener captures all of them
-  // as a `phone_click` conversion event without instrumenting each component.
-  // No PII: we record only the page path, not the number (it's a firm constant).
-  React.useEffect(() => {
-    if (!POSTHOG_KEY) return;
-    function onClick(e: MouseEvent) {
-      const target = e.target as HTMLElement | null;
-      const link = target?.closest?.('a[href^="tel:"]') as HTMLAnchorElement | null;
-      if (!link) return;
-      posthog.capture("phone_click", { pathname: window.location.pathname });
-    }
-    document.addEventListener("click", onClick, { capture: true });
-    return () => document.removeEventListener("click", onClick, { capture: true });
   }, []);
 
   if (!POSTHOG_KEY) return null;
@@ -79,14 +79,25 @@ export function PostHogRuntime() {
 function PageviewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const query = searchParams?.toString() ?? "";
 
   React.useEffect(() => {
     if (!POSTHOG_KEY || !pathname) return;
+    if (
+      isPrivateAnalyticsPath(pathname) ||
+      isPrivateAnalyticsPath(window.location.pathname)
+    ) {
+      lastPageviewUrl = null;
+      return;
+    }
     let url = window.origin + pathname;
-    const q = searchParams?.toString();
-    if (q) url = `${url}?${q}`;
-    posthog.capture("$pageview", { $current_url: url });
-  }, [pathname, searchParams]);
+    if (query) url = `${url}?${query}`;
+    if (url === lastPageviewUrl) return;
+    // Child effects run before the parent initializer. Queue the first view
+    // just like other early public events; the SDK otherwise drops it.
+    track("$pageview", { $current_url: url });
+    lastPageviewUrl = url;
+  }, [pathname, query]);
 
   return null;
 }

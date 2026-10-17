@@ -11,6 +11,8 @@ import { AttorneyHeroAside } from "@/components/marketing/attorney-hero-aside";
 import { Faq } from "@/components/marketing/faq";
 import { LeadForm } from "@/components/marketing/lead-form";
 import { PageHero } from "@/components/marketing/page-hero";
+import { IntroEmphasis } from "@/components/marketing/intro-emphasis";
+import { PracticeChecklistText } from "@/components/marketing/practice-checklist-text";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { FIRM, DISCLAIMERS } from "@/lib/constants";
@@ -22,11 +24,11 @@ import {
 } from "@/lib/data/practice-area-content";
 import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
 import { getLocationPage, getPublishedLocationPages } from "@/lib/data/queries";
-import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { buildFaqPage, FIRM_LEGAL_SERVICE_ID } from "@/lib/seo/schema";
+import { buildFaqPage, buildService } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
+import { practiceGuides } from "@/lib/v3/practice-guides";
 
 // Spec §17 hard rule #1: city × practice pages require unique local_angle_md
 // to publish. We never auto-generate filler. dynamicParams=true so a freshly
@@ -105,33 +107,17 @@ export default async function CityPracticePage({ params }: Props) {
       p.practice_area_slug === row.practice_area_slug &&
       p.city_slug !== row.city_slug,
   );
-  const nearbyCities = [
+  const otherCaliforniaCities = [
     ...samePractice.filter((p) => p.county_slug === row.county_slug),
     ...samePractice.filter((p) => p.county_slug !== row.county_slug),
   ].slice(0, 6);
 
-  const legalService = {
-    "@context": "https://schema.org",
-    "@type": ["LegalService", "Attorney"],
-    "@id": `${canonicalUrl(path)}#legal-service`,
+  const legalService = buildService({
+    path,
     name: `${FIRM.legalName} — ${row.practice_area_name} in ${row.city_name}`,
-    url: canonicalUrl(path),
-    image: defaultOgImageUrl(),
-    telephone: FIRM.phone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: FIRM.address.street,
-      addressLocality: FIRM.address.city,
-      addressRegion: FIRM.address.state,
-      postalCode: FIRM.address.zip,
-      addressCountry: FIRM.address.country,
-    },
     areaServed: { "@type": "City", name: row.city_name },
-    parentOrganization: { "@id": FIRM_LEGAL_SERVICE_ID },
-    // `knowsAbout` is valid on Organization/LegalService; `serviceType` is
-    // only valid on schema.org Service (flagged NOT_RECOGNIZED in the audit).
-    knowsAbout: area?.lawyerPhrase ?? row.practice_area_name,
-  };
+    serviceType: area?.lawyerPhrase ?? row.practice_area_name,
+  });
 
   const faqGraph = row.faq_json?.length
     ? buildFaqPage(row.faq_json)
@@ -176,7 +162,7 @@ export default async function CityPracticePage({ params }: Props) {
           { label: row.practice_area_name },
         ]}
         title={`${row.city_name} ${area ? lawyerPhraseTitle(area) : row.practice_area_name}`}
-        description={row.intro_md ?? undefined}
+        description={row.intro_md ? <IntroEmphasis text={row.intro_md} /> : undefined}
         actions={
           <div className="flex flex-wrap items-center gap-3">
             <Link
@@ -224,6 +210,23 @@ export default async function CityPracticePage({ params }: Props) {
                 </ReactMarkdown>
               </div>
             </section>
+
+            {practiceGuides(row.practice_area_slug).length > 0 ? (
+              <section className="mt-12" aria-labelledby="related-guides-heading">
+                <h2 id="related-guides-heading" className="font-display text-2xl font-medium tracking-tight md:text-3xl">
+                  Related California accident guides
+                </h2>
+                <ul className="mt-4 space-y-2">
+                  {practiceGuides(row.practice_area_slug).map((guide) => (
+                    <li key={guide.path}>
+                      <Link href={guide.path} className="text-primary underline underline-offset-4">
+                        {guide.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             <AttorneyHelpSection
               practiceLabel={
@@ -303,7 +306,7 @@ export default async function CityPracticePage({ params }: Props) {
                         className="text-primary mt-0.5 h-4 w-4 flex-none"
                         aria-hidden
                       />
-                      <span className="text-foreground">{line}</span>
+                      <span className="text-foreground"><PracticeChecklistText text={line} /></span>
                     </li>
                   ))}
                 </ul>
@@ -341,13 +344,13 @@ export default async function CityPracticePage({ params }: Props) {
               </section>
             ) : null}
 
-            {nearbyCities.length > 0 ? (
+            {otherCaliforniaCities.length > 0 ? (
               <section className="border-border mt-12 border-t pt-8">
                 <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
-                  {row.practice_area_name} in nearby cities
+                  {row.practice_area_name} in other California cities
                 </h2>
                 <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {nearbyCities.map((p) => (
+                  {otherCaliforniaCities.map((p) => (
                     <li key={`${p.county_slug}/${p.city_slug}`}>
                       <Link
                         href={`/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`}

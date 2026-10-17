@@ -54,6 +54,7 @@ async function handle(request: NextRequest) {
   if (due.length > 0) {
     revalidatePath("/blog");
     revalidatePath("/sitemap.xml");
+    revalidatePath("/sitemaps/other.xml");
     for (const p of due) {
       if (p.slug) revalidatePath(`/blog/${p.slug}`);
     }

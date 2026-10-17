@@ -5,6 +5,7 @@ import Script from "next/script";
 
 import { FIRM } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { observeFormVisibility } from "@/lib/observe-form-visibility";
 
 type TurnstileApi = {
   render: (
@@ -43,6 +44,7 @@ type Props = {
 export function Turnstile({ siteKey, onToken, className, action }: Props) {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const widgetIdRef = React.useRef<string | null>(null);
+  const [active, setActive] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
   // Set when Cloudflare's `error-callback` fires — typically a hostname that
   // isn't allow-listed for this site key, or an invalid key. (Token expiry is
@@ -60,8 +62,17 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
     }
   }, [siteKey, onToken]);
 
+  // A page can contain two forms. Do not run a second challenge far below the
+  // fold before its form is visible. Focus/pointer input also activates it, and
+  // the server still rejects every missing, expired or invalid token.
   React.useEffect(() => {
-    if (!siteKey || !loaded || !ref.current || !window.turnstile) return;
+    if (!siteKey || !ref.current) return;
+    return observeFormVisibility(ref.current, () => setActive(true));
+  }, [siteKey]);
+
+  React.useEffect(() => {
+    if (!siteKey || !active || !loaded || !ref.current || !window.turnstile)
+      return;
     const id = window.turnstile.render(ref.current, {
       sitekey: siteKey,
       action,
@@ -83,7 +94,7 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, loaded, onToken, action]);
+  }, [siteKey, active, loaded, onToken, action]);
 
   // Shown whenever verification can't work: missing key in prod, or the widget
   // hit an error-callback (e.g. this hostname isn't allow-listed for the site
@@ -121,7 +132,7 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
     if (process.env.NODE_ENV !== "production") {
       return (
         <p className={className}>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             (CAPTCHA disabled in dev — set NEXT_PUBLIC_TURNSTILE_SITE_KEY to
             enable)
           </span>
@@ -141,12 +152,23 @@ export function Turnstile({ siteKey, onToken, className, action }: Props) {
 
   return (
     <>
-      <Script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-        strategy="afterInteractive"
-        onLoad={() => setLoaded(true)}
-      />
-      <div ref={ref} className={className} />
+      {active ? (
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          strategy="afterInteractive"
+          // A second widget can mount while the shared script is still loading;
+          // Next calls its onLoad when that in-flight request completes.
+          onLoad={() => setLoaded(true)}
+          // onReady also runs when another form/navigation already loaded the
+          // shared script. onLoad alone can leave later widgets uninitialized.
+          onReady={() => setLoaded(true)}
+          onError={() => {
+            setErrored(true);
+            onToken("");
+          }}
+        />
+      ) : null}
+      <div ref={ref} className={className} style={{ minHeight: 65 }} />
     </>
   );
 }

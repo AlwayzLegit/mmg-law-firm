@@ -167,5 +167,6 @@ export function revalidateBlog(slug?: string | null): void {
   revalidatePath("/blog");
   revalidatePath("/admin/content/blog");
   revalidatePath("/sitemap.xml");
+  revalidatePath("/sitemaps/other.xml");
   if (slug) revalidatePath(`/blog/${slug}`);
 }

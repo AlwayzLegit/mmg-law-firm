@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 
 import { getAttorneyProfile } from "@/lib/data/attorney";
 import { getPublishedPosts } from "@/lib/data/blog";
-import { getPublicContentFlags } from "@/lib/data/public-content";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
   getAllPublishedCities,
@@ -10,6 +9,7 @@ import {
   getPublishedLocationPages,
 } from "@/lib/data/queries";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
+import { sharedContentRevision } from "@/lib/seo/content-revisions";
 import { V3_GUIDES } from "@/lib/v3/pages";
 
 /** Normalize a possibly-relative image URL to absolute for the sitemap. */
@@ -19,8 +19,8 @@ function absImage(url: string | null | undefined): string | null {
   return `${siteUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-// If the total ever exceeds 5,000 URLs, switch to generateSitemaps() with
-// chunks of 5,000. We're well under that for now.
+// Shared inventory for the four topic sitemaps. Keep page metadata out of
+// this pipeline: the owner's title/description freeze applies sitewide.
 
 const STATIC_ROUTES: Array<{
   path: string;
@@ -45,15 +45,13 @@ const STATIC_ROUTES: Array<{
   { path: "/legal/ccpa", priority: 0.3, changeFrequency: "yearly" },
 ];
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const lastModified = new Date();
-
+export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   // Don't advertise content index pages that have nothing published yet —
   // they 404, so listing them would be a soft-404 in Search Console.
-  const flags = await getPublicContentFlags();
+  const posts = await getPublishedPosts(true);
   // /case-results and /reviews always render the v3 guide content now.
   const staticRoutes = STATIC_ROUTES.filter((r) =>
-    r.path === "/blog" ? flags.hasBlogPosts : true,
+    r.path === "/blog" ? posts.length > 0 : true,
   );
 
   // Attorney headshot, attached to the bio route as an indexable image.
@@ -67,7 +65,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const entries: MetadataRoute.Sitemap = staticRoutes.map((r) => ({
     url: canonicalUrl(r.path),
-    lastModified,
     changeFrequency: r.changeFrequency,
     priority: r.priority,
     ...(r.path === "/attorneys/mihran-ghazaryan" && attorneyHeadshot
@@ -79,9 +76,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const g of V3_GUIDES) {
     entries.push({
       url: canonicalUrl(g.path),
-      lastModified,
       changeFrequency: "monthly",
-      priority: ["car", "truck", "moto", "injury"].includes(g.group) ? 0.8 : 0.6,
+      priority: ["car", "truck", "moto", "injury"].includes(g.group)
+        ? 0.8
+        : 0.6,
     });
   }
 
@@ -90,7 +88,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const p of PRACTICE_AREAS) {
     entries.push({
       url: canonicalUrl(`/practice-areas/${p.slug}`),
-      lastModified,
       changeFrequency: "monthly",
       priority: 0.8,
     });
@@ -98,66 +95,64 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Published counties.
   try {
-    const counties = await getPublishedCounties();
+    const counties = await getPublishedCounties(true);
     for (const c of counties) {
       entries.push({
         url: canonicalUrl(`/locations/${c.slug}`),
-        lastModified: c.updated_at ? new Date(c.updated_at) : lastModified,
+        lastModified: validSitemapDate(c.updated_at),
         changeFrequency: "monthly",
         priority: 0.7,
       });
     }
   } catch (err) {
     console.warn("[sitemap] counties:", err);
+    throw err;
   }
 
   // Published cities.
   try {
-    const cities = await getAllPublishedCities();
+    const cities = await getAllPublishedCities(true);
     for (const city of cities) {
       entries.push({
         url: canonicalUrl(`/locations/${city.county_slug}/${city.slug}`),
-        lastModified: city.updated_at
-          ? new Date(city.updated_at)
-          : lastModified,
+        lastModified: validSitemapDate(city.updated_at),
         changeFrequency: "monthly",
         priority: 0.6,
       });
     }
   } catch (err) {
     console.warn("[sitemap] cities:", err);
+    throw err;
   }
 
   // Published city × practice pages — only those with non-empty
   // local_angle_md per spec §17.
   try {
-    const pages = await getPublishedLocationPages();
+    const pages = await getPublishedLocationPages(true);
     for (const page of pages) {
+      if (!page.local_angle_md?.trim()) continue;
       entries.push({
         url: canonicalUrl(
           `/locations/${page.county_slug}/${page.city_slug}/${page.practice_area_slug}`,
         ),
-        lastModified: page.updated_at
-          ? new Date(page.updated_at)
-          : lastModified,
+        lastModified: validSitemapDate(page.updated_at),
         changeFrequency: "monthly",
         priority: 0.5,
       });
     }
   } catch (err) {
     console.warn("[sitemap] location-pages:", err);
+    throw err;
   }
 
   // Published blog posts.
   try {
-    const posts = await getPublishedPosts();
     for (const post of posts) {
       const hero = absImage(post.hero_image_url);
       entries.push({
         url: canonicalUrl(`/blog/${post.slug}`),
-        lastModified: post.published_at
-          ? new Date(post.published_at)
-          : lastModified,
+        // Publication is not a reliable last modification timestamp.
+        // Omit until the data layer provides a verified content update date.
         changeFrequency: "monthly",
         priority: 0.6,
         ...(hero ? { images: [hero] } : {}),
@@ -165,7 +160,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch (err) {
     console.warn("[sitemap] blog:", err);
+    throw err;
   }
 
-  return entries;
+  const revisedEntries = entries.map((entry) => {
+    const revision = validSitemapDate(sharedContentRevision(new URL(entry.url).pathname));
+    if (!revision) return entry;
+    const stored = entry.lastModified instanceof Date
+      ? entry.lastModified : validSitemapDate(entry.lastModified);
+    return { ...entry, lastModified: stored && stored > revision ? stored : revision };
+  });
+  return [...new Map(revisedEntries.map((entry) => [entry.url, entry])).values()];
+}
+
+export function validSitemapDate(value?: string | null): Date | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) && date.getTime() <= Date.now()
+    ? date
+    : undefined;
 }

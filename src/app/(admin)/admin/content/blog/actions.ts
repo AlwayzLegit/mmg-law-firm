@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { revalidateSitemaps } from "@/lib/seo/revalidate-sitemaps";
 
 /**
  * Slug derivation: lowercase, ASCII fold, non-alphanumerics → hyphen,
@@ -222,6 +223,7 @@ export async function updateBlogPost(
   revalidatePath("/admin/content/blog");
   revalidatePath("/blog");
   revalidatePath(`/blog/${parsed.data.slug}`);
+  revalidateSitemaps();
   // Old slug, if it changed, will rebuild on its next request and 404.
 
   return { ok: true };
@@ -272,6 +274,8 @@ export async function togglePublishBlogPost(
   revalidatePath(`/admin/content/blog/${parsed.data.id}`);
   revalidatePath("/admin/content/blog");
   revalidatePath("/blog");
+  revalidatePath("/blog/[slug]", "page");
+  revalidateSitemaps();
 
   return { ok: true };
 }

@@ -39,9 +39,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
-import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
+import { PRACTICE_AREA_OPTIONS } from "@/lib/data/practice-area-options";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
 import { track } from "@/lib/analytics/track";
+import { recordStoredLead } from "@/lib/analytics/stored-lead";
 import { cn } from "@/lib/utils";
 
 import { Turnstile } from "./turnstile";
@@ -182,6 +183,7 @@ export function LeadForm({
         return;
       }
 
+      void recordStoredLead(res);
       setSubmitted(true);
       toast.success("We received your request — we'll be in touch shortly.");
       // PostHog conversion event. No PII — we never send name, phone, email,
@@ -435,7 +437,7 @@ export function LeadForm({
                           <SelectValue placeholder="Select an option" />
                         </FormControl>
                         <SelectContent>
-                          {PRACTICE_AREAS.map((p) => (
+                          {PRACTICE_AREA_OPTIONS.map((p) => (
                             <SelectItem key={p.slug} value={p.slug}>
                               {p.name}
                             </SelectItem>

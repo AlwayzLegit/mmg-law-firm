@@ -65,7 +65,9 @@ export async function V3Header() {
   return (
     <header className="v3h" data-v3-header>
       <div className="v3h-bar">
-        <Link href="/" aria-label={`${FIRM.legalName} homepage`} className="v3h-logo">
+        {/* The always-visible logo must not prefetch the entire homepage on
+            every route (including the homepage itself). Navigation is intact. */}
+        <Link href="/" prefetch={false} aria-label={`${FIRM.legalName} homepage`} className="v3h-logo">
           <V3Img
             src="uploads/logos/mmg-law-firm-gold-wordmark-with-vertical-separator-2.png"
             alt={FIRM.legalName}

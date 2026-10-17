@@ -96,8 +96,9 @@
   .v3-page :is(a, button):is([style*="white-space:nowrap"], [style*="white-space: nowrap"])[style*="letter-spacing"] {
     letter-spacing: 0.06em !important;
   }
-  /* Label | content grids with a fixed-width label column stack instead. */
-  .v3-page :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns:minmax(0,210px) 1fr"]) {
+  /* Label | content grids with a fixed-width label column stack instead.
+     CSSOM navigation also expands function spacing and normalizes 0 to 0px. */
+  .v3-page :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns: minmax(0px, 220px) 1fr"], [style*="grid-template-columns:minmax(0,210px) 1fr"], [style*="grid-template-columns: minmax(0px, 210px) 1fr"]) {
     grid-template-columns: 1fr !important;
   }
   .v3-page :is(div, p, a, button, label, span, li, form, section, h1, h2, h3, h4) {
@@ -115,20 +116,20 @@
   /* Claim-stage rows (number | icon | title | summary | details button):
      five columns can't fit a phone. Keep number, icon and title on one line
      and give the summary and button full-width rows below. */
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) {
     grid-template-columns: 44px 48px 1fr !important;
     row-gap: 8px !important;
   }
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] > :nth-child(n + 4) {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) > :nth-child(n + 4) {
     grid-column: 1 / -1;
   }
   /* Icon | label | value rows (truck deadlines): the value drops under the
      label instead of squeezing it to nothing. */
-  .v3-page [style*="grid-template-columns:28px 1fr auto"] {
+  .v3-page :is([style*="grid-template-columns:28px 1fr auto"], [style*="grid-template-columns: 28px 1fr auto"]) {
     grid-template-columns: 28px minmax(0, 1fr) !important;
     row-gap: 4px !important;
   }
-  .v3-page [style*="grid-template-columns:28px 1fr auto"] > :nth-child(3) {
+  .v3-page :is([style*="grid-template-columns:28px 1fr auto"], [style*="grid-template-columns: 28px 1fr auto"]) > :nth-child(3) {
     grid-column: 2;
   }
   /* Number | divider | text rows (fee dialog). */
@@ -214,7 +215,8 @@
    hubs: below the desktop nav it covers body text, and the mobile dock and
    header phone already carry the call to action. */
 @media (max-width: 1199px) {
-  .v3-page a[style*="writing-mode:vertical-rl"][style*="position:fixed"] {
+  /* Navigation creates CSSOM-spaced style attributes, unlike compact SSR. */
+  .v3-page a:is([style*="writing-mode:vertical-rl"], [style*="writing-mode: vertical-rl"]):is([style*="position:fixed"], [style*="position: fixed"]) {
     display: none !important;
   }
 }
@@ -222,11 +224,11 @@
 /* Car hub closing band: the hillside image and the 20vw left inset leave
    the copy a narrow strip on phones. */
 @media (max-width: 767px) {
-  .v3-page [style*="width:min(46%,700px)"] {
+  .v3-page :is([style*="width:min(46%,700px)"], [style*="width: min(46%, 700px)"]) {
     width: 100% !important;
     opacity: 0.18 !important;
   }
-  .v3-page [style*="padding:40px clamp(20px,5.8vw,90px) 40px clamp(20px,20vw,310px)"] {
+  .v3-page :is([style*="padding:40px clamp(20px,5.8vw,90px) 40px clamp(20px,20vw,310px)"], [style*="padding: 40px clamp(20px, 5.8vw, 90px) 40px clamp(20px, 20vw, 310px)"]) {
     padding-left: 20px !important;
     padding-right: 20px !important;
   }
@@ -257,7 +259,7 @@
 /* Reviews "Meet the attorney": portrait + text inside a two-column grid
    leaves ~180px for the text below wide desktop; stack the outer grid. */
 @media (max-width: 1279px) {
-  .v3-page [style*="minmax(min(100%,420px),1fr))"]:has(> [style*="grid-template-columns:minmax(0,220px) 1fr"]) {
+  .v3-page :is([style*="minmax(min(100%,420px),1fr))"], [style*="minmax(min(100%, 420px), 1fr))"]):has(> :is([style*="grid-template-columns:minmax(0,220px) 1fr"], [style*="grid-template-columns: minmax(0px, 220px) 1fr"])) {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
@@ -380,13 +382,13 @@
 /* Resources "What compensation can cover" (5 cards): 3 + 2 instead of a
    lone card beside a khaki block at tablet widths. */
 @media (min-width: 700px) and (max-width: 1279px) {
-  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) {
+  .v3-page ul:is([style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"], [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"]):is([style*="gap:1px"], [style*="gap: 1px"]):has(> li:nth-child(5):last-child) {
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
   }
-  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) > li {
+  .v3-page ul:is([style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"], [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"]):is([style*="gap:1px"], [style*="gap: 1px"]):has(> li:nth-child(5):last-child) > li {
     grid-column: span 2;
   }
-  .v3-page ul[style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"][style*="gap:1px"]:has(> li:nth-child(5):last-child) > li:nth-child(n + 4) {
+  .v3-page ul:is([style*="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"], [style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"]):is([style*="gap:1px"], [style*="gap: 1px"]):has(> li:nth-child(5):last-child) > li:nth-child(n + 4) {
     grid-column: span 3;
   }
 }
@@ -394,11 +396,11 @@
 /* Claim-stage rows (number | icon | title | summary | button) also stack
    the summary on tablets, where it was squeezed to ~16 characters a line. */
 @media (min-width: 481px) and (max-width: 900px) {
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) {
     grid-template-columns: 44px 48px minmax(0, 1fr) auto !important;
     row-gap: 8px !important;
   }
-  .v3-page [style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"] > :nth-child(4) {
+  .v3-page :is([style*="grid-template-columns:44px 48px minmax(150px,220px) 1fr auto"], [style*="grid-template-columns: 44px 48px minmax(150px, 220px) 1fr auto"]) > :nth-child(4) {
     grid-column: 3 / -1;
     grid-row: 2;
   }
@@ -406,11 +408,11 @@
 
 @media (max-width: 480px) {
   /* Deadline cards (number | claim | detail). */
-  .v3-page [style*="grid-template-columns:56px minmax(130px,170px) 1fr"] {
+  .v3-page :is([style*="grid-template-columns:56px minmax(130px,170px) 1fr"], [style*="grid-template-columns: 56px minmax(130px, 170px) 1fr"]) {
     grid-template-columns: 44px minmax(0, 1fr) !important;
     row-gap: 8px !important;
   }
-  .v3-page [style*="grid-template-columns:56px minmax(130px,170px) 1fr"] > :nth-child(n + 3) {
+  .v3-page :is([style*="grid-template-columns:56px minmax(130px,170px) 1fr"], [style*="grid-template-columns: 56px minmax(130px, 170px) 1fr"]) > :nth-child(n + 3) {
     grid-column: 1 / -1;
   }
   /* A short rule line beside a wrapped heading reads as a stray dash. */
@@ -431,7 +433,17 @@
    "span 2" header: it creates an implicit ~40px second column that the
    following cards fall into. */
 @media (max-width: 700px) {
-  .v3-page [style*="grid-template-columns:repeat(auto-fit"] > [style*="grid-column:span 2"] {
+  /* Match both server HTML and client-navigation serialization. */
+  .v3-page :is([style*="grid-template-columns:repeat(auto-fit"], [style*="grid-template-columns: repeat(auto-fit"]) > :is([style*="grid-column:span 2"], [style*="grid-column: span 2"]) {
     grid-column: 1 / -1 !important;
+  }
+}
+
+/* The truck liability icon and copy cannot share a row on the narrowest
+   screens: the consultation control otherwise overflows its text column.
+   Keep the complete label, arrow and link; stack their containing panel. */
+@media (max-width: 359px) {
+  .v3-page :is([style*="grid-template-columns:auto 1fr"], [style*="grid-template-columns: auto 1fr"]):has(> div > a[href="#truck-form"]) {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
