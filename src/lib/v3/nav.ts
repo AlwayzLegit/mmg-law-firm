@@ -1,11 +1,13 @@
 /**
  * Site navigation for the v3 design. The three specialties (car, truck,
- * motorcycle) lead the Accident Cases menu, each with its guide pages, so
- * every hub and guide gets a crawlable link from every page.
+ * motorcycle) are top-level header items, each with its own mega menu: hub,
+ * crash-type guides, case results and the top city × specialty pages. Every
+ * hub and guide therefore gets a crawlable link from every page, in the header
+ * and again in the footer.
  */
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
 
-import { V3_BY_KEY, V3_PAGES, type V3Group } from "./pages";
+import { V3_BY_KEY } from "./pages";
 
 export type NavLink = { label: string; href: string; description?: string };
 
@@ -15,45 +17,120 @@ const link = (key: string, description?: string): NavLink => ({
   description,
 });
 
-const guidesOf = (group: V3Group, hub: string) =>
-  V3_PAGES.filter((p) => p.group === group && p.key !== hub).map((p) => ({
-    label: p.label,
-    href: p.path,
-  }));
+const links = (...keys: string[]): NavLink[] => keys.map((k) => link(k));
+
+export type SpecialtyKey = "car" | "truck" | "moto";
 
 export type Specialty = {
-  key: "car" | "truck" | "moto";
+  key: SpecialtyKey;
+  /** Short header label, e.g. "Car Accidents". */
   hub: NavLink;
+  /** Keyword anchor used on the mega-menu hub card and in the footer. */
+  hubTitle: string;
   icon: string;
+  /** Guide groups shown as columns in the mega menu. */
+  columns: { title: string; links: NavLink[] }[];
+  /** All guides, flat (footer, active-state matching). */
   guides: NavLink[];
   results: NavLink;
+  /** City × specialty pages. */
+  citiesTitle: string;
+  cities: NavLink[];
+  /** Consultation strip at the bottom of the mega menu. */
+  cta: string;
 };
 
+const PRACTICE_SLUG: Record<SpecialtyKey, string> = {
+  car: "car-accidents",
+  truck: "truck-accidents",
+  moto: "motorcycle-accidents",
+};
+
+function cityLink(citySlug: string): NavLink {
+  const c = TIER_1_LOCATIONS.find((l) => l.citySlug === citySlug);
+  if (!c) throw new Error(`Unknown tier-1 city slug in nav: ${citySlug}`);
+  return { label: c.cityName, href: `/locations/${c.countySlug}/${c.citySlug}` };
+}
+
+function cityPracticeLinks(key: SpecialtyKey, citySlugs: string[]): NavLink[] {
+  return citySlugs.map((slug) => {
+    const c = cityLink(slug);
+    return { label: c.label, href: `${c.href}/${PRACTICE_SLUG[key]}` };
+  });
+}
+
+function specialty(
+  key: SpecialtyKey,
+  hubKey: string,
+  description: string,
+  icon: string,
+  columns: { title: string; keys: string[] }[],
+  resultsKey: string,
+  citiesTitle: string,
+  citySlugs: string[],
+  cta: string,
+): Specialty {
+  const cols = columns.map((c) => ({ title: c.title, links: links(...c.keys) }));
+  return {
+    key,
+    hub: link(hubKey, description),
+    hubTitle: V3_BY_KEY[hubKey].title,
+    icon,
+    columns: cols,
+    guides: cols.flatMap((c) => c.links),
+    results: link(resultsKey),
+    citiesTitle,
+    cities: cityPracticeLinks(key, citySlugs),
+    cta,
+  };
+}
+
 export const SPECIALTIES: Specialty[] = [
-  {
-    key: "car",
-    hub: link("car", "Injuries involving passenger vehicles"),
-    icon: "uploads/moto-icons/car.svg",
-    guides: guidesOf("car", "car"),
-    results: link("carresults"),
-  },
-  {
-    key: "truck",
-    hub: link("truck", "Commercial vehicle collisions"),
-    icon: "uploads/moto-icons/truck.svg",
-    guides: guidesOf("truck", "truck"),
-    results: link("truckresults"),
-  },
-  {
-    key: "moto",
-    hub: link("moto", "Guidance for injured riders"),
-    icon: "uploads/moto-icons/motorcycle.svg",
-    guides: guidesOf("moto", "moto"),
-    results: link("motoresults"),
-  },
+  specialty(
+    "car",
+    "car",
+    "Injuries involving passenger vehicles",
+    "uploads/moto-icons/car.svg",
+    [
+      { title: "Types of car accidents", keys: ["rearend", "intersection", "multi", "distract", "dui"] },
+      { title: "Coverage and claims", keys: ["hitrun", "umuim", "rideshare"] },
+    ],
+    "carresults",
+    "Car accident lawyer near you",
+    ["glendale", "los-angeles", "burbank", "pasadena"],
+    "Injured in a car crash?",
+  ),
+  specialty(
+    "truck",
+    "truck",
+    "Commercial vehicle collisions",
+    "uploads/moto-icons/truck.svg",
+    [
+      { title: "Types of truck accidents", keys: ["rollover", "jackknife", "underride", "cargo", "brake", "delivery"] },
+      { title: "Liability and evidence", keys: ["truckliab", "truckev"] },
+    ],
+    "truckresults",
+    "Truck accident lawyer near you",
+    ["glendale", "los-angeles", "long-beach", "san-bernardino"],
+    "Hurt in a commercial truck crash?",
+  ),
+  specialty(
+    "moto",
+    "moto",
+    "Guidance for injured riders",
+    "uploads/moto-icons/motorcycle.svg",
+    [
+      { title: "Types of motorcycle accidents", keys: ["lanesplit", "leftturn", "lanechange"] },
+      { title: "Rider claims", keys: ["passenger", "motoprop"] },
+    ],
+    "motoresults",
+    "Motorcycle accident lawyer near you",
+    ["glendale", "los-angeles", "pasadena", "san-diego"],
+    "Injured riding?",
+  ),
 ];
 
-/** Other injury matters the firm handles (existing practice-area pages). */
+/** Other injury matters the firm handles (footer + Resources menu). */
 export const OTHER_CASES: NavLink[] = [
   link("catastrophic"),
   link("tbi"),
@@ -67,18 +144,23 @@ export const OTHER_CASES: NavLink[] = [
   { label: "All practice areas", href: "/practice-areas" },
 ];
 
+export const OTHER_CASES_LINK: NavLink = {
+  label: "Other injury cases we handle",
+  href: "/practice-areas",
+};
+
 export const ABOUT_LINKS: NavLink[] = [
-  link("about"),
   link("attorney"),
+  link("about"),
   link("reviews"),
   link("results"),
   link("fees"),
   link("glendale"),
+  link("consult"),
 ];
 
 export const RESOURCE_LINKS: NavLink[] = [
   link("resources"),
-  link("faqs"),
   link("after"),
   link("deadlines"),
   link("process"),
@@ -86,7 +168,7 @@ export const RESOURCE_LINKS: NavLink[] = [
   link("settle"),
   link("fault"),
   link("bills"),
-  link("umuim"),
+  link("faqs"),
 ];
 
 const MENU_CITY_SLUGS = [
@@ -104,10 +186,7 @@ const MENU_CITY_SLUGS = [
   "sacramento",
 ];
 
-export const CITY_LINKS: NavLink[] = MENU_CITY_SLUGS.map((slug) => {
-  const c = TIER_1_LOCATIONS.find((l) => l.citySlug === slug)!;
-  return { label: c.cityName, href: `/locations/${c.countySlug}/${c.citySlug}` };
-});
+export const CITY_LINKS: NavLink[] = MENU_CITY_SLUGS.map(cityLink);
 
 export const LEGAL_LINKS: NavLink[] = [
   link("privacy"),

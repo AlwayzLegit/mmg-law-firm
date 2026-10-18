@@ -5,10 +5,11 @@ import { getPublicContentFlags } from "@/lib/data/public-content";
 import {
   ABOUT_LINKS,
   CITY_LINKS,
-  OTHER_CASES,
+  OTHER_CASES_LINK,
   RESOURCE_LINKS,
   SPECIALTIES,
   type NavLink,
+  type Specialty,
 } from "@/lib/v3/nav";
 
 import { V3HeaderClient } from "./v3-header-client";
@@ -46,21 +47,92 @@ function List({ links }: { links: NavLink[] }) {
   );
 }
 
+/** Every path a specialty menu covers, for the active-state underline. */
+function specialtyMatch(s: Specialty): string {
+  return [s.hub.href, ...s.guides.map((g) => g.href), s.results.href, ...s.cities.map((c) => c.href)].join(",");
+}
+
+/**
+ * One specialty's mega menu: hub card and results on the left, the guide
+ * groups in the middle, the city × specialty pages on the right, and the
+ * consultation strip along the bottom. Server-rendered so every link is a
+ * real, crawlable <a>.
+ */
+function SpecialtyMenu({ s }: { s: Specialty }) {
+  const id = `v3h-${s.key}`;
+  return (
+    <div className="v3h-dd" data-dd={s.key}>
+      <button type="button" className="v3h-item" aria-expanded="false" aria-controls={id} data-dd-btn={s.key} data-nav-match={specialtyMatch(s)}>
+        {s.hub.label}
+        <Chevron />
+      </button>
+      <div id={id} className="v3h-panel v3h-mega" data-dd-panel={s.key}>
+        <div className="v3h-mega-grid">
+          <div className="v3h-spec v3h-spec-lead">
+            <Link href={s.hub.href} className="v3h-spec-hub">
+              <V3Img src={s.icon} alt="" style={{ width: 48, height: 48, flex: "none" }} />
+              <span>
+                <span className="v3h-spec-title">{s.hubTitle}</span>
+                <span className="v3h-spec-desc">{s.hub.description}</span>
+              </span>
+            </Link>
+            <Link href={s.results.href} className="v3h-more">
+              {s.results.label} <Arrow />
+            </Link>
+          </div>
+          {s.columns.map((c) => (
+            <div key={c.title} className="v3h-spec">
+              <p className="v3h-col-title">{c.title}</p>
+              <List links={c.links} />
+            </div>
+          ))}
+          <div className="v3h-spec">
+            <p className="v3h-col-title">{s.citiesTitle}</p>
+            <List links={s.cities} />
+            <Link href="/locations" className="v3h-more">
+              All California locations <Arrow />
+            </Link>
+          </div>
+        </div>
+        <div className="v3h-panel-foot">
+          <p>{s.cta}</p>
+          <span aria-hidden="true" />
+          <Link href="/contact">
+            Request a free case evaluation <Arrow />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SmallMenu({ name, label, links, match, children, wide }: { name: string; label: string; links: NavLink[]; match: string; children?: React.ReactNode; wide?: boolean }) {
+  const id = `v3h-${name}`;
+  return (
+    <div className="v3h-dd" data-dd={name}>
+      <button type="button" className="v3h-item" aria-expanded="false" aria-controls={id} data-dd-btn={name} data-nav-match={match}>
+        {label}
+        <Chevron />
+      </button>
+      <div id={id} className={`v3h-panel v3h-small${wide ? " v3h-cities" : ""}`} data-dd-panel={name}>
+        <List links={links} />
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Site header from the v3 design: dark bar, gold wordmark, serif nav and the
- * phone line. Dropdown panels are server-rendered (every link is a real,
- * crawlable <a>); V3HeaderClient only toggles which panel is open.
+ * phone line. Car, truck and motorcycle accidents are the first three items,
+ * each with its own mega menu; About, Resources and Locations follow as small
+ * panels. V3HeaderClient only toggles which panel is open.
  */
 export async function V3Header() {
   const flags = await getPublicContentFlags();
-  const casesMatch = [
-    "/practice-areas",
-    ...SPECIALTIES.flatMap((sp) => sp.guides.map((g) => g.href)),
-    ...OTHER_CASES.map((o) => o.href),
-  ].join(",");
-  const resources = flags.hasBlogPosts
-    ? [...RESOURCE_LINKS, { label: "Blog", href: "/blog" }]
-    : RESOURCE_LINKS;
+  const resources = [...RESOURCE_LINKS, ...(flags.hasBlogPosts ? [{ label: "Blog", href: "/blog" }] : []), OTHER_CASES_LINK];
+  const aboutMatch = ABOUT_LINKS.map((l) => l.href).join(",");
+  const resourcesMatch = [...resources.map((l) => l.href), "/practice-areas"].join(",");
 
   return (
     <header className="v3h" data-v3-header>
@@ -75,93 +147,22 @@ export async function V3Header() {
             sizes="380px"
           />
         </Link>
-
         <nav aria-label="Primary" className="v3h-nav">
-          <Link href="/attorneys/mihran-ghazaryan" className="v3h-item" data-nav-match="/attorneys">
-            Our Attorney
-          </Link>
-
-          <div className="v3h-dd" data-dd="cases">
-            <button type="button" className="v3h-item" aria-expanded="false" aria-controls="v3h-cases" data-dd-btn="cases" data-nav-match={casesMatch}>
-              Accident Cases
-              <Chevron />
-            </button>
-            <div id="v3h-cases" className="v3h-panel v3h-mega" data-dd-panel="cases">
-              <p className="v3h-panel-title">Accident Cases</p>
-              <div className="v3h-mega-grid">
-                {SPECIALTIES.map((s) => (
-                  <div key={s.key} className="v3h-spec">
-                    <Link href={s.hub.href} className="v3h-spec-hub">
-                      <V3Img src={s.icon} alt="" style={{ width: 48, height: 48, flex: "none" }} />
-                      <span>
-                        <span className="v3h-spec-title">{s.hub.label}</span>
-                        <span className="v3h-spec-desc">{s.hub.description}</span>
-                      </span>
-                    </Link>
-                    <List links={s.guides} />
-                    <Link href={s.results.href} className="v3h-more">
-                      {s.results.label} <Arrow />
-                    </Link>
-                  </div>
-                ))}
-                <div className="v3h-spec v3h-other">
-                  <p className="v3h-col-title">Other injury cases</p>
-                  <List links={OTHER_CASES} />
-                </div>
-              </div>
-              <div className="v3h-panel-foot">
-                <p>Not sure where to start?</p>
-                <span aria-hidden="true" />
-                <Link href="/contact">
-                  Request a free case evaluation <Arrow />
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="v3h-dd" data-dd="about">
-            <button type="button" className="v3h-item" aria-expanded="false" aria-controls="v3h-about" data-dd-btn="about" data-nav-match="/about-the-firm,/reviews,/case-results,/fees-and-costs,/car-accident-case-results,/truck-accident-case-results,/motorcycle-accident-case-results">
-              About MMG
-              <Chevron />
-            </button>
-            <div id="v3h-about" className="v3h-panel v3h-small" data-dd-panel="about">
-              <List links={ABOUT_LINKS} />
-            </div>
-          </div>
-
-          <div className="v3h-dd" data-dd="resources">
-            <button type="button" className="v3h-item" aria-expanded="false" aria-controls="v3h-resources" data-dd-btn="resources" data-nav-match="/resources,/accident-lawyer-faqs,/what-to-do-after-california-accident,/california-accident-claim-deadlines,/how-an-accident-claim-works,/compensation-after-a-california-accident,/insurance-settlement-offers-releases,/partial-fault-california-accident,/medical-bills-liens-treatment-costs,/blog">
-              Resources
-              <Chevron />
-            </button>
-            <div id="v3h-resources" className="v3h-panel v3h-small" data-dd-panel="resources">
-              <List links={resources} />
-            </div>
-          </div>
-
-          <div className="v3h-dd" data-dd="locations">
-            <button type="button" className="v3h-item" aria-expanded="false" aria-controls="v3h-locations" data-dd-btn="locations" data-nav-match="/locations">
-              Locations
-              <Chevron />
-            </button>
-            <div id="v3h-locations" className="v3h-panel v3h-small v3h-cities" data-dd-panel="locations">
-              <List links={CITY_LINKS} />
-              <Link href="/locations" className="v3h-more">
-                All California locations <Arrow />
-              </Link>
-            </div>
-          </div>
-
-          <Link href="/contact" className="v3h-item" data-nav-match="/contact">
-            Contact
-          </Link>
+          {SPECIALTIES.map((s) => (
+            <SpecialtyMenu key={s.key} s={s} />
+          ))}
+          <SmallMenu name="about" label="About" links={ABOUT_LINKS} match={aboutMatch} />
+          <SmallMenu name="resources" label="Resources" links={resources} match={resourcesMatch} />
+          <SmallMenu name="locations" label="Locations" links={CITY_LINKS} match="/locations" wide>
+            <Link href="/locations" className="v3h-more">
+              All California locations <Arrow />
+            </Link>
+          </SmallMenu>
         </nav>
-
         <a href={`tel:${FIRM.phoneTel}`} className="v3h-phone" aria-label={`Call ${FIRM.phone}`}>
           <PhoneIcon />
           <span className="v3h-phone-num">{FIRM.phone}</span>
         </a>
-
         <details className="v3h-mobile" data-mobile-nav>
           <summary aria-label="Open menu" className="v3h-burger">
             <span />
@@ -170,26 +171,26 @@ export async function V3Header() {
           </summary>
           <div className="v3h-sheet">
             <nav aria-label="Mobile">
-              <Link href="/attorneys/mihran-ghazaryan" className="v3h-m-top">
-                Our Attorney
-              </Link>
-              <details>
-                <summary>Accident Cases</summary>
-                {SPECIALTIES.map((s) => (
-                  <div key={s.key} className="v3h-m-group">
+              {SPECIALTIES.map((s) => (
+                <details key={s.key}>
+                  <summary>{s.hub.label}</summary>
+                  <div className="v3h-m-group">
                     <Link href={s.hub.href} className="v3h-m-hub">
-                      {s.hub.label}
+                      {s.hubTitle}
                     </Link>
-                    <List links={s.guides} />
+                    {s.columns.map((c) => (
+                      <List key={c.title} links={c.links} />
+                    ))}
+                    <List links={[s.results]} />
                   </div>
-                ))}
-                <div className="v3h-m-group">
-                  <p className="v3h-m-sub">Other injury cases</p>
-                  <List links={OTHER_CASES} />
-                </div>
-              </details>
+                  <div className="v3h-m-group">
+                    <p className="v3h-m-sub">{s.citiesTitle}</p>
+                    <List links={[...s.cities, { label: "All California locations", href: "/locations" }]} />
+                  </div>
+                </details>
+              ))}
               <details>
-                <summary>About MMG</summary>
+                <summary>About</summary>
                 <List links={ABOUT_LINKS} />
               </details>
               <details>
@@ -200,9 +201,6 @@ export async function V3Header() {
                 <summary>Locations</summary>
                 <List links={[...CITY_LINKS, { label: "All California locations", href: "/locations" }]} />
               </details>
-              <Link href="/contact" className="v3h-m-top">
-                Contact
-              </Link>
             </nav>
             <div className="v3h-m-cta">
               <a href={`tel:${FIRM.phoneTel}`} className="v3h-m-call">
