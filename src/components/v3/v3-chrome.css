@@ -115,7 +115,9 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   color: #131a20;
 }
-.v3h[data-open="cases"] [data-dd-panel="cases"],
+.v3h[data-open="car"] [data-dd-panel="car"],
+.v3h[data-open="truck"] [data-dd-panel="truck"],
+.v3h[data-open="moto"] [data-dd-panel="moto"],
 .v3h[data-open="about"] [data-dd-panel="about"],
 .v3h[data-open="resources"] [data-dd-panel="resources"],
 .v3h[data-open="locations"] [data-dd-panel="locations"] {
@@ -174,7 +176,7 @@
   color: #6f4512;
 }
 
-/* accident cases mega menu */
+/* specialty mega menus (car, truck, motorcycle) */
 .v3h-mega {
   position: fixed;
   top: 98px;
@@ -193,10 +195,25 @@
   color: #131a20;
 }
 .v3h-mega-grid {
-  margin-top: 16px;
   padding: 0 12px 22px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr));
+}
+.v3h-spec-lead .v3h-spec-hub {
+  grid-template-columns: 56px 1fr;
+  align-items: start;
+  margin-top: 4px;
+}
+.v3h-spec-lead .v3h-spec-hub img {
+  width: 56px !important;
+  height: 56px !important;
+}
+.v3h-spec-lead .v3h-spec-title {
+  font-size: 24px;
+  line-height: 1.2;
+}
+.v3h-spec-lead .v3h-spec-desc {
+  margin-top: 6px;
 }
 .v3h-spec {
   padding: 4px 20px 6px;
@@ -231,8 +248,7 @@
   font-size: 14.5px;
   color: #4a5157;
 }
-.v3h-spec .v3h-list a,
-.v3h-other .v3h-list a {
+.v3h-spec .v3h-list a {
   display: block;
   padding: 6px 0;
   font-size: 15.5px;
@@ -247,7 +263,7 @@
   font-size: 15px;
 }
 .v3h-col-title {
-  margin: 12px 0 10px;
+  margin: 14px 0 8px;
   font-size: 13px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -400,11 +416,20 @@
   }
 }
 @media (min-width: 1200px) {
+  /* Six labelled items (three specialties, About, Resources, Locations) plus
+     the phone line: tighter gutters and gaps so the row fits from 1200px up
+     without the phone number spilling past the edge. */
   .v3h-bar {
     height: 100px;
+    padding: 0 clamp(24px, calc(5.8vw - 40px), 89px);
   }
   .v3h-nav {
     display: flex;
+    gap: clamp(12px, calc(2.4vw - 14px), 32px);
+    margin-right: clamp(8px, calc(3vw - 20px), 40px);
+  }
+  .v3h-logo img {
+    width: clamp(180px, calc(24vw - 110px), 320px);
   }
   .v3h-mobile {
     display: none;
@@ -555,6 +580,12 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 26px 20px;
   border-bottom: 1px solid rgba(230, 226, 216, 0.2);
+}
+.v3f-stack {
+  display: grid;
+  gap: 26px;
+  align-content: start;
+  min-width: 0;
 }
 .v3f-col-title {
   font-size: 13px;

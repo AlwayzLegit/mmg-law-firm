@@ -7,9 +7,17 @@ vi.mock("@/lib/data/public-content", () => ({
 
 import { V3Header } from "./v3-header";
 
+/** The header's own synchronous sub-components; next/link and V3Img stay as elements. */
+const LOCAL = new Set(["SpecialtyMenu", "SmallMenu", "List"]);
+
+/** Walk the tree, expanding the header's own sub-components so their links count. */
 function elements(node: ReactNode): Array<Record<string, unknown>> {
   return Children.toArray(node).flatMap((child) => {
     if (!isValidElement<{ children?: ReactNode }>(child)) return [];
+    if (typeof child.type === "function" && LOCAL.has(child.type.name)) {
+      const rendered = (child.type as (p: unknown) => ReactNode)(child.props);
+      return [child.props, ...elements(rendered)];
+    }
     return [child.props, ...elements(child.props.children)];
   });
 }

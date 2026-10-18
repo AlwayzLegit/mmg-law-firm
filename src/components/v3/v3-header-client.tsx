@@ -73,9 +73,18 @@ export function V3HeaderClient() {
     header.removeAttribute("data-open");
     header.querySelectorAll<HTMLDetailsElement>("details[data-mobile-nav]").forEach((d) => (d.open = false));
     document.documentElement.style.overflow = "";
-    header.querySelectorAll<HTMLElement>("[data-nav-match]").forEach((el) => {
-      const hit = el.dataset.navMatch!.split(",").some((p) => pathname === p || pathname.startsWith(p + "/"));
-      if (hit) el.setAttribute("data-active", "");
+    // The most specific match wins, so a city × specialty page underlines the
+    // specialty item rather than both it and Locations.
+    const items = Array.from(header.querySelectorAll<HTMLElement>("[data-nav-match]"));
+    const score = (el: HTMLElement) =>
+      el.dataset
+        .navMatch!.split(",")
+        .filter((p) => pathname === p || pathname.startsWith(p + "/"))
+        .reduce((best, p) => Math.max(best, p.length), 0);
+    const scores = items.map(score);
+    const top = Math.max(0, ...scores);
+    items.forEach((el, i) => {
+      if (top > 0 && scores[i] === top) el.setAttribute("data-active", "");
       else el.removeAttribute("data-active");
     });
   }, [pathname]);

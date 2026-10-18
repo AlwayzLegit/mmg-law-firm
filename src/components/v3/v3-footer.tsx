@@ -10,13 +10,14 @@ import {
   RESOURCE_LINKS,
   SPECIALTIES,
   type NavLink,
+  type Specialty,
 } from "@/lib/v3/nav";
 
 import { V3Img } from "./v3-img";
 
-function Col({ title, links }: { title: string; links: NavLink[] }) {
+function Col({ title, links, className }: { title: string; links: NavLink[]; className?: string }) {
   return (
-    <nav aria-label={title} className="v3f-col">
+    <nav aria-label={title} className={className ? `v3f-col ${className}` : "v3f-col"}>
       <p className="v3f-col-title">{title}</p>
       <ul>
         {links.map((l) => (
@@ -29,6 +30,26 @@ function Col({ title, links }: { title: string; links: NavLink[] }) {
   );
 }
 
+const FOOTER_TITLE: Record<Specialty["key"], string> = {
+  car: "Car Accident Lawyer",
+  truck: "Truck Accident Lawyer",
+  moto: "Motorcycle Accident Lawyer",
+};
+
+/**
+ * One specialty column: the hub with its full keyword anchor, every guide,
+ * the results page and the Glendale city × specialty page.
+ */
+function specialtyLinks(s: Specialty): NavLink[] {
+  const glendale = s.cities.find((c) => c.href.includes("/glendale/"));
+  return [
+    { label: s.hubTitle, href: s.hub.href },
+    ...s.guides,
+    s.results,
+    ...(glendale ? [{ label: `Glendale ${FOOTER_TITLE[s.key]}`, href: glendale.href }] : []),
+  ];
+}
+
 /**
  * Site footer in the v3 design language (dark slate, gold wordmark) with the
  * full link structure for crawl depth and all four CRPC disclaimers verbatim.
@@ -36,7 +57,6 @@ function Col({ title, links }: { title: string; links: NavLink[] }) {
 export async function V3Footer() {
   const settings = await getFirmSettings();
   const founded = settings.founded_year;
-  const caseLinks: NavLink[] = SPECIALTIES.flatMap((s) => [s.hub, ...s.guides.slice(0, 3)]);
   return (
     <footer className="v3f">
       <div className="v3f-inner">
@@ -60,12 +80,18 @@ export async function V3Footer() {
         </div>
 
         <div className="v3f-cols">
-          <Col title="Accident Cases" links={caseLinks} />
-          <Col title="More Injury Cases" links={OTHER_CASES} />
-          <Col title="About MMG" links={ABOUT_LINKS} />
-          <Col title="Resources" links={RESOURCE_LINKS} />
-          <Col title="Cities We Serve" links={[...CITY_LINKS.slice(0, 8), { label: "All locations", href: "/locations" }]} />
-          <Col title="Legal" links={LEGAL_LINKS} />
+          {SPECIALTIES.map((s) => (
+            <Col key={s.key} title={FOOTER_TITLE[s.key]} links={specialtyLinks(s)} />
+          ))}
+          <Col title="Other Injury Cases" links={OTHER_CASES} />
+          <div className="v3f-stack">
+            <Col title="About MMG" links={ABOUT_LINKS} />
+            <Col title="Resources" links={[...RESOURCE_LINKS, { label: "Blog", href: "/blog" }]} />
+          </div>
+          <div className="v3f-stack">
+            <Col title="Cities We Serve" links={[...CITY_LINKS.slice(0, 8), { label: "All locations", href: "/locations" }]} />
+            <Col title="Legal" links={LEGAL_LINKS} />
+          </div>
         </div>
 
         <div className="v3f-legal">
