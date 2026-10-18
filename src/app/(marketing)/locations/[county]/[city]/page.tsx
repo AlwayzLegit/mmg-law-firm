@@ -31,6 +31,11 @@ import { V3CityLinks } from "@/components/v3/v3-city-links";
 const isGlendale = (county: string, city: string) =>
   county === "los-angeles-county" && city === "glendale";
 
+// Exact route titles approved by the owner on October 18, 2026.
+const approvedLocationTitles: Record<string, string> = {
+  "/locations/mendocino-county/ukiah": "Ukiah Personal Injury Attorney",
+};
+
 export const dynamicParams = true;
 export const revalidate = 86400;
 
@@ -54,7 +59,7 @@ export async function generateMetadata({ params }: Props) {
     });
   }
   return buildMetadata({
-    title: `${c.name} Personal Injury Lawyer`,
+    title: approvedLocationTitles[`/locations/${county}/${city}`] ?? `${c.name} Personal Injury Lawyer`,
     description:
       c.meta_description ??
       `${FIRM.legalName} represents ${c.name} clients in personal-injury matters across ${c.county_name}. Free consultation. Bilingual counsel.`,
