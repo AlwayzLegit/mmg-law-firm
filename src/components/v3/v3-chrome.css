@@ -470,8 +470,13 @@
 }
 .v3f-logo {
   grid-area: logo;
-  display: block;
-  align-self: end;
+  /* The grid aligns the image's bottom edge with the phone number's
+     baseline. The "MMG" letters sit 39/170 of the SVG's height above that
+     edge, so the image is nudged down by that share of its own height to
+     put the letters' baseline on the phone's. */
+  display: inline-block;
+  vertical-align: baseline;
+  transform: translateY(22.9%);
 }
 .v3f-addr {
   grid-area: addr;
