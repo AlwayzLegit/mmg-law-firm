@@ -534,6 +534,11 @@
       "cta";
     row-gap: 12px;
   }
+  /* The wordmark is nudged down into the gap below it; give the address
+     that space back when the block is stacked. */
+  .v3f-addr {
+    margin-top: 10px;
+  }
   .v3f-phone {
     margin-top: 12px;
   }
