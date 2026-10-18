@@ -61,6 +61,17 @@ const approvedLocationTitles: Record<string, string> = {
   "/locations/los-angeles-county/pasadena/rideshare-accidents": "Pasadena Uber & Lyft Accident Lawyer",
   "/locations/sacramento-county/sacramento/rideshare-accidents": "Sacramento Uber & Lyft Accident Lawyer",
   "/locations/san-francisco-county/san-francisco/rideshare-accidents": "San Francisco Uber & Lyft Accident Lawyer",
+  "/locations/santa-clara-county/san-jose/rideshare-accidents": "San Jose Uber & Lyft Accident Lawyer",
+  "/locations/orange-county/anaheim/rideshare-accidents": "Anaheim Uber & Lyft Accident Lawyer",
+  "/locations/fresno-county/fresno/rideshare-accidents": "Fresno Uber & Lyft Accident Lawyer",
+  "/locations/orange-county/santa-ana/workplace-discrimination": "Santa Ana Workplace Discrimination Lawyer",
+  "/locations/alameda-county/oakland/rideshare-accidents": "Oakland Uber & Lyft Accident Lawyer",
+  "/locations/orange-county/irvine/rideshare-accidents": "Irvine Uber & Lyft Accident Lawyer",
+  "/locations/san-diego-county/san-diego/workplace-discrimination": "San Diego Workplace Discrimination Lawyer",
+  "/locations/los-angeles-county/los-angeles/workplace-discrimination": "Los Angeles Workplace Discrimination Lawyer",
+  "/locations/los-angeles-county/beverly-hills/rideshare-accidents": "Beverly Hills Uber & Lyft Accident Lawyer",
+  "/locations/santa-barbara-county/santa-barbara/rideshare-accidents": "Santa Barbara Uber & Lyft Accident Lawyer",
+  "/locations/stanislaus-county/modesto/rideshare-accidents": "Modesto Uber & Lyft Accident Lawyer",
 };
 
 export async function generateMetadata({ params }: Props) {
