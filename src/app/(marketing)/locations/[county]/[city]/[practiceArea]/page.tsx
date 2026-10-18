@@ -72,6 +72,21 @@ const approvedLocationTitles: Record<string, string> = {
   "/locations/los-angeles-county/beverly-hills/rideshare-accidents": "Beverly Hills Uber & Lyft Accident Lawyer",
   "/locations/santa-barbara-county/santa-barbara/rideshare-accidents": "Santa Barbara Uber & Lyft Accident Lawyer",
   "/locations/stanislaus-county/modesto/rideshare-accidents": "Modesto Uber & Lyft Accident Lawyer",
+  "/locations/san-luis-obispo-county/san-luis-obispo/rideshare-accidents": "San Luis Obispo Uber & Lyft Accident Lawyer",
+  "/locations/sonoma-county/santa-rosa/rideshare-accidents": "Santa Rosa Uber & Lyft Accident Lawyer",
+  "/locations/san-joaquin-county/stockton/rideshare-accidents": "Stockton Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/pasadena/workplace-discrimination": "Pasadena Workplace Discrimination Lawyer",
+  "/locations/butte-county/chico/rideshare-accidents": "Chico Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/burbank/rideshare-accidents": "Burbank Uber & Lyft Accident Lawyer",
+  "/locations/shasta-county/redding/rideshare-accidents": "Redding Uber & Lyft Accident Lawyer",
+  "/locations/santa-cruz-county/santa-cruz/rideshare-accidents": "Santa Cruz Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/santa-monica/rideshare-accidents": "Santa Monica Uber & Lyft Accident Lawyer",
+  "/locations/ventura-county/ventura/rideshare-accidents": "Ventura Uber & Lyft Accident Lawyer",
+  "/locations/tulare-county/visalia/rideshare-accidents": "Visalia Uber & Lyft Accident Lawyer",
+  "/locations/merced-county/merced/rideshare-accidents": "Merced Uber & Lyft Accident Lawyer",
+  "/locations/imperial-county/el-centro/rideshare-accidents": "El Centro Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/long-beach/workplace-discrimination": "Long Beach Workplace Discrimination Lawyer",
+  "/locations/el-dorado-county/south-lake-tahoe/rideshare-accidents": "South Lake Tahoe Uber & Lyft Accident Lawyer",
 };
 
 export async function generateMetadata({ params }: Props) {
