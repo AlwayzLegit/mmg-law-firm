@@ -25,6 +25,14 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, buildService } from "@/lib/seo/schema";
 import { cn } from "@/lib/utils";
 
+// Exact route titles approved by the owner on October 18, 2026.
+const approvedLocationTitles: Record<string, string> = {
+  "/locations/marin-county": "Marin County Personal Injury Attorney",
+  "/locations/ventura-county": "Ventura County Personal Injury Attorney",
+  "/locations/sonoma-county": "Sonoma County Personal Injury Attorney",
+  "/locations/solano-county": "Solano County Personal Injury Attorney",
+};
+
 export const dynamicParams = true;
 export const revalidate = 86400;
 
@@ -47,7 +55,7 @@ export async function generateMetadata({ params }: Props) {
     });
   }
   return buildMetadata({
-    title: `${c.name} Personal Injury Lawyer`,
+    title: approvedLocationTitles[`/locations/${county}`] ?? `${c.name} Personal Injury Lawyer`,
     description:
       c.meta_description ??
       `${FIRM.legalName} represents ${c.name} clients in personal-injury matters. Free consultation. Bilingual representation.`,

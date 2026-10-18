@@ -87,6 +87,19 @@ const approvedLocationTitles: Record<string, string> = {
   "/locations/imperial-county/el-centro/rideshare-accidents": "El Centro Uber & Lyft Accident Lawyer",
   "/locations/los-angeles-county/long-beach/workplace-discrimination": "Long Beach Workplace Discrimination Lawyer",
   "/locations/el-dorado-county/south-lake-tahoe/rideshare-accidents": "South Lake Tahoe Uber & Lyft Accident Lawyer",
+  "/locations/santa-clara-county/san-jose/workplace-discrimination": "San Jose Workplace Discrimination Attorney",
+  "/locations/sonoma-county/santa-rosa/dog-bites": "Santa Rosa Dog Bite Attorney",
+  "/locations/san-mateo-county/san-mateo/dog-bites": "San Mateo Dog Bite Attorney",
+  "/locations/san-mateo-county/san-mateo/rideshare-accidents": "San Mateo Uber & Lyft Accident Attorney",
+  "/locations/san-luis-obispo-county/san-luis-obispo/motorcycle-accidents": "San Luis Obispo Motorcycle Accident Attorney",
+  "/locations/sutter-county/yuba-city/truck-accidents": "Yuba City Truck Accident Attorney",
+  "/locations/humboldt-county/eureka/rideshare-accidents": "Eureka Uber & Lyft Accident Lawyer",
+  "/locations/monterey-county/salinas/rideshare-accidents": "Salinas Uber & Lyft Accident Lawyer",
+  "/locations/marin-county/san-rafael/slip-and-fall": "San Rafael Slip and Fall Attorney",
+  "/locations/los-angeles-county/burbank/workplace-discrimination": "Burbank Workplace Discrimination Lawyer",
+  "/locations/placer-county/roseville/rideshare-accidents": "Roseville Uber & Lyft Accident Lawyer",
+  "/locations/sutter-county/yuba-city/rideshare-accidents": "Yuba City Uber & Lyft Accident Lawyer",
+  "/locations/kings-county/hanford/rideshare-accidents": "Hanford Uber & Lyft Accident Lawyer",
 };
 
 export async function generateMetadata({ params }: Props) {
