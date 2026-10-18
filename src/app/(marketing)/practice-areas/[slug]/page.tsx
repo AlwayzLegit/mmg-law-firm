@@ -53,7 +53,10 @@ export async function generateMetadata({ params }: Props) {
   }
   const resolved = await getPracticeAreaContent(slug);
   return buildMetadata({
-    title: `California ${lawyerPhraseTitle(area)}`,
+    // Exact statewide workplace title approved October 18, 2026.
+    title: slug === "workplace-discrimination"
+      ? "California Workplace Discrimination Lawyer"
+      : `California ${lawyerPhraseTitle(area)}`,
     description:
       resolved?.meta_description ??
       `${resolved?.intro ?? area.intro} Free consultation with ${FIRM.attorneyName}.`,
