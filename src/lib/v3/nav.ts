@@ -25,7 +25,8 @@ export type Specialty = {
   key: SpecialtyKey;
   /** Short header label, e.g. "Car Accidents". */
   hub: NavLink;
-  /** Keyword anchor used on the mega-menu hub card and in the footer. */
+  /** Keyword anchor used on the mega-menu hub card and in the footer
+   *  (independent of the page's <title>, which the owner sets for SERP copy). */
   hubTitle: string;
   icon: string;
   /** Guide groups shown as columns in the mega menu. */
@@ -62,6 +63,7 @@ function cityPracticeLinks(key: SpecialtyKey, citySlugs: string[]): NavLink[] {
 function specialty(
   key: SpecialtyKey,
   hubKey: string,
+  hubTitle: string,
   description: string,
   icon: string,
   columns: { title: string; keys: string[] }[],
@@ -74,7 +76,7 @@ function specialty(
   return {
     key,
     hub: link(hubKey, description),
-    hubTitle: V3_BY_KEY[hubKey].title,
+    hubTitle,
     icon,
     columns: cols,
     guides: cols.flatMap((c) => c.links),
@@ -89,6 +91,7 @@ export const SPECIALTIES: Specialty[] = [
   specialty(
     "car",
     "car",
+    "California Car Accident Lawyer",
     "Injuries involving passenger vehicles",
     "uploads/moto-icons/car.svg",
     [
@@ -103,6 +106,7 @@ export const SPECIALTIES: Specialty[] = [
   specialty(
     "truck",
     "truck",
+    "California Truck Accident Lawyer",
     "Commercial vehicle collisions",
     "uploads/moto-icons/truck.svg",
     [
@@ -117,6 +121,7 @@ export const SPECIALTIES: Specialty[] = [
   specialty(
     "moto",
     "moto",
+    "California Motorcycle Accident Lawyer",
     "Guidance for injured riders",
     "uploads/moto-icons/motorcycle.svg",
     [
