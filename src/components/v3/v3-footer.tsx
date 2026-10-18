@@ -41,29 +41,22 @@ export async function V3Footer() {
     <footer className="v3f">
       <div className="v3f-inner">
         <div className="v3f-top">
-          <div className="v3f-brand">
-            <V3Img src="uploads/logos/mmg-law-firm-gold-wordmark.svg" alt={FIRM.legalName} style={{ width: "min(320px,100%)", height: "auto" }} />
-            <address className="v3f-addr">
-              {FIRM_FULL_ADDRESS}
-              <br />
-              {FIRM.hoursLong}
-            </address>
-            <p className="v3f-langs">{FIRM.languages.join(" / ")}</p>
-          </div>
-          <div className="v3f-contact">
-            <a href={`tel:${FIRM.phoneTel}`} className="v3f-phone">
-              <svg width="22" height="22" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-                <path d="M231.88,175.08A56.26,56.26,0,0,1,176,224C96.6,224,32,159.4,32,80A56.26,56.26,0,0,1,80.92,24.12a16,16,0,0,1,16.62,9.52l21.12,47.15,0,.12A16,16,0,0,1,117.39,96c-.18.27-.37.52-.57.77L96,121.45c7.49,15.22,23.41,31,38.83,38.51l24.34-20.71a8.12,8.12,0,0,1,.75-.56,16,16,0,0,1,15.17-1.4l.13.06,47.11,21.11A16,16,0,0,1,231.88,175.08Z" />
-              </svg>
-              {FIRM.phone}
-            </a>
-            <a href={`mailto:${FIRM.email}`} className="v3f-email">
-              {FIRM.email}
-            </a>
-            <Link href="/contact" className="v3f-cta">
-              Free Case Consultation
-            </Link>
-          </div>
+          <V3Img src="uploads/logos/mmg-law-firm-gold-wordmark.svg" alt={FIRM.legalName} className="v3f-logo" style={{ width: "min(320px,100%)", height: "auto" }} />
+          <a href={`tel:${FIRM.phoneTel}`} className="v3f-phone">
+            {FIRM.phone}
+          </a>
+          <address className="v3f-addr">
+            {FIRM_FULL_ADDRESS}
+            <br />
+            {FIRM.hoursLong}
+          </address>
+          <a href={`mailto:${FIRM.email}`} className="v3f-email">
+            {FIRM.email}
+          </a>
+          <p className="v3f-langs">{FIRM.languages.join(" / ")}</p>
+          <Link href="/contact" className="v3f-cta">
+            Free Case Consultation
+          </Link>
         </div>
 
         <div className="v3f-cols">

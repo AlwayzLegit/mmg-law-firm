@@ -450,38 +450,54 @@
   margin: 0 auto;
   padding: 40px clamp(20px, 6.2vw, 96px) 30px;
 }
+/* Firm block: a two-column grid so the brand column and the contact column
+   share rows, and each row is aligned on one baseline — wordmark with phone,
+   address with email, languages with the consultation button. Every item in
+   a column starts on the same left edge. */
 .v3f-top {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 28px 60px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "logo phone"
+    "addr email"
+    "langs cta";
+  column-gap: 60px;
+  row-gap: 16px;
+  align-items: baseline;
+  justify-items: start;
   padding-bottom: 28px;
   border-bottom: 1px solid rgba(230, 226, 216, 0.2);
 }
+.v3f-logo {
+  grid-area: logo;
+  /* The grid aligns the image's bottom edge with the phone number's
+     baseline. The "MMG" letters sit 39/170 of the SVG's height above that
+     edge, so the image is nudged down by that share of its own height to
+     put the letters' baseline on the phone's. */
+  display: inline-block;
+  vertical-align: baseline;
+  transform: translateY(22.9%);
+}
 .v3f-addr {
-  margin-top: 18px;
+  grid-area: addr;
+  margin: 0;
   font-style: normal;
   font-size: 16.5px;
   line-height: 1.6;
   color: #e6e2d8;
 }
 .v3f-langs {
-  margin-top: 6px;
+  grid-area: langs;
+  margin: 0;
   font-size: 15.5px;
+  line-height: 1.6;
   color: #e5bd79;
 }
-.v3f-contact {
-  display: grid;
-  justify-items: start;
-  gap: 12px;
-}
 .v3f-phone {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  grid-area: phone;
   color: #e8c37f;
   font-size: 23px;
+  line-height: 1.2;
   white-space: nowrap;
 }
 .v3f-phone:hover,
@@ -489,11 +505,14 @@
   color: #f3d59e;
 }
 .v3f-email {
+  grid-area: email;
   color: #f0ece2;
   font-size: 16.5px;
+  line-height: 1.6;
 }
 .v3f-cta {
-  margin-top: 6px;
+  grid-area: cta;
+  align-self: start;
   height: 52px;
   padding: 0 26px;
   display: inline-flex;
@@ -502,6 +521,30 @@
   border-radius: 3px;
   color: #181b1c !important;
   font-size: 17px;
+}
+@media (max-width: 767px) {
+  .v3f-top {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "logo"
+      "addr"
+      "langs"
+      "phone"
+      "email"
+      "cta";
+    row-gap: 12px;
+  }
+  /* The wordmark is nudged down into the gap below it; give the address
+     that space back when the block is stacked. */
+  .v3f-addr {
+    margin-top: 10px;
+  }
+  .v3f-phone {
+    margin-top: 12px;
+  }
+  .v3f-cta {
+    margin-top: 6px;
+  }
 }
 .v3f-cta:hover {
   background: #d5b379;
