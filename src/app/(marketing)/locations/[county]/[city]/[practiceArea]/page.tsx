@@ -100,6 +100,14 @@ const approvedLocationTitles: Record<string, string> = {
   "/locations/placer-county/roseville/rideshare-accidents": "Roseville Uber & Lyft Accident Lawyer",
   "/locations/sutter-county/yuba-city/rideshare-accidents": "Yuba City Uber & Lyft Accident Lawyer",
   "/locations/kings-county/hanford/rideshare-accidents": "Hanford Uber & Lyft Accident Lawyer",
+  "/locations/solano-county/vallejo/rideshare-accidents": "Vallejo Uber & Lyft Accident Lawyer",
+  "/locations/marin-county/san-rafael/rideshare-accidents": "San Rafael Uber & Lyft Accident Lawyer",
+  "/locations/sonoma-county/santa-rosa/slip-and-fall": "Santa Rosa Slip and Fall Attorney",
+  "/locations/los-angeles-county/glendale/rideshare-accidents": "Glendale Uber & Lyft Accident Lawyer",
+  "/locations/madera-county/madera/rideshare-accidents": "Madera Uber & Lyft Accident Lawyer",
+  "/locations/san-benito-county/hollister/rideshare-accidents": "Hollister Uber & Lyft Accident Lawyer",
+  "/locations/napa-county/napa/rideshare-accidents": "Napa Uber & Lyft Accident Lawyer",
+  "/locations/nevada-county/grass-valley/rideshare-accidents": "Grass Valley Uber & Lyft Accident Lawyer",
 };
 
 export async function generateMetadata({ params }: Props) {
