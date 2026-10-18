@@ -65,7 +65,11 @@ export async function generateMetadata({ params }: Props) {
     ? lawyerPhraseTitle(metaArea)
     : row.practice_area_name;
   return buildMetadata({
-    title: `${row.city_name} ${metaPhrase}`,
+    // Exact title approved by the owner on October 18, 2026; other routes retain their titles.
+    title:
+      county === "san-diego-county" && city === "san-diego" && practiceArea === "rideshare-accidents"
+        ? "San Diego Uber & Lyft Accident Lawyer"
+        : `${row.city_name} ${metaPhrase}`,
     description:
       row.meta_description ??
       `${FIRM.legalName} handles ${row.practice_area_name.toLowerCase()} matters for ${row.city_name} clients. Free consultation. Bilingual representation.`,
