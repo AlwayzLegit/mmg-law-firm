@@ -49,6 +49,20 @@ type Props = {
   params: Promise<{ county: string; city: string; practiceArea: string }>;
 };
 
+// Exact route titles approved by the owner on October 18, 2026.
+const approvedLocationTitles: Record<string, string> = {
+  "/locations/san-diego-county/san-diego/rideshare-accidents": "San Diego Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/los-angeles/rideshare-accidents": "Los Angeles Uber & Lyft Accident Lawyer",
+  "/locations/kern-county/bakersfield/rideshare-accidents": "Bakersfield Uber & Lyft Accident Lawyer",
+  "/locations/orange-county/santa-ana/rideshare-accidents": "Santa Ana Uber & Lyft Accident Lawyer",
+  "/locations/san-bernardino-county/san-bernardino/rideshare-accidents": "San Bernardino Uber & Lyft Accident Lawyer",
+  "/locations/riverside-county/riverside/rideshare-accidents": "Riverside Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/long-beach/rideshare-accidents": "Long Beach Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/pasadena/rideshare-accidents": "Pasadena Uber & Lyft Accident Lawyer",
+  "/locations/sacramento-county/sacramento/rideshare-accidents": "Sacramento Uber & Lyft Accident Lawyer",
+  "/locations/san-francisco-county/san-francisco/rideshare-accidents": "San Francisco Uber & Lyft Accident Lawyer",
+};
+
 export async function generateMetadata({ params }: Props) {
   const { county, city, practiceArea } = await params;
   const row = await getLocationPage(county, city, practiceArea);
@@ -65,11 +79,7 @@ export async function generateMetadata({ params }: Props) {
     ? lawyerPhraseTitle(metaArea)
     : row.practice_area_name;
   return buildMetadata({
-    // Exact title approved by the owner on October 18, 2026; other routes retain their titles.
-    title:
-      county === "san-diego-county" && city === "san-diego" && practiceArea === "rideshare-accidents"
-        ? "San Diego Uber & Lyft Accident Lawyer"
-        : `${row.city_name} ${metaPhrase}`,
+    title: approvedLocationTitles[`/locations/${county}/${city}/${practiceArea}`] ?? `${row.city_name} ${metaPhrase}`,
     description:
       row.meta_description ??
       `${FIRM.legalName} handles ${row.practice_area_name.toLowerCase()} matters for ${row.city_name} clients. Free consultation. Bilingual representation.`,
