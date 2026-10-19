@@ -1,4 +1,4 @@
-// Exact search metadata approved by the owner on October 19, 2026 (pages 811–910).
+// Exact search metadata approved by the owner on October 19, 2026 (pages 811–959).
 // The metadata freeze applies: change these values only with specific owner approval.
 // Full rendered titles deliberately include the approved brand suffix.
 export const approvedSearchMetadata: Readonly<Record<string, { title: string; description: string }>> = {
@@ -401,5 +401,201 @@ export const approvedSearchMetadata: Readonly<Record<string, { title: string; de
   "/blog/uber-lyft-accident-lawyer-california-2": {
     "title": "California Rideshare Passenger Injury Claims | MMG Law Firm",
     "description": "Hurt as an Uber or Lyft passenger in California? Explore which insurance may apply, who may be liable and what steps can help protect your injury claim."
+  },
+  "/blog/what-to-do-after-a-motorcycle-accident-in-california": {
+    "title": "After a California Motorcycle Crash: Key Steps | MMG",
+    "description": "Learn what to do after a California motorcycle accident, from getting medical care to preserving evidence and handling insurance questions about fault."
+  },
+  "/blog/uber-lyft-accident-lawyer-california-3": {
+    "title": "Uber & Lyft Claims: California Insurance Periods | MMG",
+    "description": "Learn how California rideshare insurance changes when the app is off, waiting for a ride or on a trip, and what evidence can establish the right coverage."
+  },
+  "/blog/uber-lyft-accident-lawyer-california-4": {
+    "title": "California Rideshare Claims & Settlement Offers | MMG",
+    "description": "After a California Uber or Lyft crash, learn what to preserve, which coverage may apply and what to consider before accepting an early settlement offer."
+  },
+  "/blog/hit-and-run-accident-california-2": {
+    "title": "Hit-and-Run Insurance Claims in California | MMG Law Firm",
+    "description": "The other driver disappeared after a California crash. Learn how uninsured motorist coverage, collision insurance and MedPay may help with your losses."
+  },
+  "/blog/hit-and-run-accident-california-3": {
+    "title": "California Hit-and-Run Reporting & Deadlines | MMG Law Firm",
+    "description": "Learn why prompt reporting matters after a California hit-and-run, which insurance may cover injuries and how different deadlines can affect your claim."
+  },
+  "/blog/scooter-accident-lawyer-california": {
+    "title": "California Scooter Accident Injury Claims | MMG Law Firm",
+    "description": "Hurt in a California scooter crash? Learn about driver and rental-company liability, insurance gaps and evidence to preserve as you explore a claim."
+  },
+  "/blog/who-pays-medical-bills-after-car-accident-california": {
+    "title": "Medical Bills After a California Car Accident | MMG Law Firm",
+    "description": "Who pays medical bills while a California car accident claim is pending? Explore health insurance, MedPay and liens, including possible repayment issues."
+  },
+  "/blog/unpaid-commission-bonus-lawyer-california": {
+    "title": "California Unpaid Commissions & Bonus Claims | MMG Law Firm",
+    "description": "Missing earned commissions or a bonus in California? Learn what agreements and pay records may establish your claim and what options are available."
+  },
+  "/blog/racial-discrimination-lawyer-california": {
+    "title": "Racial Discrimination at Work in California | MMG Law Firm",
+    "description": "Learn how California law addresses racial discrimination at work, what evidence can support a claim and why documenting workplace treatment matters."
+  },
+  "/blog/sexual-harassment-at-work-california-what-to-do": {
+    "title": "Sexual Harassment at Work: California Steps | MMG Law Firm",
+    "description": "Facing sexual harassment at work in California? Learn how to document and report it, understand retaliation protections and explore your claim options."
+  },
+  "/blog/unpaid-overtime-lawyer-california": {
+    "title": "Unpaid Overtime in California: Claim Options | MMG Law Firm",
+    "description": "Worked overtime without proper pay in California? Learn how rates, job classification and off-the-clock work affect your claim and what records to keep."
+  },
+  "/locations/alpine-county/markleeville/dog-bites": {
+    "title": "Markleeville Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Markleeville? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/alpine-county/markleeville/slip-and-fall": {
+    "title": "Markleeville Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Markleeville? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/amador-county/jackson/dog-bites": {
+    "title": "Jackson, CA Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Jackson, CA? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/calaveras-county/angels-camp/dog-bites": {
+    "title": "Angels Camp Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Angels Camp? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/colusa-county/colusa/dog-bites": {
+    "title": "Colusa Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Colusa? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/del-norte-county/crescent-city/dog-bites": {
+    "title": "Crescent City Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Crescent City? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/glenn-county/willows/dog-bites": {
+    "title": "Willows Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Willows? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/glenn-county/willows/slip-and-fall": {
+    "title": "Willows Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Willows? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/inyo-county/bishop/dog-bites": {
+    "title": "Bishop Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Bishop? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/lassen-county/susanville/dog-bites": {
+    "title": "Susanville Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Susanville? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/lassen-county/susanville/slip-and-fall": {
+    "title": "Susanville Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Susanville? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/mariposa-county/mariposa/dog-bites": {
+    "title": "Mariposa Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Mariposa? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/mariposa-county/mariposa/slip-and-fall": {
+    "title": "Mariposa Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Mariposa? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/modoc-county/alturas/dog-bites": {
+    "title": "Alturas Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Alturas? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/mono-county/mammoth-lakes/dog-bites": {
+    "title": "Mammoth Lakes Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Mammoth Lakes? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/mono-county/mammoth-lakes/slip-and-fall": {
+    "title": "Mammoth Lakes Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Mammoth Lakes? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/plumas-county/quincy/dog-bites": {
+    "title": "Quincy, CA Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Quincy, CA? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/plumas-county/quincy/slip-and-fall": {
+    "title": "Quincy, CA Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Quincy, CA? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/sierra-county/loyalton/dog-bites": {
+    "title": "Loyalton Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Loyalton? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/siskiyou-county/yreka/dog-bites": {
+    "title": "Yreka Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Yreka? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/siskiyou-county/yreka/slip-and-fall": {
+    "title": "Yreka Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Yreka? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/tehama-county/red-bluff/slip-and-fall": {
+    "title": "Red Bluff Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Red Bluff? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/trinity-county/weaverville/dog-bites": {
+    "title": "Weaverville Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Weaverville? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/trinity-county/weaverville/slip-and-fall": {
+    "title": "Weaverville Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Weaverville? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/locations/tuolumne-county/sonora/dog-bites": {
+    "title": "Sonora Dog Bite Lawyer | MMG Law Firm",
+    "description": "Bitten by a dog in Sonora? MMG Law Firm helps with owner liability, injury claims and compensation for your losses. Request a free consultation."
+  },
+  "/locations/tuolumne-county/sonora/slip-and-fall": {
+    "title": "Sonora Slip and Fall Lawyer | MMG Law Firm",
+    "description": "Injured in a fall in Sonora? MMG Law Firm helps with unsafe-property claims, evidence and injury compensation. Request a free consultation."
+  },
+  "/blog": {
+    "title": "California Injury & Employment Law Blog | MMG Law Firm",
+    "description": "Read MMG Law Firm articles on California accidents, injury claims and workplace rights. Explore evidence, insurance, compensation and practical next steps."
+  },
+  "/case-results": {
+    "title": "Understanding Case Results & Settlements | MMG Law Firm",
+    "description": "Learn how to interpret settlements and verdicts, what recovery figures may include and which questions to ask about your California accident claim."
+  },
+  "/contact": {
+    "title": "Contact MMG Law Firm | Free California Case Evaluation",
+    "description": "Contact MMG Law Firm in Glendale for a free California accident case evaluation. Discuss your situation, ask questions and learn about possible next steps."
+  },
+  "/fees-and-costs": {
+    "title": "Attorney Fees & Case Expenses | MMG Law Firm",
+    "description": "Understand MMG Law Firm's contingency fees, advanced case expenses and written fee terms. Learn how attorney costs differ from outside medical bills."
+  },
+  "/locations": {
+    "title": "California Service Areas | MMG Law Firm",
+    "description": "Find California counties and cities served by MMG Law Firm from its Glendale office. Explore local injury claim information and request a free consultation."
+  },
+  "/practice-areas": {
+    "title": "California Injury & Employment Law | MMG Law Firm",
+    "description": "Explore MMG Law Firm's California injury and employment practice areas, including vehicle accidents, unsafe-property claims, discrimination and unpaid wages."
+  },
+  "/resources": {
+    "title": "California Accident Resources & Guides | MMG Law Firm",
+    "description": "Explore California accident resources on reporting, filing deadlines, fault and compensation. Find official guidance and questions to discuss with an attorney."
+  },
+  "/reviews": {
+    "title": "MMG Law Firm Reviews & Client Feedback",
+    "description": "Read selected MMG Law Firm review excerpts about communication and client service. Find questions to ask when considering a California accident lawyer."
+  },
+  "/legal/accessibility": {
+    "title": "Accessibility Statement | MMG Law Firm",
+    "description": "Read MMG Law Firm's website accessibility statement. Learn about our accessibility efforts and how to report a barrier or request help accessing information."
+  },
+  "/legal/ccpa": {
+    "title": "California Privacy Rights: CCPA & CPRA | MMG Law Firm",
+    "description": "Read MMG Law Firm's California privacy rights notice, including access, deletion and correction requests. Find out how to submit a verifiable privacy request."
+  },
+  "/legal/disclaimer": {
+    "title": "Website Legal Disclosures | MMG Law Firm",
+    "description": "Review MMG Law Firm's website disclosures on attorney advertising, inquiries, confidentiality, fees and case results before requesting a consultation."
+  },
+  "/legal/privacy": {
+    "title": "Privacy Policy | MMG Law Firm",
+    "description": "Learn how MMG Law Firm collects, uses and shares website information, handles cookies and analytics, and explains privacy rights and contact options."
   }
 };
