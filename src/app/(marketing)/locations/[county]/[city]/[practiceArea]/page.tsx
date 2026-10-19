@@ -114,6 +114,23 @@ const approvedLocationTitles: Record<string, string> = {
   "/locations/contra-costa-county/richmond/rideshare-accidents": "Richmond Uber & Lyft Accident Lawyer",
   "/locations/mendocino-county/ukiah/rideshare-accidents": "Ukiah Uber & Lyft Accident Lawyer",
   "/locations/los-angeles-county/glendale/workplace-discrimination": "Glendale Workplace Discrimination Lawyer",
+  "/locations/modoc-county/alturas/rideshare-accidents": "Alturas Uber & Lyft Accident Lawyer",
+  "/locations/calaveras-county/angels-camp/rideshare-accidents": "Angels Camp Uber & Lyft Accident Lawyer",
+  "/locations/inyo-county/bishop/rideshare-accidents": "Bishop Uber & Lyft Accident Lawyer",
+  "/locations/colusa-county/colusa/rideshare-accidents": "Colusa Uber & Lyft Accident Lawyer",
+  "/locations/del-norte-county/crescent-city/rideshare-accidents": "Crescent City Uber & Lyft Accident Lawyer",
+  "/locations/amador-county/jackson/rideshare-accidents": "Jackson Uber & Lyft Accident Lawyer",
+  "/locations/sierra-county/loyalton/rideshare-accidents": "Loyalton Uber & Lyft Accident Lawyer",
+  "/locations/mono-county/mammoth-lakes/rideshare-accidents": "Mammoth Lakes Uber & Lyft Accident Lawyer",
+  "/locations/mariposa-county/mariposa/rideshare-accidents": "Mariposa Uber & Lyft Accident Lawyer",
+  "/locations/alpine-county/markleeville/rideshare-accidents": "Markleeville Uber & Lyft Accident Lawyer",
+  "/locations/plumas-county/quincy/rideshare-accidents": "Quincy Uber & Lyft Accident Lawyer",
+  "/locations/tehama-county/red-bluff/rideshare-accidents": "Red Bluff Uber & Lyft Accident Lawyer",
+  "/locations/tuolumne-county/sonora/rideshare-accidents": "Sonora Uber & Lyft Accident Lawyer",
+  "/locations/lassen-county/susanville/rideshare-accidents": "Susanville Uber & Lyft Accident Lawyer",
+  "/locations/trinity-county/weaverville/rideshare-accidents": "Weaverville Uber & Lyft Accident Lawyer",
+  "/locations/glenn-county/willows/rideshare-accidents": "Willows Uber & Lyft Accident Lawyer",
+  "/locations/siskiyou-county/yreka/rideshare-accidents": "Yreka Uber & Lyft Accident Lawyer",
 };
 
 export async function generateMetadata({ params }: Props) {
