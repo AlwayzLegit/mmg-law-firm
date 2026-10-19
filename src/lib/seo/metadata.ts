@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { FIRM, SITE } from "@/lib/constants";
+import { approvedSearchMetadata } from "@/lib/seo/approved-search-metadata";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
 
 type BuildOpts = {
@@ -62,9 +63,15 @@ export function buildMetadata({
         ? image
         : `${siteUrl()}${image}`;
 
+  // Apply only the explicitly approved search fields on existing, indexable pages.
+  // Keep article headlines, social cards and all unlisted routes unchanged.
+  const approved = !noindex && Object.hasOwn(approvedSearchMetadata, path)
+    ? approvedSearchMetadata[path]
+    : undefined;
+
   return {
-    title,
-    description,
+    title: approved ? { absolute: approved.title } : title,
+    description: approved?.description ?? description,
     metadataBase: new URL(siteUrl()),
     alternates: {
       canonical: url,
