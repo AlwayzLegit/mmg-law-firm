@@ -108,6 +108,12 @@ const approvedLocationTitles: Record<string, string> = {
   "/locations/san-benito-county/hollister/rideshare-accidents": "Hollister Uber & Lyft Accident Lawyer",
   "/locations/napa-county/napa/rideshare-accidents": "Napa Uber & Lyft Accident Lawyer",
   "/locations/nevada-county/grass-valley/rideshare-accidents": "Grass Valley Uber & Lyft Accident Lawyer",
+  "/locations/lake-county/clearlake/rideshare-accidents": "Clearlake Uber & Lyft Accident Lawyer",
+  "/locations/yuba-county/marysville/rideshare-accidents": "Marysville Uber & Lyft Accident Lawyer",
+  "/locations/yolo-county/davis/rideshare-accidents": "Davis Uber & Lyft Accident Lawyer",
+  "/locations/contra-costa-county/richmond/rideshare-accidents": "Richmond Uber & Lyft Accident Lawyer",
+  "/locations/mendocino-county/ukiah/rideshare-accidents": "Ukiah Uber & Lyft Accident Lawyer",
+  "/locations/los-angeles-county/glendale/workplace-discrimination": "Glendale Workplace Discrimination Lawyer",
 };
 
 export async function generateMetadata({ params }: Props) {
