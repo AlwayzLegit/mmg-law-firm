@@ -4,7 +4,7 @@ export function googleAnalyticsInit(gaId: string): string {
   const id = JSON.stringify(gaId).replace(/</g, "\\u003c");
   return `(function () {
 var id = ${id};
-var privatePath = /^\\/(?:admin|login|onboarding|auth)(?:\\/|$)/i;
+var privatePath = /^\\/(?:admin|login|forgot-password|reset-password|onboarding|auth)(?:\\/|$)/i;
 function decodedPath(path) { try { return decodeURIComponent(path); } catch (_) { return path; } }
 if (privatePath.test(decodedPath(window.location.pathname))) {
   window['ga-disable-' + id] = true;

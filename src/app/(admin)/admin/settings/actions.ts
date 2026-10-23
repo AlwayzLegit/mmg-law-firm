@@ -117,10 +117,10 @@ function inviteEmail(opts: {
         </p>
         <p style="font-size: 12px; line-height: 1.6; color: #888;">
           The link works once and expires in one hour. If it has expired,
-          open <a href="${siteUrl()}/login" style="color: #2b46d8;">the sign-in page</a>
-          and choose &ldquo;Email me a sign-in link&rdquo; to get a fresh one
-          &mdash; no need to ask anyone. If you weren't expecting this, you can
-          ignore this email.
+          ask the person who invited you to resend it, or use
+          <a href="${siteUrl()}/forgot-password" style="color: #2b46d8;">Forgot password</a>
+          on the sign-in page to get a new link. If you weren't expecting
+          this, you can ignore this email.
         </p>
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
         <p style="font-size: 12px; color: #aaa;">${FIRM.legalName}</p>
@@ -263,7 +263,7 @@ async function pendingInviteLink(
     return {
       ok: false,
       error:
-        "This admin already has a password. They can sign in, or use “Email me a sign-in link” on the login page.",
+        "This admin already has a password. They can sign in, or use “Forgot password” on the sign-in page.",
     };
   }
 
@@ -477,6 +477,11 @@ export async function setPassword(formData: FormData): Promise<ActionResult> {
   const { error } = await supabase.auth.updateUser({ password: parsed.data });
   if (error) {
     return { ok: false, error: error.message };
+  }
+  // Password reset: end the recovery session so the admin signs in fresh
+  // with the new password (and any other sessions are revoked).
+  if (formData.get("signOut") === "1") {
+    await supabase.auth.signOut({ scope: "global" });
   }
 
   // Mark onboarding complete (so requireAdmin stops sending them to

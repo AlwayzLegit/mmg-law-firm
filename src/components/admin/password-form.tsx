@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { setPassword } from "@/app/(admin)/admin/settings/actions";
 
 /**
- * The one "choose a password" form. Used by /onboarding (invite accepted,
- * sign-in link) and by the Security card in settings, so the rules, copy
- * and validation stay identical everywhere an admin sets a password.
+ * The one "choose a password" form. Used by /onboarding (account set-up),
+ * /reset-password and the Security card in settings, so the rules, copy and
+ * validation stay identical everywhere an admin sets a password.
  */
 export default function PasswordForm({
   submitLabel = "Save password",
   redirectTo,
+  signOutAfter = false,
   idPrefix = "pw",
   className,
 }: {
@@ -22,6 +23,9 @@ export default function PasswordForm({
   /** After the password is stored, do a full navigation here (so the server
    *  sees the refreshed session cookies). Omit to stay put and reset the form. */
   redirectTo?: string;
+  /** End the recovery session after saving, so the admin signs in fresh with
+   *  the new password (password-reset flow). */
+  signOutAfter?: boolean;
   /** Unique prefix for the input ids when two forms share a page. */
   idPrefix?: string;
   className?: string;
@@ -33,7 +37,9 @@ export default function PasswordForm({
     const form = e.currentTarget;
     setBusy(true);
     try {
-      const res = await setPassword(new FormData(form));
+      const fd = new FormData(form);
+      if (signOutAfter) fd.set("signOut", "1");
+      const res = await setPassword(fd);
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -86,7 +92,7 @@ export default function PasswordForm({
         {busy ? "Saving..." : submitLabel}
       </Button>
       <p className="text-muted-foreground text-xs">
-        At least 10 characters. You sign in with your email and this password.
+        At least 10 characters.
       </p>
     </form>
   );

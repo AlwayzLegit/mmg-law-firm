@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import LoginForm from "./login-form";
+import AuthCard from "@/components/admin/auth-card";
 
 export const metadata = {
   title: "Admin Login",
@@ -7,16 +10,16 @@ export const metadata = {
 };
 
 type Props = {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; reset?: string }>;
 };
 
 const ERRORS: Record<string, string> = {
   "not-admin":
-    "Your account isn't authorized for admin. Contact the firm owner to request access.",
+    "This account isn't authorized for the admin. Contact the firm owner to request access.",
   "auth-failed":
-    "That link didn't work. It may have expired or been used already. Use “Email me a sign-in link” below to get a fresh one.",
+    "That link has expired or was already used. Request a new one below.",
   "missing-code":
-    "That link was incomplete. Open it again from the email, or request a new one.",
+    "That link was incomplete. Open it again from the email, or request a new one below.",
 };
 
 export default async function LoginPage({ searchParams }: Props) {
@@ -24,28 +27,36 @@ export default async function LoginPage({ searchParams }: Props) {
   const error = params.error
     ? (ERRORS[params.error] ?? "Something went wrong. Please try again.")
     : null;
+  const notice = params.reset
+    ? "Your password has been updated. Sign in with your new password."
+    : null;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-secondary/40 px-4 py-16">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
-          MMG Law Firm
-        </p>
-        <h1 className="mt-3 font-display text-2xl font-medium tracking-tight">
-          Sign in to admin
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Enter your email and password. Only authorized firm staff have
-          access. New here, or no password yet? Use the link below the form.
-        </p>
+    <AuthCard
+      title="Sign in"
+      subtitle="Enter your email and password to open the admin."
+    >
+      {notice ? (
+        <div className="mt-5 rounded-md border border-success/40 bg-success/10 p-3 text-xs text-foreground">
+          {notice}
+        </div>
+      ) : null}
+      {error ? (
+        <div className="mt-5 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+          {error}{" "}
+          <Link href="/forgot-password" className="font-medium underline">
+            Reset password
+          </Link>
+        </div>
+      ) : null}
 
-        {error ? (
-          <div className="mt-5 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-            {error}
-          </div>
-        ) : null}
+      <LoginForm next={params.next} />
 
-        <LoginForm next={params.next} />
-      </div>
-    </main>
+      <p className="mt-5 text-center text-xs text-muted-foreground">
+        <Link href="/forgot-password" className="text-primary hover:underline">
+          Forgot password?
+        </Link>
+      </p>
+    </AuthCard>
   );
 }
