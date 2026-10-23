@@ -76,6 +76,9 @@ in order. Paste the contents of each file into a new query and click
 | 12 | `0012_rate_limits.sql` | Postgres-backed cross-instance rate limiter (`rate_limits` table + `bump_rate_limit()` RPC). Service-role-only writes. |
 | 13–30 | `0013_…` → `0030_…` | Incremental features (trusted devices, follow-ups, redirects, media bucket, saved views, messages, tasks, content health, templates, lead merge/tags, redirects). Apply in order. |
 | 31 | `0031_content_agent.sql` | Content-agent API: `api_keys` (scoped tokens), `agent_instructions`, `content_topics`, `agent_runs`, `agent_questions`, `api_idempotency`; blog review/keyword columns; `claim_content_topics()` RPC; service-role content-health function; seeds instructions v1. |
+| 33 | `0033_private_auth_helpers.sql` | Moves `is_admin()` / `is_owner()` into the unexposed `app_private` schema. (There is no 0032 on `main`.) |
+| 34 | `0034_drop_trusted_devices.sql` | Drops the device-trust table; admin login is email + password only. |
+| 35 | `0035_admin_password_set.sql` | Adds `admin_profiles.password_set` (idempotent — a no-op where it was already added by hand). Required before `pnpm bootstrap-owner`. |
 
 If you prefer the CLI:
 
@@ -103,34 +106,41 @@ SQL output for errors.
 
 ---
 
-## 3. Create your admin profile
+## 3. Create the first admin owner
 
-Two steps — first the auth user, then the admin_profiles row.
+There is no public sign-up and `/login` only accepts email + password, so
+the first owner is created from your machine with the service-role key.
+One command, idempotent, safe to re-run:
 
-### 3a. Send yourself a magic link
-
-Once the site is live (you can do this after the first deploy, or use a
-local dev session pointed at the prod Supabase), go to `/login`, enter
-the firm owner email, click the link in the email.
-
-### 3b. Insert the admin row
-
-In **Project → SQL Editor**, paste this one query and edit the email
-to match the one you signed in with — no UUID lookup needed:
-
-```sql
-insert into admin_profiles (user_id, role, full_name)
-select id, 'owner', 'Site Owner'
-from auth.users
-where email = 'your-email@example.com'
-on conflict (user_id) do nothing;
+```bash
+pnpm bootstrap-owner --email owner@mmg-lawfirm.com --name "Mihran Ghazaryan"
 ```
 
-Reload `/admin` — you should now reach the dashboard. Without this row,
-the auth gate redirects every signed-in user back to `/login`.
+It reads `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and
+`NEXT_PUBLIC_SITE_URL` from `.env.local` (or the environment), so point
+those at the **production** project and the production site URL for a
+live bootstrap. It creates the auth user (pre-confirmed), writes the
+`admin_profiles` row as `owner`, and prints a one-time sign-in link.
 
-> Once one owner exists, additional admins can be invited from
-> `/admin/settings` instead of running SQL.
+Open the link in a browser: it signs you in and lands on `/onboarding`
+to choose a password. From then on you sign in at `/login` with email +
+password. The link works once and expires in an hour; re-run the script
+for a fresh one.
+
+No email is sent by this step on purpose — it works before Resend is
+verified (§4). Once Resend is live, every later admin is invited from
+`/admin/settings` and every stuck admin can self-serve with
+“Email me a sign-in link” on `/login`.
+
+### How admin access works after that
+
+| Situation | What to do |
+|---|---|
+| Add a colleague | Owner: `/admin/settings` → Invite. They get a one-time link → choose a password → done. Until then their row shows **Invite pending** with **Resend invite** / **Copy link**. |
+| Invite email never arrived / link expired | Invitee: `/login` → “Email me a sign-in link”. Or owner: **Resend invite**, or **Copy link** and send it by text. |
+| Forgot password | `/login` → “Email me a sign-in link” → choose a new password. |
+| Change your own password | `/admin/settings` → Security. |
+| Revoke access | Owner: `/admin/settings` → Remove on their row (the last owner can't be removed). |
 
 ---
 
@@ -248,7 +258,8 @@ Walk through this checklist on the deployed URL:
 - [ ] `/contact` lead form: submit a test entry → check Supabase
       `leads` table for the row, check the LEAD_NOTIFY_EMAIL inbox for
       the notification
-- [ ] `/login` → magic-link email arrives → click → land in `/admin`
+- [ ] `/login` → sign in with the owner email + password → land in `/admin`
+- [ ] `/login` → “Email me a sign-in link” → email arrives → opens `/onboarding`
 - [ ] [Google Rich Results Test](https://search.google.com/test/rich-results)
       against the homepage — should detect LegalService + WebSite + Person
 
@@ -310,9 +321,14 @@ sender is stubbed and no-ops.
 - **"Edge runtime not supported"** — `src/proxy.ts` uses Node runtime by
   design (Supabase SSR doesn't work on edge). Don't add
   `export const runtime = "edge"` anywhere.
-- **Magic link sends, but click goes to /login** — your auth user
-  exists, but `admin_profiles` doesn't have a matching row. Run the
-  step 3b SQL.
+- **Sign-in link opens but lands on /login?error=not-admin** — the auth
+  user exists, but `admin_profiles` has no matching row (or the
+  `password_set` column is missing — apply migration 0035). Re-run
+  `pnpm bootstrap-owner` for the owner, or invite the person from
+  `/admin/settings`.
+- **“Invalid email or password” for a new admin** — they never chose a
+  password (invite link unused or expired). They should use “Email me a
+  sign-in link” on `/login`; no owner action needed.
 - **Lead form submits but no email arrives** — usually `RESEND_FROM_EMAIL`
   is on an unverified domain. Check Resend → Logs for the 422.
 - **Static pages show stale content after editing in admin** — the
@@ -325,4 +341,4 @@ sender is stubbed and no-ops.
   Rich Results Test.
 - **`/admin` 404 for everyone** — `proxy.ts` redirects `/admin/*` to
   `/login` when Supabase env vars are unset. If they're set but you
-  still get redirected after login, see step 3b.
+  still get redirected after login, see §3.

@@ -17,7 +17,7 @@ export default async function AdminSettingsPage() {
   const [{ data: admins }, settings] = await Promise.all([
     supabase
       .from("admin_profiles")
-      .select("user_id, role, full_name, created_at")
+      .select("user_id, role, full_name, created_at, password_set")
       .order("created_at", { ascending: true }),
     getFirmSettings(),
   ]);
@@ -124,8 +124,20 @@ export default async function AdminSettingsPage() {
                         {a.full_name ?? "(no name)"}
                       </p>
                       <p className="text-muted-foreground text-xs">
-                        Joined{" "}
-                        {new Date(a.created_at).toLocaleDateString("en-US")}
+                        {a.password_set ? (
+                          <>
+                            Joined{" "}
+                            {new Date(a.created_at).toLocaleDateString("en-US")}
+                          </>
+                        ) : (
+                          <>
+                            <span className="bg-secondary text-foreground rounded-md px-1.5 py-0.5 font-medium">
+                              Invite pending
+                            </span>{" "}
+                            · sent{" "}
+                            {new Date(a.created_at).toLocaleDateString("en-US")}
+                          </>
+                        )}
                       </p>
                     </div>
                     {profile.role === "owner" ? (
@@ -133,6 +145,7 @@ export default async function AdminSettingsPage() {
                         userId={a.user_id}
                         role={a.role}
                         isSelf={a.user_id === user.id}
+                        pending={!a.password_set}
                       />
                     ) : (
                       <span className="bg-secondary rounded-md px-2 py-0.5 text-xs font-medium capitalize">

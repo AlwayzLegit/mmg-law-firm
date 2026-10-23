@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
-
-import OnboardingForm from "./onboarding-form";
+import PasswordForm from "@/components/admin/password-form";
 
 export const metadata = {
   title: "Set your password",
@@ -12,13 +11,15 @@ export const metadata = {
 type Props = { searchParams: Promise<{ reset?: string }> };
 
 /**
- * Set-a-password page, reached two ways:
+ * The one "choose a password" page. Every one-time link (invite, re-sent
+ * invite, sign-in link) lands here after /auth/callback signs the admin in:
  *
- * 1. First run: a newly invited admin lands here after opening the invite
- *    link (requireAdmin redirects them while `password_set` is false).
- * 2. Password reset: the "Forgot password" link in the email signs them in
- *    and sends them here with `?reset=1`, so an admin who already has a
- *    password can choose a new one.
+ * - An admin with no password yet (invite not completed) sees the welcome
+ *   copy. requireAdmin() sends them here from anywhere in /admin until they
+ *   finish, so the step can't be skipped.
+ * - An admin who already has a password only gets here through a sign-in
+ *   link (`?reset=1`); they choose a new password. Without `?reset=1` they
+ *   are sent on to /admin.
  */
 export default async function OnboardingPage({ searchParams }: Props) {
   const { reset } = await searchParams;
@@ -26,7 +27,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
   const { profile } = await requireAdmin({ allowUnonboarded: true });
   if (profile.password_set && !reset) redirect("/admin");
 
-  const isReset = Boolean(reset);
+  const firstRun = !profile.password_set;
   return (
     <main className="bg-secondary/40 flex min-h-screen flex-col items-center justify-center px-4 py-16">
       <div className="border-border bg-card w-full max-w-md rounded-2xl border p-8 shadow-sm">
@@ -34,14 +35,19 @@ export default async function OnboardingPage({ searchParams }: Props) {
           MMG Law Firm
         </p>
         <h1 className="font-display mt-3 text-2xl font-medium tracking-tight">
-          {isReset ? "Choose a new password" : "Set your password"}
+          {firstRun ? "Set your password" : "Choose a new password"}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          {isReset
-            ? "You're signed in through the reset link. Pick a new password to finish."
-            : `Welcome${profile.full_name ? `, ${profile.full_name}` : ""}. Create a password to finish setting up your account. Next time you sign in with your email and password.`}
+          {firstRun
+            ? `Welcome${profile.full_name ? `, ${profile.full_name}` : ""}. You're signed in. Create a password to finish setting up your account; from then on you sign in with your email and this password.`
+            : "You're signed in through your link. Pick a new password to finish; your old one stops working."}
         </p>
-        <OnboardingForm />
+        <PasswordForm
+          idPrefix="onboarding"
+          className="mt-6 grid gap-3"
+          submitLabel="Set password & continue"
+          redirectTo="/admin"
+        />
       </div>
     </main>
   );

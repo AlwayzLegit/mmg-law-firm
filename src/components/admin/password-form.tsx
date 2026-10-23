@@ -7,21 +7,43 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { setPassword } from "@/app/(admin)/admin/settings/actions";
 
-export default function OnboardingForm() {
+/**
+ * The one "choose a password" form. Used by /onboarding (invite accepted,
+ * sign-in link) and by the Security card in settings, so the rules, copy
+ * and validation stay identical everywhere an admin sets a password.
+ */
+export default function PasswordForm({
+  submitLabel = "Save password",
+  redirectTo,
+  idPrefix = "pw",
+  className,
+}: {
+  submitLabel?: string;
+  /** After the password is stored, do a full navigation here (so the server
+   *  sees the refreshed session cookies). Omit to stay put and reset the form. */
+  redirectTo?: string;
+  /** Unique prefix for the input ids when two forms share a page. */
+  idPrefix?: string;
+  className?: string;
+}) {
   const [busy, setBusy] = React.useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setBusy(true);
     try {
-      const res = await setPassword(new FormData(e.currentTarget));
+      const res = await setPassword(new FormData(form));
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
       toast.success("Password saved.");
-      // Full navigation so the server sees the refreshed session cookies.
-      window.location.href = "/admin";
+      if (redirectTo) {
+        window.location.href = redirectTo;
+        return;
+      }
+      form.reset();
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong. Please try again.");
@@ -31,28 +53,27 @@ export default function OnboardingForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 grid gap-3" noValidate>
+    <form onSubmit={onSubmit} className={className ?? "grid gap-3"} noValidate>
       <div className="grid gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
+        <label htmlFor={`${idPrefix}-password`} className="text-sm font-medium">
           New password
         </label>
         <Input
-          id="password"
+          id={`${idPrefix}-password`}
           name="password"
           type="password"
           autoComplete="new-password"
-          autoFocus
           required
           minLength={10}
           placeholder="At least 10 characters"
         />
       </div>
       <div className="grid gap-1.5">
-        <label htmlFor="confirm" className="text-sm font-medium">
+        <label htmlFor={`${idPrefix}-confirm`} className="text-sm font-medium">
           Confirm password
         </label>
         <Input
-          id="confirm"
+          id={`${idPrefix}-confirm`}
           name="confirm"
           type="password"
           autoComplete="new-password"
@@ -61,12 +82,11 @@ export default function OnboardingForm() {
           placeholder="Re-enter password"
         />
       </div>
-      <Button type="submit" disabled={busy}>
-        {busy ? "Saving..." : "Set password & continue"}
+      <Button type="submit" disabled={busy} className="w-fit">
+        {busy ? "Saving..." : submitLabel}
       </Button>
       <p className="text-muted-foreground text-xs">
-        Use at least 10 characters. From now on you sign in with your email
-        and this password.
+        At least 10 characters. You sign in with your email and this password.
       </p>
     </form>
   );

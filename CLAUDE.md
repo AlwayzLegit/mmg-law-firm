@@ -122,8 +122,8 @@ Schema builders live in `lib/seo/schema.ts`. Sitemap in `app/sitemap.ts`. Robots
 
 ### 10. Admin
 
-- `/admin/*` gated by `requireAdmin()` (server-side) + Supabase email + password auth. Invites and password resets are `token_hash` links generated server-side and sent through Resend (migration 0034 retired the device-code second factor).
-- Initial setup: insert into `admin_profiles` manually after first deploy.
+- `/admin/*` gated by `requireAdmin()` (server-side) + Supabase email + password auth. Invites and sign-in links are `token_hash` links generated server-side and sent through Resend (migration 0034 retired the device-code second factor); every link lands on `/onboarding` to choose a password. Pending invitees show on `/admin/settings` with resend / copy-link.
+- Initial setup: `pnpm bootstrap-owner --email … --name …` creates the first owner and prints a one-time link (needs migration 0035).
 - Dashboard, leads (list + detail + kanban), content (counties, cities, location_pages, practice_areas, blog, testimonials, case_results), simple analytics from Postgres, settings.
 
 ### 11. Design system

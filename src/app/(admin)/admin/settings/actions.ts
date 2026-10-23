@@ -13,39 +13,47 @@ import { escapeHtml } from "@/lib/leads/intake";
 import { FIRM } from "@/lib/constants";
 
 const InviteInput = z.object({
-  email: z.string().trim().email("Enter a valid email"),
+  email: z.string().trim().toLowerCase().email("Enter a valid email"),
   full_name: z.string().trim().min(2).max(100),
   role: z.enum(["owner", "staff", "intake"]),
 });
 
-export type InviteResult = { ok: true } | { ok: false; error: string };
+export type InviteResult =
+  | { ok: true; resent: boolean }
+  | { ok: false; error: string };
+
+type ServiceClient = ReturnType<typeof getServiceSupabase>;
 
 /**
- * Generate a sign-in link for an admin invite.
+ * Generate a one-time sign-in link for an admin.
  *
  * We use `admin.generateLink` (not `inviteUserByEmail`) because we send the
  * email ourselves via Resend and, crucially, build a `token_hash` link that
  * /auth/callback verifies with `verifyOtp`. That works for a brand-new user
  * with no prior browser state — unlike the PKCE `?code=` flow, whose verifier
- * cookie the invitee never has, which is why the old invite produced the
- * "sign-in link was missing a code" error.
+ * cookie the invitee never has.
  *
  * `invite` creates the auth user if absent. If they already exist — e.g. a
  * user who was removed (which deletes only the admin_profiles row, not the
- * auth user) and is being re-added, or one invited before — `invite` fails,
- * so we fall back to `magiclink`, which signs the existing user in. The
- * fallback is unconditional and exception-safe: Supabase's "already exists"
- * error can arrive as a returned error OR a thrown exception, and its exact
- * wording varies, so we never gate the fallback on matching error text.
+ * auth user), a pending invitee being re-sent their link, or one invited
+ * before — `invite` fails, so we fall back to `magiclink`, which signs the
+ * existing user in. The fallback is unconditional and exception-safe:
+ * Supabase's "already exists" error can arrive as a returned error OR a
+ * thrown exception, and its exact wording varies, so we never gate the
+ * fallback on matching error text.
+ *
+ * Every link lands on /onboarding. requireAdmin() sends an admin without a
+ * password there anyway, so going straight to it saves a redirect hop; an
+ * admin who already has a password is bounced from /onboarding to /admin.
  */
 async function generateAdminSignInLink(
-  supabase: ReturnType<typeof getServiceSupabase>,
+  supabase: ServiceClient,
   email: string,
 ): Promise<
-  | { ok: true; userId: string; url: string }
+  | { ok: true; userId: string; url: string; created: boolean }
   | { ok: false; error: string }
 > {
-  const next = encodeURIComponent("/admin");
+  const next = encodeURIComponent("/onboarding");
 
   async function linkFor(
     type: "invite" | "magiclink",
@@ -71,16 +79,54 @@ async function generateAdminSignInLink(
   }
 
   let res = await linkFor("invite");
+  let created = true;
   // If the invite didn't produce a link for ANY reason (the common one being
   // an already-existing auth user), sign the existing user in with a magic
   // link instead.
   if (!res.data) {
     res = await linkFor("magiclink");
+    created = false;
   }
   if (!res.data) {
     return { ok: false, error: res.error ?? "Couldn't create invite." };
   }
-  return { ok: true, ...res.data };
+  return { ok: true, ...res.data, created };
+}
+
+/** The invite email body. Shared by the first invite and every resend. */
+function inviteEmail(opts: {
+  url: string;
+  inviterName: string | null;
+  role: string;
+}): { subject: string; html: string } {
+  return {
+    subject: `You've been invited to the ${FIRM.legalName} admin`,
+    html: `
+      <div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
+        <h2 style="margin: 0 0 12px;">You're invited to ${FIRM.legalName}</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #444;">
+          ${escapeHtml(opts.inviterName ?? "An administrator")} has invited you
+          to the ${FIRM.legalName} admin as
+          <strong>${escapeHtml(opts.role)}</strong>. Click the button below to
+          choose your password and get started.
+        </p>
+        <p style="margin: 24px 0;">
+          <a href="${opts.url}" style="display: inline-block; background: #2b46d8; color: #fff; text-decoration: none; padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            Accept invite &amp; choose a password
+          </a>
+        </p>
+        <p style="font-size: 12px; line-height: 1.6; color: #888;">
+          The link works once and expires in one hour. If it has expired,
+          open <a href="${siteUrl()}/login" style="color: #2b46d8;">the sign-in page</a>
+          and choose &ldquo;Email me a sign-in link&rdquo; to get a fresh one
+          &mdash; no need to ask anyone. If you weren't expecting this, you can
+          ignore this email.
+        </p>
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 12px; color: #aaa;">${FIRM.legalName}</p>
+      </div>
+    `,
+  };
 }
 
 /**
@@ -88,7 +134,13 @@ async function generateAdminSignInLink(
  *
  * Generates a token_hash sign-in link, upserts an admin_profiles row binding
  * the user to a role, then emails the link via Resend. The new user lands at
- * /auth/callback after clicking, which verifies the link and signs them in.
+ * /auth/callback after clicking, which verifies the link, signs them in and
+ * sends them to /onboarding to choose a password.
+ *
+ * Inviting an address that already has admin access is refused with a
+ * pointer to the row's "Resend invite" / role controls, so a typo can't
+ * silently change a colleague's role. A removed admin (auth user still
+ * exists, profile row gone) is re-added normally.
  */
 export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
   const { profile, user } = await requireAdmin();
@@ -116,11 +168,27 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
     return { ok: false, error: link.error };
   }
 
+  const { data: existing } = await supabase
+    .from("admin_profiles")
+    .select("password_set")
+    .eq("user_id", link.userId)
+    .maybeSingle();
+
+  if (existing?.password_set) {
+    return {
+      ok: false,
+      error:
+        "That address already has admin access. Change their role or remove them from the Admins list instead.",
+    };
+  }
+  const resent = Boolean(existing);
+
   const { error: upErr } = await supabase.from("admin_profiles").upsert(
     {
       user_id: link.userId,
       role: parsed.data.role,
       full_name: parsed.data.full_name,
+      password_set: false,
     },
     { onConflict: "user_id" },
   );
@@ -130,36 +198,16 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
 
   const sent = await sendEmail({
     to: parsed.data.email,
-    subject: `You've been invited to the ${FIRM.legalName} admin`,
-    html: `
-      <div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
-        <h2 style="margin: 0 0 12px;">You're invited to ${FIRM.legalName}</h2>
-        <p style="font-size: 14px; line-height: 1.6; color: #444;">
-          ${escapeHtml(profile.full_name ?? "An administrator")} has invited you
-          to the ${FIRM.legalName} admin as
-          <strong>${parsed.data.role}</strong>. Click the button below to sign in
-          and get started.
-        </p>
-        <p style="margin: 24px 0;">
-          <a href="${link.url}" style="display: inline-block; background: #2b46d8; color: #fff; text-decoration: none; padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-            Accept invite &amp; sign in
-          </a>
-        </p>
-        <p style="font-size: 12px; line-height: 1.6; color: #888;">
-          The link signs you in and asks you to choose a password. It works
-          once and expires after a short time; if it stops working, ask the
-          person who invited you to resend it. If you weren't expecting this,
-          you can ignore this email.
-        </p>
-        <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
-        <p style="font-size: 12px; color: #aaa;">${FIRM.legalName}</p>
-      </div>
-    `,
+    ...inviteEmail({
+      url: link.url,
+      inviterName: profile.full_name,
+      role: parsed.data.role,
+    }),
   });
   if (!sent.ok) {
     return {
       ok: false,
-      error: `Profile created, but the invite email failed to send (${sent.error ?? "unknown"}). You can resend from this page.`,
+      error: `Profile created, but the invite email failed to send (${sent.error ?? "unknown"}). Use “Copy invite link” on their row in the Admins list and send it yourself.`,
     };
   }
 
@@ -167,12 +215,128 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
     actor_id: user.id,
     entity: "admin_profiles",
     entity_id: link.userId,
-    action: "invite",
+    action: resent ? "invite_resend" : "invite",
     diff: { email: parsed.data.email, role: parsed.data.role },
   });
 
   revalidatePath("/admin/settings");
+  return { ok: true, resent };
+}
+
+const PendingInviteInput = z.object({ userId: z.string().uuid() });
+
+/**
+ * Look up a pending invitee (profile row exists, no password yet) and mint a
+ * fresh one-time link for them. Owner-only. Shared by resend + copy-link.
+ */
+async function pendingInviteLink(
+  formData: FormData,
+): Promise<
+  | {
+      ok: true;
+      actorId: string;
+      actorName: string | null;
+      userId: string;
+      email: string;
+      role: string;
+      url: string;
+    }
+  | { ok: false; error: string }
+> {
+  const { profile, user } = await requireAdmin();
+  if (profile.role !== "owner") {
+    return { ok: false, error: "Only owners can manage invites." };
+  }
+  const parsed = PendingInviteInput.safeParse({
+    userId: formData.get("userId"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  const supabase = getServiceSupabase();
+  const { data: target } = await supabase
+    .from("admin_profiles")
+    .select("role, password_set")
+    .eq("user_id", parsed.data.userId)
+    .maybeSingle();
+  if (!target) return { ok: false, error: "Admin not found." };
+  if (target.password_set) {
+    return {
+      ok: false,
+      error:
+        "This admin already has a password. They can sign in, or use “Email me a sign-in link” on the login page.",
+    };
+  }
+
+  const { data: authUser, error: userErr } =
+    await supabase.auth.admin.getUserById(parsed.data.userId);
+  const email = authUser?.user?.email;
+  if (userErr || !email) {
+    return { ok: false, error: "Couldn't find that user's email." };
+  }
+
+  const link = await generateAdminSignInLink(supabase, email);
+  if (!link.ok) return { ok: false, error: link.error };
+
+  return {
+    ok: true,
+    actorId: user.id,
+    actorName: profile.full_name,
+    userId: parsed.data.userId,
+    email,
+    role: target.role,
+    url: link.url,
+  };
+}
+
+/** Email a pending admin a fresh invite link. Owner-only. */
+export async function resendInvite(formData: FormData): Promise<ActionResult> {
+  const pending = await pendingInviteLink(formData);
+  if (!pending.ok) return pending;
+
+  const sent = await sendEmail({
+    to: pending.email,
+    ...inviteEmail({
+      url: pending.url,
+      inviterName: pending.actorName,
+      role: pending.role,
+    }),
+  });
+  if (!sent.ok) {
+    return {
+      ok: false,
+      error: `The invite email failed to send (${sent.error ?? "unknown"}). Use “Copy invite link” and send it yourself.`,
+    };
+  }
+
+  logAudit({
+    actor_id: pending.actorId,
+    entity: "admin_profiles",
+    entity_id: pending.userId,
+    action: "invite_resend",
+    diff: { email: pending.email },
+  });
   return { ok: true };
+}
+
+/**
+ * Return a fresh invite link for a pending admin so the owner can send it
+ * through any channel (text message, a different mailbox) when email
+ * delivery is the problem. Owner-only; one-time link, expires in an hour.
+ */
+export async function getInviteLink(
+  formData: FormData,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const pending = await pendingInviteLink(formData);
+  if (!pending.ok) return pending;
+
+  logAudit({
+    actor_id: pending.actorId,
+    entity: "admin_profiles",
+    entity_id: pending.userId,
+    action: "invite_link_copied",
+    diff: { email: pending.email },
+  });
+  return { ok: true, url: pending.url };
 }
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
