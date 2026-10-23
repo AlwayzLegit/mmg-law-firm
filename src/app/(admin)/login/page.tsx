@@ -14,7 +14,7 @@ const ERRORS: Record<string, string> = {
   "not-admin":
     "Your account isn't authorized for admin. Contact the firm owner to request access.",
   "auth-failed":
-    "That link didn't work. It may have expired or been used already. Use “Forgot password” to get a new one, or ask the owner to resend your invite.",
+    "That link didn't work. It may have expired or been used already. Use “Email me a sign-in link” below to get a fresh one.",
   "missing-code":
     "That link was incomplete. Open it again from the email, or request a new one.",
 };
@@ -35,7 +35,7 @@ export default async function LoginPage({ searchParams }: Props) {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Enter your email and password. Only authorized firm staff have
-          access.
+          access. New here, or no password yet? Use the link below the form.
         </p>
 
         {error ? (

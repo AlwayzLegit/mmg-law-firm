@@ -18,7 +18,7 @@ export default function InviteForm() {
     startTransition(async () => {
       const result = await inviteAdmin(fd);
       if (result.ok) {
-        toast.success("Invitation sent.");
+        toast.success(result.resent ? "Invite re-sent." : "Invitation sent.");
         formRef.current?.reset();
       } else {
         toast.error(result.error);
@@ -68,9 +68,11 @@ export default function InviteForm() {
         {pending ? "Sending invite..." : "Send invite"}
       </Button>
       <p className="text-xs text-muted-foreground">
-        The invitee gets an email with a one-time link. Opening it signs them
-        in and asks them to choose a password; after that they sign in with
-        email and password.
+        The invitee gets an email with a one-time link (expires in one hour).
+        Opening it signs them in and asks them to choose a password; after
+        that they sign in with email and password. Until they do, their row
+        above shows &ldquo;Invite pending&rdquo; with resend and copy-link
+        buttons.
       </p>
     </form>
   );

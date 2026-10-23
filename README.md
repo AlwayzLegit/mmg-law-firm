@@ -42,7 +42,7 @@ All public pages have an **in-code fallback** so dev-without-Supabase still rend
 2. `cp .env.local.example .env.local` and fill in real values (the file documents each var)
 3. Apply migrations against your Supabase project — see [`DEPLOY.md`](./DEPLOY.md) §2b for the canonical order
 4. Optional: generate types — `pnpm dlx supabase gen types typescript --project-id <id> > src/types/database.ts`
-5. Insert your admin profile — see [`DEPLOY.md`](./DEPLOY.md) §3
+5. Create the first owner: `pnpm bootstrap-owner --email you@example.com --name "You"` and open the printed link — see [`DEPLOY.md`](./DEPLOY.md) §3
 6. `pnpm dev` (default port 3000; `--turbopack` is implicit)
 
 You can also run the dev server **without Supabase configured** — every public page falls through to in-code seed content. Useful for design work without a DB round-trip. Admin routes redirect to `/login` in this mode.
@@ -74,6 +74,8 @@ Live in `supabase/migrations/`. Apply in numbered order:
 | `0006_legal_pages.sql`           | Legal pages table + seeds 4 canonical rows               |
 | `0007_firm_settings.sql`         | Singleton settings row (founding year, sameAs URLs)      |
 | `0008_homepage_faqs.sql`         | Adds homepage FAQs jsonb column                          |
+| `0009` – `0034`                  | Incremental features; see `DEPLOY.md` §2b for the list  |
+| `0035_admin_password_set.sql`    | `admin_profiles.password_set` (onboarding flag)          |
 
 ## Deployment
 

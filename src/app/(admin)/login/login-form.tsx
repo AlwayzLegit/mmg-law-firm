@@ -7,11 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   loginWithPassword,
-  requestPasswordReset,
+  requestSignInLink,
 } from "@/lib/auth/login-actions";
 
-type Mode = "password" | "reset" | "reset-sent";
+type Mode = "password" | "link" | "link-sent";
 
+/**
+ * Two ways in, nothing else:
+ *
+ * 1. Email + password (the everyday path).
+ * 2. "Email me a sign-in link" — one self-service recovery for every stuck
+ *    state: forgot the password, invite link expired before they chose one,
+ *    first owner bootstrapped from the CLI. The link signs them in and lands
+ *    on the choose-a-password page.
+ */
 export default function LoginForm({ next }: { next?: string }) {
   const [mode, setMode] = React.useState<Mode>("password");
   const [email, setEmail] = React.useState("");
@@ -38,13 +47,13 @@ export default function LoginForm({ next }: { next?: string }) {
     }
   }
 
-  async function onReset(e: React.FormEvent) {
+  async function onLink(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
     setBusy(true);
     try {
-      await requestPasswordReset({ email });
-      setMode("reset-sent");
+      await requestSignInLink({ email });
+      setMode("link-sent");
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong. Please try again.");
@@ -53,14 +62,19 @@ export default function LoginForm({ next }: { next?: string }) {
     }
   }
 
-  if (mode === "reset-sent") {
+  if (mode === "link-sent") {
     return (
       <div className="mt-6 grid gap-4">
         <div className="rounded-md border border-success/40 bg-success/10 p-4 text-sm text-foreground">
           If <span className="font-medium">{email}</span> belongs to an admin
-          account, a password-reset link is on its way. It works once and
-          expires in one hour.
+          account, a sign-in link is on its way. Open it on any device; it
+          works once and expires in one hour. It signs you in and asks you to
+          choose a password.
         </div>
+        <p className="text-xs text-muted-foreground">
+          Nothing after a few minutes? Check spam, then ask the firm owner to
+          confirm your address is on the Admins list.
+        </p>
         <button
           type="button"
           onClick={() => setMode("password")}
@@ -72,12 +86,13 @@ export default function LoginForm({ next }: { next?: string }) {
     );
   }
 
-  if (mode === "reset") {
+  if (mode === "link") {
     return (
-      <form onSubmit={onReset} className="mt-6 grid gap-3" noValidate>
+      <form onSubmit={onLink} className="mt-6 grid gap-3" noValidate>
         <p className="text-sm text-muted-foreground">
-          Enter your admin email and we&apos;ll send a link to choose a new
-          password.
+          Forgot your password, or never set one? Enter your admin email and
+          we&apos;ll send a one-time link that signs you in so you can choose
+          a password.
         </p>
         <label htmlFor="email" className="text-sm font-medium">
           Email
@@ -93,7 +108,7 @@ export default function LoginForm({ next }: { next?: string }) {
           placeholder="you@example.com"
         />
         <Button type="submit" disabled={busy || !email}>
-          {busy ? "Sending..." : "Send reset link"}
+          {busy ? "Sending..." : "Email me a sign-in link"}
         </Button>
         <button
           type="button"
@@ -139,11 +154,11 @@ export default function LoginForm({ next }: { next?: string }) {
       <div className="mt-1 text-center text-xs">
         <button
           type="button"
-          onClick={() => setMode("reset")}
+          onClick={() => setMode("link")}
           disabled={busy}
           className="text-primary hover:underline disabled:opacity-50"
         >
-          Forgot password?
+          Forgot password, or never set one? Email me a sign-in link
         </button>
       </div>
     </form>
