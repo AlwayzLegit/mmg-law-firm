@@ -209,6 +209,10 @@ re-apply or port to `convert.mjs`):
 - `attorney.tsx`: `.v3-att-hero` hook; `moto.tsx`: photo placeholder removed,
   card grid min 280px; `privacy.tsx` / `disclosures.tsx`: hero-card h3 → h2;
   description placeholders "(optional)"; 11.5px labels → 12.5px.
+- `home.tsx` (Oct 23): hero portrait sized by `width: min(100%, maxHeight × 938/1348)`
+  instead of `width:auto` — an auto-sized `next/image` takes its CSS width from
+  the density-corrected srcset candidate, so DPR-3 phones (iPhone 15/16) got a
+  ~300px portrait while DPR-2 phones got full width. `sizes` desktop → 480px.
 
 CSS fixes live in `v3.css` (safety net matches React's spaced style form;
 dialog, table, grid and tap-target rules; see the comments) and
