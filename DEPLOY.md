@@ -249,6 +249,17 @@ attorney bio + legal pages + admin shell).
 
 ---
 
+### 6e. Cloudflare staging (optional, pre-migration)
+
+The site also builds as a Cloudflare Worker (`pnpm cf:build`, deployed by
+the "Cloudflare deploy (staging)" GitHub Actions workflow). The account
+side and the exact order of steps are in `docs/cloudflare-migration-plan.md`
+§C. Repo secrets come from your local `.env.local` via
+`pnpm github-secrets` (uses `gh secret set`; nothing is printed). Any host
+other than `NEXT_PUBLIC_SITE_URL` gets `X-Robots-Tag: noindex` from
+`src/proxy.ts`, so staging and the workers.dev URL never compete with
+production in search.
+
 ## 7. Smoke test the live site
 
 Walk through this checklist on the deployed URL:

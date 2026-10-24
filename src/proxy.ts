@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 
 import { env } from "@/lib/env";
 import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
+import { isNonCanonicalHost } from "@/lib/seo/host-guard";
 
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` and pinned it to the
@@ -111,6 +112,8 @@ async function getRedirects(): Promise<Map<string, RedirectRule>> {
 
 export async function proxy(request: NextRequest) {
   const csp = buildCsp();
+  const requestHost =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   const cspHeader = env.CSP_REPORT_ONLY
     ? "content-security-policy-report-only"
     : "content-security-policy";
@@ -124,6 +127,10 @@ export async function proxy(request: NextRequest) {
     // public-page analytics (or external destinations) as document.referrer.
     if (isPrivateAnalyticsPath(request.nextUrl.pathname)) {
       res.headers.set("referrer-policy", "no-referrer");
+    }
+    // Staging, workers.dev and preview hosts must not be indexed.
+    if (isNonCanonicalHost(requestHost, env.NEXT_PUBLIC_SITE_URL)) {
+      res.headers.set("x-robots-tag", "noindex, nofollow");
     }
     return res;
   }
