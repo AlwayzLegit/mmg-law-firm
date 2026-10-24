@@ -40,7 +40,7 @@
   // two never drift; the Worker's scheduled() maps a fired expression back
   // to its /api/cron route.
   "triggers": {
-    "crons": ["0 14 * * 1", "0 15 * * 1-5", "0 * * * *"]
+    "crons": ["0 14 * * 1", "0 15 * * 1-5", "*/15 * * * *", "0 * * * *"]
   },
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://www.mmg-lawfirm.com"

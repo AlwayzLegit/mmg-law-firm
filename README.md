@@ -78,6 +78,7 @@ Live in `supabase/migrations/`. Apply in numbered order:
 | `0035_admin_password_set.sql`    | `admin_profiles.password_set` (onboarding flag)          |
 | `0036_lead_landing_url.sql`      | `leads.landing_url` (first-touch attribution)            |
 | `0037_lead_intake_checklist.sql` | `leads.intake` (intake checklist, deadline rule)         |
+| `0038_lead_sla_alerted.sql`      | `leads.sla_alerted_at` (one-time speed-to-lead alert)    |
 
 ## Deployment
 
@@ -92,7 +93,7 @@ These are not required for the site to run, but each unlocks a feature when set 
 
 | Var             | Enables                                                                                                                                                                | When unset                                  |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `CRON_SECRET`   | The three scheduled jobs in `src/lib/cron/schedules.ts` (weekly digest, daily agenda, publish-scheduled). The scheduler sends it as `Authorization: Bearer <CRON_SECRET>`; `vercel.json` mirrors the registry (a test enforces it). | Endpoints return `503 cron-not-configured`. |
+| `CRON_SECRET`   | The four scheduled jobs in `src/lib/cron/schedules.ts` (weekly digest, daily agenda, 15-minute SLA alerts, publish-scheduled). The scheduler sends it as `Authorization: Bearer <CRON_SECRET>`; `vercel.json` mirrors the registry (a test enforces it). | Endpoints return `503 cron-not-configured`. |
 | `LEAD_NOTIFY_EMAIL` | New-lead notification emails, the weekly digest and the daily agenda. | No lead emails are sent; digest/agenda return `503 no-recipient`. |
 | `ADMIN_API_KEY` | **Legacy** shared token for the admin REST API at `/api/admin/*` (all scopes). Prefer scoped keys from `/admin/settings/api-keys`; see `docs/admin-api.md` and `docs/content-agent-runbook.md`. | Only scoped keys are accepted.             |
 | `CONTENT_NOTIFY_EMAIL` | Where content-agent run reports / questions are emailed.                                                                                                        | Falls back to `LEAD_NOTIFY_EMAIL`.         |

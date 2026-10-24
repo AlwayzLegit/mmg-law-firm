@@ -29,6 +29,12 @@ export const CRON_JOBS: readonly CronJob[] = [
       "Weekdays 15:00 UTC: leads waiting for a first call, overdue tasks, due follow-ups, near statute deadlines.",
   },
   {
+    path: "/api/cron/sla-alerts",
+    schedule: "*/15 * * * *",
+    description:
+      "Every 15 minutes: one-time email + SMS for leads past the first-response target.",
+  },
+  {
     path: "/api/cron/publish-scheduled",
     schedule: "0 * * * *",
     description: "Hourly: revalidate blog posts whose published_at came due.",

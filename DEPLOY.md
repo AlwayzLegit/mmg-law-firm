@@ -81,6 +81,7 @@ in order. Paste the contents of each file into a new query and click
 | 35 | `0035_admin_password_set.sql` | Adds `admin_profiles.password_set` (idempotent — a no-op where it was already added by hand). Required before `pnpm bootstrap-owner`. |
 | 36 | `0036_lead_landing_url.sql` | Adds `leads.landing_url` (first-touch landing page; `source_url` stays the page the form was submitted from). |
 | 37 | `0037_lead_intake_checklist.sql` | Adds `leads.intake` jsonb (intake checklist; `government_entity` switches the statute-of-limitations estimate to the 6-month claim). |
+| 38 | `0038_lead_sla_alerted.sql` | Adds `leads.sla_alerted_at` + partial index so `/api/cron/sla-alerts` alerts each lead past the first-response target exactly once. |
 
 If you prefer the CLI:
 
@@ -220,7 +221,7 @@ In **Settings → Environment Variables**, add every variable from
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Yes | From step 5 |
 | `TURNSTILE_SECRET_KEY` | Yes | From step 5 |
 | `REVALIDATE_SECRET` | Yes | Any random string — `openssl rand -hex 32` |
-| `CRON_SECRET` | Yes | Any random string — `openssl rand -hex 32`. Without it the three scheduled jobs (`src/lib/cron/schedules.ts`) return 503. Production only; the scheduler sends it as `Authorization: Bearer`. |
+| `CRON_SECRET` | Yes | Any random string — `openssl rand -hex 32`. Without it the four scheduled jobs (`src/lib/cron/schedules.ts`) return 503. Production only; the scheduler sends it as `Authorization: Bearer`. |
 | `TWILIO_*` | No | Leave blank until 10DLC is registered |
 | `NEXT_PUBLIC_GA_ID` | No | Add when GA4 is set up |
 
