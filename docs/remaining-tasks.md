@@ -33,12 +33,15 @@ whether it is engineering work or something only the firm can do.
       `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`) and 10DLC registration.
       Until then the SMS leg of the new-lead notify and the breach alert
       no-ops; email still goes out.
-- [ ] Cloudflare account (workstream C–F in `docs/cloudflare-migration-plan.md`):
-      Workers Paid, R2 bucket `mmg-law-firm-cache`, Cloudflare Images, a
-      scoped API token → repo secrets `CLOUDFLARE_API_TOKEN` /
-      `CLOUDFLARE_ACCOUNT_ID`. Then run the "Cloudflare deploy (staging)"
-      workflow, smoke the workers.dev URL, add `staging.mmg-lawfirm.com`,
-      cut over, 30-day rollback hold.
+- [ ] Cloudflare (workstream C in `docs/cloudflare-migration-plan.md` has
+      the exact steps). Done 2026-10-24: Workers Paid + R2 Paid confirmed,
+      bucket `mmg-law-firm-cache` created, Turnstile allow-lists staging and
+      workers.dev, `CLOUDFLARE_ACCOUNT_ID` repo secret set. **Owner:** create
+      the scoped API token, fill `.env.local` (token, Resend key, Turnstile
+      keys), run `pnpm github-secrets`. Then: run the "Cloudflare deploy
+      (staging)" workflow, smoke `mmg-law-firm.jetnine-inc.workers.dev`,
+      attach `staging.mmg-lawfirm.com`, parity crawl, cut over, 30-day
+      rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed, Spanish intake (yes/no — decides whether

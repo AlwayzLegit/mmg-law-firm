@@ -16,7 +16,8 @@
     "dedupe-blog": "node scripts/dedupe-blog-duplicates.mjs",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && wrangler dev",
-    "cf:deploy": "opennextjs-cloudflare build && wrangler deploy"
+    "cf:deploy": "opennextjs-cloudflare build && wrangler deploy",
+    "github-secrets": "node scripts/github-secrets-from-env.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

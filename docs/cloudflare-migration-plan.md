@@ -197,11 +197,45 @@ Run the same checks the Oct 13 QA pass used (`docs/qa-handoff-browser.md`):
 
 ### C. Staging on the real domain (half a day)
 
-1. Cloudflare DNS: add `staging.mmg-lawfirm.com` → Worker custom domain,
-   proxied. Keep `X-Robots-Tag: noindex` on it.
-2. Point staging at **production** Supabase + Resend (read paths only for
-   the QA pass; use a throwaway lead to test the form).
-3. Re-run the parity crawl against staging. This is the final go/no-go.
+Account state on 2026-10-24 (account `fb8683be6eab7014c9835bd0834a7999`,
+zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
+
+- [x] Workers Paid and R2 Paid are already active; an Images subscription
+      exists (the `IMAGES` binding needs nothing more).
+- [x] R2 bucket `mmg-law-firm-cache` created.
+- [x] Turnstile widget "Mmg Law Firm Captcha" (`0x4AAAAAADoV9nhefGrITBfM`)
+      allow-lists `staging.mmg-lawfirm.com` and
+      `mmg-law-firm.jetnine-inc.workers.dev` alongside the production hosts.
+- [x] Repo secret `CLOUDFLARE_ACCOUNT_ID` set.
+- [ ] **API token** (owner creates it: dash → My Profile → API Tokens →
+      Create Token → Custom). Name `mmg-law-firm GitHub Actions deploy`.
+      Account `Jetnine.inc@gmail.com's Account`: Workers Scripts **Edit**,
+      Workers R2 Storage **Edit**, Workers KV Storage **Edit**, Queues
+      **Edit**, Workers Observability **Edit**, Workers Tail **Read**,
+      Account Settings **Read**, Images **Edit**. Zone `mmg-lawfirm.com`
+      only: Workers Routes **Edit**, DNS **Edit**, SSL and Certificates
+      **Edit**, Zone **Read**, Zone Settings **Read**. User: User Details
+      **Read**, Memberships **Read**. Put the value in `.env.local` as
+      `CLOUDFLARE_API_TOKEN=…`.
+- [ ] **Repo secrets**: fill `.env.local` with `RESEND_API_KEY`,
+      `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (`0x4AAAAAADoV9nhefGrITBfM`),
+      `TURNSTILE_SECRET_KEY` (Turnstile widget page) and optionally
+      `ADMIN_API_KEY`, `NEXT_PUBLIC_SENTRY_DSN`, then run
+      `pnpm github-secrets`. It pushes every listed key with `gh secret set`
+      and generates `CRON_SECRET` / `REVALIDATE_SECRET` once (appended to
+      `.env.local`). Values never appear in chat or logs.
+- [ ] Run the **Cloudflare deploy (staging)** workflow (Actions tab, default
+      `site_url` is `https://staging.mmg-lawfirm.com`). It builds, deploys
+      to `https://mmg-law-firm.jetnine-inc.workers.dev`, pushes the Worker
+      secrets and smokes six routes.
+- [ ] Custom domain: Workers & Pages → mmg-law-firm → Settings → Domains &
+      Routes → add `staging.mmg-lawfirm.com` (Cloudflare creates the proxied
+      DNS record and cert). Keep it `noindex` (the Worker already sends
+      `X-Robots-Tag: noindex` for any host other than `www.mmg-lawfirm.com`
+      — verify after the first deploy).
+- [ ] Staging points at **production** Supabase + Resend (read paths only
+      for the QA pass; use a throwaway lead to test the form).
+- [ ] Re-run the parity crawl against staging. This is the final go/no-go.
 
 ### D. Cutover (≈1 hour, low traffic window, e.g. Tuesday 6 am PT)
 
@@ -213,8 +247,9 @@ Pre-work the day before:
 - Set all production secrets on the Worker. Copy every key from Vercel's
   list: Supabase (3), Resend (2), Turnstile (2), PostHog (4), Sentry (3),
   GA, Site URL, `REVALIDATE_SECRET`, `ADMIN_API_KEY`. **Also set
-  `CRON_SECRET`** — it is not set on Vercel today, so the three crons are
-  returning `503 cron-not-configured` in production right now.
+  `CRON_SECRET`** — set on Vercel since PR #164; the Worker gets its own
+  value from the repo secret (workstream C); without it the four crons
+  return `503 cron-not-configured`.
 - Freeze admin content edits for the window (tell the team).
 
 Cutover:
