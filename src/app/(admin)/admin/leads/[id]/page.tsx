@@ -17,6 +17,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
 import FollowUpControl from "./follow-up-control";
+import CaseControl from "./case-control";
 import {
   MESSAGE_TEMPLATES,
   type MessageTemplate,
@@ -63,10 +64,13 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
   if (error) throw error;
   if (!lead) notFound();
 
-  const practiceAreaName =
-    (lead.practice_areas as { name: string } | null)?.name ?? null;
-  const countyName = (lead.counties as { name: string } | null)?.name ?? null;
-  const cityName = (lead.cities as { name: string } | null)?.name ?? null;
+  // Option lists for the editable Case card.
+  const [{ data: paOptions }, { data: countyOptions }, { data: cityOptions }] =
+    await Promise.all([
+      supabase.from("practice_areas").select("id, name").order("name"),
+      supabase.from("counties").select("id, name").order("name"),
+      supabase.from("cities").select("id, name, county_id").order("name"),
+    ]);
 
   // Other submissions from the same person — same phone or email. Two
   // parameterized .eq() queries (deduped) avoid any .or() filter injection
@@ -379,10 +383,24 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
               <CardTitle className="text-base">Case</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
-              <Pair label="Practice area" value={practiceAreaName ?? "—"} />
-              <Pair label="County" value={countyName ?? "—"} />
-              <Pair label="City" value={cityName ?? "—"} />
-              <Pair label="Incident date" value={lead.incident_date ?? "—"} />
+              <CaseControl
+                leadId={lead.id as string}
+                current={{
+                  practice_area_id: (lead.practice_area_id as string | null) ?? null,
+                  county_id: (lead.county_id as string | null) ?? null,
+                  city_id: (lead.city_id as string | null) ?? null,
+                  incident_date: (lead.incident_date as string | null) ?? null,
+                }}
+                practiceAreas={(paOptions ?? []) as { id: string; name: string }[]}
+                counties={(countyOptions ?? []) as { id: string; name: string }[]}
+                cities={
+                  (cityOptions ?? []) as {
+                    id: string;
+                    name: string;
+                    county_id: string | null;
+                  }[]
+                }
+              />
               <Pair
                 label="Has attorney"
                 value={lead.has_attorney ? "Yes" : "No"}

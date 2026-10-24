@@ -26,6 +26,8 @@ export type LeadRow = {
   created_at: string;
   follow_up_at?: string | null;
   tags?: string[] | null;
+  /** Derived channel (Google Ads, Google Organic, Referral, Direct …). */
+  channel?: string | null;
 };
 
 /**
@@ -273,6 +275,7 @@ export default function LeadsTable({
               <th className="px-2 py-3 text-left">Phone</th>
               <th className="px-2 py-3 text-left">Email</th>
               <th className="px-2 py-3 text-left">Status</th>
+              <th className="px-2 py-3 text-left">Channel</th>
               <th className="px-2 py-3 text-left">Follow-up</th>
             </tr>
           </thead>
@@ -351,6 +354,9 @@ export default function LeadsTable({
                       </span>
                     ) : null;
                   })()}
+                </td>
+                <td className="text-muted-foreground px-2 py-3 align-top text-xs whitespace-nowrap">
+                  {l.channel ?? "—"}
                 </td>
                 <td className="px-2 py-3 align-top text-xs">
                   {l.follow_up_at ? (

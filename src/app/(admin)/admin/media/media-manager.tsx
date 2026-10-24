@@ -13,13 +13,37 @@ import {
   uploadMedia,
 } from "./actions";
 
-export type MediaItem = { name: string; url: string };
+export type MediaItem = {
+  name: string;
+  url: string;
+  createdAt?: string | null;
+  bytes?: number | null;
+};
+
+/** "1792790137186-2ab90974-quid-pro-quo-harassment-california.webp" → the
+ *  human part; uploads are prefixed with a timestamp and a short hash. */
+export function displayName(name: string): string {
+  return name.replace(/^\d{10,}-[0-9a-f]{6,}-/, "");
+}
+
+function formatBytes(n: number | null | undefined): string {
+  if (!n) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function MediaManager({ items }: { items: MediaItem[] }) {
   const [pending, startTransition] = React.useTransition();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [importUrl, setImportUrl] = React.useState("");
   const [importName, setImportName] = React.useState("");
+  const [query, setQuery] = React.useState("");
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? items.filter((m) => m.name.toLowerCase().includes(q))
+    : items;
 
   function onImport() {
     const url = importUrl.trim();
@@ -170,13 +194,33 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
         </div>
       </div>
 
+      {items.length > 0 ? (
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground sr-only">Search images</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${items.length} images by file name…`}
+            className="border-border bg-background focus:ring-ring h-9 w-full max-w-md rounded-md border px-3 text-sm focus:ring-2 focus:outline-none"
+          />
+          {q ? (
+            <span className="text-muted-foreground text-xs whitespace-nowrap">
+              {visible.length} match{visible.length === 1 ? "" : "es"}
+            </span>
+          ) : null}
+        </label>
+      ) : null}
+
       {items.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           No images yet. Upload one above.
         </p>
+      ) : visible.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No image matches “{query}”.</p>
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((m) => (
+          {visible.map((m) => (
             <li
               key={m.name}
               className="border-border bg-card overflow-hidden rounded-lg border"
@@ -185,10 +229,31 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={m.url}
-                  alt={m.name}
+                  alt={displayName(m.name)}
+                  loading="lazy"
                   className="h-full w-full object-cover"
                 />
               </div>
+              <p
+                className="truncate px-2 pt-2 text-xs font-medium"
+                title={m.name}
+              >
+                {displayName(m.name)}
+              </p>
+              <p className="text-muted-foreground px-2 text-[11px]">
+                {[
+                  m.createdAt
+                    ? new Date(m.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : null,
+                  formatBytes(m.bytes),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
               <div className="flex items-center justify-between gap-1 p-2">
                 <button
                   type="button"

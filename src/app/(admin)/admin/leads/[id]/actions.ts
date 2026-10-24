@@ -683,3 +683,83 @@ export async function deleteLeadNote(
   revalidatePath(`/admin/leads/${parsed.data.leadId}`);
   return { ok: true };
 }
+
+const CaseInput = z.object({
+  leadId: z.string().uuid(),
+  practice_area_id: z.string().uuid().nullable(),
+  county_id: z.string().uuid().nullable(),
+  city_id: z.string().uuid().nullable(),
+  incident_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+});
+
+/**
+ * Set the case facts the public form left blank: practice area, county,
+ * city, incident date. Any admin; the city must belong to the county when
+ * both are set. Audited as `case_updated` with the changed fields.
+ */
+export async function updateLeadCase(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+  const nul = (v: FormDataEntryValue | null) =>
+    typeof v === "string" && v.trim() !== "" ? v.trim() : null;
+
+  const parsed = CaseInput.safeParse({
+    leadId: formData.get("leadId"),
+    practice_area_id: nul(formData.get("practice_area_id")),
+    county_id: nul(formData.get("county_id")),
+    city_id: nul(formData.get("city_id")),
+    incident_date: nul(formData.get("incident_date")),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const d = parsed.data;
+
+  if (d.incident_date && new Date(d.incident_date).getTime() > Date.now()) {
+    return { ok: false, error: "Incident date can't be in the future." };
+  }
+
+  const supabase = await getServerSupabase();
+  if (d.city_id) {
+    const { data: city } = await supabase
+      .from("cities")
+      .select("id, county_id")
+      .eq("id", d.city_id)
+      .maybeSingle();
+    if (!city) return { ok: false, error: "Unknown city." };
+    if (d.county_id && city.county_id !== d.county_id) {
+      return { ok: false, error: "That city isn't in the selected county." };
+    }
+    // A city implies its county.
+    d.county_id = d.county_id ?? (city.county_id as string | null);
+  }
+
+  const { error } = await supabase
+    .from("leads")
+    .update({
+      practice_area_id: d.practice_area_id,
+      county_id: d.county_id,
+      city_id: d.city_id,
+      incident_date: d.incident_date,
+    })
+    .eq("id", d.leadId);
+  if (error) return { ok: false, error: error.message };
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: d.leadId,
+    action: "case_updated",
+    diff: {
+      practice_area_id: d.practice_area_id,
+      county_id: d.county_id,
+      city_id: d.city_id,
+      incident_date: d.incident_date,
+    },
+  });
+
+  revalidatePath(`/admin/leads/${d.leadId}`);
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin/analytics");
+  return { ok: true };
+}

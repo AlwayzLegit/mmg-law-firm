@@ -1,6 +1,8 @@
+import "server-only";
+
 import { after } from "next/server";
 
-import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 
 type AuditEntry = {
   actor_id: string;
@@ -18,11 +20,19 @@ type AuditEntry = {
  * nothing awaits it. This helper actually awaits the insert (inside
  * after() so it doesn't block the user-facing action) and swallows
  * failures so audit gaps never break an admin flow.
+ *
+ * Writes go through the service-role client. `audit_log` has an admin
+ * SELECT policy but no INSERT policy, so inserts with the signed-in user's
+ * client were rejected by RLS and every admin action since launch went
+ * unlogged (only API-key events, which already used the service role,
+ * appeared). Callers pass `actor_id` from requireAdmin(), so the row is
+ * still attributed to a verified admin. Only ever call this from server
+ * actions and route handlers.
  */
 export function logAudit(entry: AuditEntry): void {
   after(async () => {
     try {
-      const supabase = await getServerSupabase();
+      const supabase = getServiceSupabase();
       const { error } = await supabase.from("audit_log").insert(entry);
       if (error) console.warn("[audit_log]", error.message);
     } catch (err) {
@@ -36,7 +46,7 @@ export function logAuditMany(entries: AuditEntry[]): void {
   if (entries.length === 0) return;
   after(async () => {
     try {
-      const supabase = await getServerSupabase();
+      const supabase = getServiceSupabase();
       const { error } = await supabase.from("audit_log").insert(entries);
       if (error) console.warn("[audit_log]", error.message);
     } catch (err) {
