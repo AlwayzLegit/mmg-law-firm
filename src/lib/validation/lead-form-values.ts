@@ -27,6 +27,7 @@ export type LeadFormValues = {
   referrer?: string;
   source_url?: string;
   landing_url?: string;
+  locale?: string;
 };
 
 export const leadFormDefaults: LeadFormValues = {

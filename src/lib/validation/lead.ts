@@ -2,6 +2,7 @@ import { z } from "zod";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 import { PRACTICE_AREA_OPTIONS } from "@/lib/data/practice-area-options";
+import { LOCALES } from "@/lib/i18n/config";
 
 // Zod 4 probes `Function("")` to decide whether it may JIT-compile object
 // parsers. Under our CSP (no `unsafe-eval`) that probe is a logged violation
@@ -88,6 +89,9 @@ export const LeadSchema = z
     referrer: z.string().max(2000).optional(),
     source_url: z.string().max(2000).optional(),
     landing_url: z.string().max(2000).optional(),
+    // Language of the page the form was on. Drives the consent-text snapshot
+    // and an intake tag so the callback is in the right language.
+    locale: z.enum(LOCALES).optional(),
   })
   .superRefine((val, ctx) => {
     // Heuristic spam check: links inside the name field, or 3+ URLs in

@@ -93,6 +93,7 @@ These are not required for the site to run, but each unlocks a feature when set 
 
 | Var             | Enables                                                                                                                                                                | When unset                                  |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `NEXT_PUBLIC_LOCALE_PAGES_LIVE` | Set to `1` after attorney review to publish the Armenian/Russian pages (`/hy`, `/ru`): index, hreflang, sitemap, footer links. | Pages render `noindex` and unlinked (review mode). |
 | `CRON_SECRET`   | The four scheduled jobs in `src/lib/cron/schedules.ts` (weekly digest, daily agenda, 15-minute SLA alerts, publish-scheduled). The scheduler sends it as `Authorization: Bearer <CRON_SECRET>`; `vercel.json` mirrors the registry (a test enforces it). | Endpoints return `503 cron-not-configured`. |
 | `LEAD_NOTIFY_EMAIL` | New-lead notification emails, the weekly digest and the daily agenda. | No lead emails are sent; digest/agenda return `503 no-recipient`. |
 | `ADMIN_API_KEY` | **Legacy** shared token for the admin REST API at `/api/admin/*` (all scopes). Prefer scoped keys from `/admin/settings/api-keys`; see `docs/admin-api.md` and `docs/content-agent-runbook.md`. | Only scoped keys are accepted.             |

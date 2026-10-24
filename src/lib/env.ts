@@ -78,6 +78,9 @@ const ServerEnvSchema = z.object({
   // report violations but never block) — an instant, code-free rollback if a
   // legitimate script ever gets blocked in production.
   CSP_REPORT_ONLY: z.string().default(""),
+  // "1" publishes the localized pages (/hy, /ru): indexable, in the sitemap,
+  // linked from the language switcher. Unset they render noindex for review.
+  NEXT_PUBLIC_LOCALE_PAGES_LIVE: z.string().default(""),
 });
 
 const REQUIRED_IN_PROD: ReadonlyArray<keyof z.infer<typeof ServerEnvSchema>> = [

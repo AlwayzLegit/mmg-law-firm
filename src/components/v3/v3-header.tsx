@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { FIRM } from "@/lib/constants";
+import { LOCALE_NAMES, ROUTED_LOCALES, localePath } from "@/lib/i18n/config";
+import { localePagesLive } from "@/lib/i18n/routes";
 import { getPublicContentFlags } from "@/lib/data/public-content";
 import {
   ABOUT_LINKS,
@@ -201,6 +203,12 @@ export async function V3Header() {
                 <summary>Locations</summary>
                 <List links={[...CITY_LINKS, { label: "All California locations", href: "/locations" }]} />
               </details>
+              {localePagesLive() ? (
+                <details>
+                  <summary>Հայերեն / Русский</summary>
+                  <List links={ROUTED_LOCALES.map((l) => ({ label: LOCALE_NAMES[l].native, href: localePath(l, "/") }))} />
+                </details>
+              ) : null}
             </nav>
             <div className="v3h-m-cta">
               <a href={`tel:${FIRM.phoneTel}`} className="v3h-m-call">

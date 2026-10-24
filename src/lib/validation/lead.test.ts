@@ -204,3 +204,11 @@ describe("LeadSchema — spam heuristics (superRefine)", () => {
     expect(result.success).toBe(true);
   });
 });
+
+describe("LeadSchema — locale", () => {
+  it("accepts a known locale and rejects an unknown one", () => {
+    expect(LeadSchema.safeParse({ ...baseValid, locale: "hy" }).success).toBe(true);
+    expect(LeadSchema.safeParse({ ...baseValid }).success).toBe(true);
+    expect(LeadSchema.safeParse({ ...baseValid, locale: "xx" }).success).toBe(false);
+  });
+});

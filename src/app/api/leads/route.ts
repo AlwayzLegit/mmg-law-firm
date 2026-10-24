@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { FIRM, FIRM_FULL_ADDRESS, TCPA_CONSENT_TEXT } from "@/lib/constants";
+import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/resend";
 import { env } from "@/lib/env";
+import { consentTextFor } from "@/lib/i18n";
+import { LOCALE_LEAD_TAG, LOCALE_NAMES } from "@/lib/i18n/config";
 import { detectSpam, escapeHtml, parseClientIp } from "@/lib/leads/intake";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sendSms } from "@/lib/sms/twilio";
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
   });
 
   const consentAt = new Date().toISOString();
+  const locale = parsed.data.locale;
+  const localeTag = locale ? LOCALE_LEAD_TAG[locale] : null;
 
   // Resolve foreign keys via slug → uuid lookup. Each is best-effort.
   let practiceAreaId: string | null = null;
@@ -130,7 +134,8 @@ export async function POST(request: NextRequest) {
         description: parsed.data.description ?? null,
         has_attorney: parsed.data.has_attorney ?? false,
         consent_contact: true,
-        consent_text: TCPA_CONSENT_TEXT,
+        consent_text: consentTextFor(locale),
+        tags: localeTag ? [localeTag] : [],
         consent_ip: ip,
         consent_ts: consentAt,
         source_url: parsed.data.source_url ?? null,
@@ -183,6 +188,7 @@ export async function POST(request: NextRequest) {
           <tr><td style="padding:4px 12px 4px 0; color:#666;">Name</td><td>${escapeHtml(parsed.data.full_name)}</td></tr>
           <tr><td style="padding:4px 12px 4px 0; color:#666;">Phone</td><td><a href="tel:${escapeHtml(parsed.data.phone)}">${escapeHtml(parsed.data.phone)}</a></td></tr>
           ${parsed.data.email ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Email</td><td><a href="mailto:${escapeHtml(parsed.data.email)}">${escapeHtml(parsed.data.email)}</a></td></tr>` : ""}
+          ${locale && localeTag ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Language</td><td>${escapeHtml(LOCALE_NAMES[locale].label)}</td></tr>` : ""}
           ${parsed.data.practice_area ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Matter</td><td>${escapeHtml(parsed.data.practice_area)}</td></tr>` : ""}
           ${parsed.data.city_slug ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">City</td><td>${escapeHtml(parsed.data.city_slug)}</td></tr>` : ""}
           ${parsed.data.incident_date ? `<tr><td style="padding:4px 12px 4px 0; color:#666;">Incident</td><td>${escapeHtml(parsed.data.incident_date)}</td></tr>` : ""}
