@@ -228,7 +228,7 @@ export function readAttributionInBrowser(): Attribution {
 export type Channel =
   | "Google Ads"
   | "Google Organic"
-  | "Bing Organic"
+  | "Other Search"
   | "Paid Social"
   | "Social"
   | "Paid Search"
@@ -238,9 +238,11 @@ export type Channel =
 
 const SEARCH_HOSTS = [
   ["google.", "Google Organic"],
-  ["bing.com", "Bing Organic"],
-  ["yahoo.", "Bing Organic"],
-  ["duckduckgo.com", "Bing Organic"],
+  ["bing.com", "Other Search"],
+  ["yahoo.", "Other Search"],
+  ["duckduckgo.com", "Other Search"],
+  ["ecosia.org", "Other Search"],
+  ["brave.com", "Other Search"],
 ] as const;
 const SOCIAL_HOSTS = [
   "facebook.com",
@@ -279,8 +281,8 @@ export function channelOf(lead: {
   if (medium === "email" || source === "email" || source === "newsletter") {
     return "Email";
   }
+  if (/^(bing|yahoo|duckduckgo|ecosia|brave)$/.test(source)) return "Other Search";
   if (medium === "organic" || source === "google") return "Google Organic";
-  if (source === "bing") return "Bing Organic";
   if (medium === "referral" || (source && !medium)) return "Referral";
 
   let host = "";
