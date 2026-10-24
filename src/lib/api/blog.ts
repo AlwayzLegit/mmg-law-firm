@@ -77,6 +77,9 @@ export const CreateBlogInput = z.object({
   review_status: z.enum(REVIEW_STATUSES).optional(),
   is_published: z.boolean().optional(),
   published_at: PublishedAt.nullish(),
+  /** Owner override: create even though a post already covers this topic
+   *  (the slug then gets a -N suffix). The content agent must never set it. */
+  allow_duplicate: z.boolean().optional(),
 });
 export type CreateBlogData = z.infer<typeof CreateBlogInput>;
 

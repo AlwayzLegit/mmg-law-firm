@@ -17,12 +17,14 @@ import {
   uniqueSlug,
   type CreateBlogData,
 } from "@/lib/api/blog";
+import { findCoveringPost } from "@/lib/api/blog-dedupe";
 import { publishPolicyDenial } from "@/lib/api/blog-policy";
 import { withIdempotency } from "@/lib/api/idempotency";
 import {
   assertRunRunning,
   assertTopicClaimable,
   linkPost,
+  skipTopicAsCovered,
 } from "@/lib/content-agent/blog-linkage";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
@@ -108,7 +110,30 @@ async function createPost(d: CreateBlogData, principal: ApiPrincipal): Promise<R
     if (!check.ok) return json(check.status, { error: check.error });
   }
 
-  const slug = await uniqueSlug(supabase, d.slug ?? slugify(d.title));
+  // Refuse a second post on a topic the site already covers. The agent
+  // used to get a quiet "-2", "-3" slug here; now it gets a 409 it can
+  // report, and its topic leaves the queue so tomorrow's run won't retry.
+  const base = d.slug ?? slugify(d.title);
+  if (!d.allow_duplicate) {
+    const covering = await findCoveringPost(supabase, { slug: base, title: d.title });
+    if (covering) {
+      if (d.topic_id) {
+        await skipTopicAsCovered(supabase, d.topic_id, covering);
+      }
+      return json(409, {
+        error: "duplicate_topic",
+        message: `A post already covers this topic: /blog/${covering.slug} ("${covering.title}"${covering.is_published ? "" : ", draft"}). Pick a different angle or update the existing post. Pass allow_duplicate:true to override (owner tooling only).`,
+        existing: {
+          id: covering.id,
+          slug: covering.slug,
+          title: covering.title,
+          is_published: covering.is_published,
+          public_url: `/blog/${covering.slug}`,
+        },
+      });
+    }
+  }
+  const slug = d.allow_duplicate ? await uniqueSlug(supabase, base) : base;
   const publishedAt = d.published_at ?? (wantsPublish ? new Date().toISOString() : null);
   const reviewStatus = wantsPublish ? "published" : (d.review_status ?? "needs_review");
 

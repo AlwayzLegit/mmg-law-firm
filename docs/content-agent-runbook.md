@@ -20,6 +20,21 @@ prompt to run it with. Endpoint details live in [`admin-api.md`](./admin-api.md)
 5. Optional: set `CONTENT_NOTIFY_EMAIL` in Vercel (falls back to `LEAD_NOTIFY_EMAIL`)
    to get an email when a run finishes with questions or fails.
 
+## Duplicates
+
+`POST /api/admin/blog` refuses a post whose slug family or title matches an
+existing article (`409 duplicate_topic`, with the existing post in the body)
+and auto-skips the claimed topic. Topics whose keyword is already covered are
+skipped at `POST /api/admin/agent/topics` too (`reason: already covered by …`).
+Owner tooling can pass `allow_duplicate: true` to force a second post.
+
+To clean up duplicates that were created before this guard existed:
+
+```bash
+pnpm dedupe-blog            # dry run: lists /blog/<x>-N → /blog/<x>
+pnpm dedupe-blog --apply    # unpublish them and add 301 redirects
+```
+
 ## Daily loop (what the agent does)
 
 ```
@@ -27,6 +42,8 @@ POST /api/admin/agent/runs           → run + brief (claims 1 topic, delivers y
   if brief.policy.pause_drafting      → PATCH runs/:id {status:"succeeded", summary_md:"paused: …"} and stop
   for each brief.topics.claimed:
     skip if keyword already in brief.history.keyword_coverage
+    (the API enforces this too: POST /api/admin/blog returns 409 duplicate_topic
+     with the existing post, and the topic is auto-skipped — report it and stop)
     write the post per instructions + policy
     (optional) POST /api/admin/images {url|data}        → hero_image_url
     POST /api/admin/blog  (+ Idempotency-Key run:topic)  → draft, review_status needs_review
@@ -58,6 +75,8 @@ returns its topic to the queue with your note.
 > **Step 6 — Report.** `PATCH /api/admin/agent/runs/{run.id}` with `{"status":"succeeded","summary_md":"<short markdown: what you wrote, word count, keyword, which internal links, what to check>","report":{"posts":[{"post_id":"…","slug":"…","title":"…","primary_keyword":"…","word_count":N,"internal_links":["…"],"published":false,"topic_id":"…"}],"checks":{"banned_phrases":"pass","links_to_target_url":true,"meta_len":N}},"metrics":{"duration_s":N,"api_calls":N},"topics":[{"id":"<topic id>","status":"drafted","post_id":"<post id>"}],"questions":[…]}`. Put anything you were unsure about — a fact you could not verify, a legal point needing confirmation, a topic you think should be re-angled — into `questions` (kind `fact_check`, `decision`, `approval` or `blocker`; ≤10). Do not ask what `open_questions_count` says is already pending.
 >
 > **Failure.** If any step fails and you cannot recover, `PATCH /api/admin/agent/runs/{run.id}` with `{"status":"failed","error":"<what happened>","summary_md":"<what you did get done>"}`. Never leave the run without a final PATCH.
+>
+> **Duplicates.** If `POST /api/admin/blog` answers `409` with `error: "duplicate_topic"`, the site already has that article (`existing.public_url`). Do not retry with a new slug or title. Finish the run with `topics:[{"id":"<topic id>","status":"skipped","note":"already covered by <existing.public_url>"}]` and a one-line summary.
 >
 > **Hard rules.** No guarantees or outcome promises. No invented results, testimonials, statistics or credentials. No firm contact details typed from memory. Draft only — an attorney publishes. One post per run unless `policy.posts_per_run` and `topics.claimed` say otherwise.
 
