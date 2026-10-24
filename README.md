@@ -77,6 +77,7 @@ Live in `supabase/migrations/`. Apply in numbered order:
 | `0009` – `0034`                  | Incremental features; see `DEPLOY.md` §2b for the list  |
 | `0035_admin_password_set.sql`    | `admin_profiles.password_set` (onboarding flag)          |
 | `0036_lead_landing_url.sql`      | `leads.landing_url` (first-touch attribution)            |
+| `0037_lead_intake_checklist.sql` | `leads.intake` (intake checklist, deadline rule)         |
 
 ## Deployment
 
