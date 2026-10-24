@@ -64,8 +64,10 @@ jobs:
       - name: Start wrangler dev
         run: |
           nohup pnpm exec wrangler dev --port 8787 --test-scheduled \
-            --var NEXT_PUBLIC_SITE_URL:http://localhost:8787 \
+            --var NEXT_PUBLIC_SITE_URL:https://www.mmg-lawfirm.com \
             --var CRON_SECRET:spike-secret \
+            --var "NEXT_PUBLIC_SUPABASE_URL:${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
+            --var "NEXT_PUBLIC_SUPABASE_ANON_KEY:${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
             > wrangler.log 2>&1 &
           for i in $(seq 1 90); do
             if curl -s -o /dev/null http://localhost:8787/robots.txt; then echo "up after ${i}s"; break; fi
@@ -88,11 +90,15 @@ jobs:
           check /practice-areas 200
           check /practice-areas/car-accidents 200
           check /locations/los-angeles-county/glendale 200
-          # /blog lists posts from Supabase; without the secrets it has nothing to
-          # list and returns 404 by design. Either is fine; a 500 is not.
-          code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8787/blog)
-          printf '%-55s %s\n' /blog "$code" | tee -a smoke.txt
-          [ "$code" = 200 ] || [ "$code" = 404 ] || echo FAIL >> smoke.txt
+          check /blog 200
+          check /blog/dog-bite-lawyer-california 200
+          # Admin-managed redirect: proxy.ts reads the redirects table live.
+          check /blog/dog-bite-lawyer-california-5 308 /blog/dog-bite-lawyer-california
+          check /sitemaps/car-accidents.xml 200
+          check /practice-areas/car-accidents/opengraph-image 200
+          # Image optimizer route. Without an Images binding OpenNext may pass the
+          # original through; what matters here is 200 + an image content type.
+          check "/_next/image?url=%2Fv3%2Fportraits%2Fattorney-standing-transparent-portrait.webp&w=640&q=75" 200
           check /rear-end-car-accident-lawyer 200
           check /legal/privacy 200
           check /sitemap.xml 200
@@ -111,6 +117,40 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           ! grep -q '^FAIL$' smoke.txt
 
+      - name: Content types
+        run: |
+          for u in /practice-areas/car-accidents/opengraph-image "/_next/image?url=%2Fv3%2Fportraits%2Fattorney-standing-transparent-portrait.webp&w=640&q=75"; do
+            ct=$(curl -s -o /dev/null -w "%{content_type} %{size_download}B" "http://localhost:8787$u")
+            printf '%-70s %s\n' "$u" "$ct" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$ct" | grep -q '^image/' || { echo "  not an image"; exit 1; }
+          done
+
+      - name: Head parity vs production
+        run: |
+          set -e
+          fields() { # file
+            echo "title:        $(grep -o '<title>[^<]*</title>' "$1" | head -1)"
+            echo "canonical:    $(grep -o '<link rel="canonical" href="[^"]*"' "$1" | head -1)"
+            echo "description:  $(grep -o '<meta name="description" content="[^"]*"' "$1" | head -1)"
+            echo "og:image:     $(grep -o '<meta property="og:image" content="[^"]*"' "$1" | head -1 | sed -E 's#\?[^"]*##')"
+            echo "json-ld:      $(grep -o '<script type="application/ld+json"' "$1" | wc -l) blocks"
+            echo "disclaimers:  $(grep -o 'Attorney Advertising' "$1" | wc -l) mentions"
+          }
+          fail=0
+          for path in / /contact /practice-areas/car-accidents /locations/los-angeles-county/glendale /rear-end-car-accident-lawyer /blog/dog-bite-lawyer-california /legal/privacy; do
+            curl -s --max-time 60 -A "mmg-parity" "https://www.mmg-lawfirm.com$path" > /tmp/prod.html
+            curl -s --max-time 60 "http://localhost:8787$path" > /tmp/worker.html
+            fields /tmp/prod.html > /tmp/prod.txt
+            fields /tmp/worker.html > /tmp/worker.txt
+            if diff -q /tmp/prod.txt /tmp/worker.txt > /dev/null; then
+              echo "✓ $path"
+            else
+              echo "✗ $path"; diff /tmp/prod.txt /tmp/worker.txt || true; fail=1
+            fi
+          done | tee parity.txt
+          { echo "## Head parity (worker vs production)"; echo '```'; cat parity.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $fail
+
       - name: Headers and HTML sanity
         run: |
           curl -s -D - -o /tmp/home.html http://localhost:8787/ | grep -iE '^(content-security-policy|strict-transport|x-frame|cache-control)' | tee -a "$GITHUB_STEP_SUMMARY"
@@ -128,5 +168,6 @@ jobs:
           name: cloudflare-spike
           path: |
             smoke.txt
+            parity.txt
             wrangler.log
           if-no-files-found: ignore
