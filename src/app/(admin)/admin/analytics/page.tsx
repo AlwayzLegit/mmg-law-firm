@@ -220,9 +220,13 @@ export default async function AdminAnalyticsPage({
       <p className="text-muted-foreground mt-1 text-sm">
         Leads vs. signed clients per channel over the last {range} days. Sorted
         by signed — a loud source that never signs ranks below a quiet one that
-        does.
+        does. Days = median from lead to signed, from the audit log.
       </p>
       <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <ConversionCard
+          title={`By channel (${range}d)`}
+          rows={conversion.byChannel}
+        />
         <ConversionCard
           title={`By source (${range}d)`}
           rows={conversion.bySource}
@@ -539,7 +543,7 @@ function ConversionCard({
           <ul className="divide-border divide-y">
             <li className="text-muted-foreground flex items-center justify-between gap-3 py-1 text-[11px] font-medium tracking-wide uppercase">
               <span>Channel</span>
-              <span className="flex-none">Leads · Signed · Rate</span>
+              <span className="flex-none">Leads · Signed · Rate · Days</span>
             </li>
             {rows.map((r) => (
               <li
@@ -568,6 +572,13 @@ function ConversionCard({
                     }
                   >
                     {r.signedPct}%
+                  </span>
+                  <span className="text-muted-foreground"> · </span>
+                  <span
+                    className={r.medianDaysToSign === null ? "text-muted-foreground" : "font-medium"}
+                    title="Median days from lead to signed"
+                  >
+                    {r.medianDaysToSign === null ? "—" : `${r.medianDaysToSign}d`}
                   </span>
                 </span>
               </li>

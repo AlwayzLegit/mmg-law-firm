@@ -359,21 +359,40 @@ export type ConversionRow = {
   signed: number;
   /** signed / leads, whole percent. */
   signedPct: number;
+  /** Median days from lead creation to the audited move to "signed"; null
+   *  when no signed lead in the row has an audit entry. */
+  medianDaysToSign: number | null;
   href?: string;
 };
 
 export type ConversionBreakdowns = {
+  /** Derived channel (Google Ads, Google Organic, Referral, Direct…). */
+  byChannel: ConversionRow[];
   bySource: ConversionRow[];
   byPracticeArea: ConversionRow[];
   byCounty: ConversionRow[];
 };
 
 type ConvRow = {
+  id: string;
   status: LeadStatus;
+  created_at: string;
   utm_source: string | null;
+  utm_medium: string | null;
+  gclid: string | null;
+  referrer: string | null;
   practice_areas: { name: string; slug: string } | null;
   counties: { name: string; slug: string } | null;
 };
+
+/** Median of day counts, rounded to one decimal; null when empty. */
+export function medianDays(days: number[]): number | null {
+  if (days.length === 0) return null;
+  const s = [...days].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  const m = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  return Math.round(m * 10) / 10;
+}
 
 /** Tally leads + signed per dimension, ranked by signed (ROI), then volume. */
 function convRank(
@@ -381,27 +400,37 @@ function convRank(
   pick: (r: ConvRow) => { name: string; slug: string } | { name: string } | null | undefined,
   hrefBase: string | null,
   limit: number,
+  signedAt: Map<string, number> = new Map(),
 ): ConversionRow[] {
   const tally = new Map<
     string,
-    { leads: number; signed: number; slug: string | null }
+    { leads: number; signed: number; slug: string | null; days: number[] }
   >();
   for (const row of rows) {
     if (row.status === "spam") continue; // spam isn't a real lead
     const v = pick(row);
     if (!v?.name) continue;
     const slug = "slug" in v ? v.slug : null;
-    const cur = tally.get(v.name) ?? { leads: 0, signed: 0, slug };
+    const cur = tally.get(v.name) ?? { leads: 0, signed: 0, slug, days: [] };
     cur.leads += 1;
-    if (row.status === "signed") cur.signed += 1;
+    if (row.status === "signed") {
+      cur.signed += 1;
+      const at = signedAt.get(row.id);
+      if (at !== undefined) {
+        cur.days.push(
+          Math.max(0, (at - new Date(row.created_at).getTime()) / DAY_MS),
+        );
+      }
+    }
     tally.set(v.name, cur);
   }
   return [...tally.entries()]
-    .map(([label, { leads, signed, slug }]) => ({
+    .map(([label, { leads, signed, slug, days }]) => ({
       label,
       leads,
       signed,
       signedPct: leads > 0 ? Math.round((signed / leads) * 100) : 0,
+      medianDaysToSign: medianDays(days),
       href:
         hrefBase && slug
           ? `${hrefBase}${encodeURIComponent(slug)}`
@@ -422,28 +451,72 @@ export async function getConversionBreakdowns(
   windowDays = 90,
 ): Promise<ConversionBreakdowns> {
   const since = new Date(Date.now() - windowDays * DAY_MS).toISOString();
-  const { data } = await supabase
-    .from("leads")
-    .select(
-      "status, utm_source, practice_areas(name, slug), counties(name, slug)",
-    )
-    .gte("created_at", since);
+  const [{ data }, { data: auditRows }] = await Promise.all([
+    supabase
+      .from("leads")
+      .select(
+        "id, status, created_at, utm_source, utm_medium, gclid, referrer, practice_areas(name, slug), counties(name, slug)",
+      )
+      .gte("created_at", since),
+    // When each lead was moved to "signed" (earliest audited change wins).
+    supabase
+      .from("audit_log")
+      .select("entity_id, created_at, diff")
+      .eq("entity", "leads")
+      .in("action", ["status_change", "bulk_status_change"])
+      .gte("created_at", since)
+      .order("created_at", { ascending: true })
+      .limit(5000),
+  ]);
   const rows = (data ?? []) as unknown as ConvRow[];
+  const signedAt = new Map<string, number>();
+  for (const a of (auditRows ?? []) as Array<{
+    entity_id: string | null;
+    created_at: string;
+    diff: { to?: string } | null;
+  }>) {
+    if (!a.entity_id || a.diff?.to !== "signed") continue;
+    if (!signedAt.has(a.entity_id)) {
+      signedAt.set(a.entity_id, new Date(a.created_at).getTime());
+    }
+  }
 
   return {
+    byChannel: convRank(
+      rows,
+      (r) => ({
+        name: channelOf({
+          utm_source: r.utm_source,
+          utm_medium: r.utm_medium,
+          gclid: r.gclid,
+          referrer: r.referrer,
+        }),
+      }),
+      null,
+      8,
+      signedAt,
+    ),
     bySource: convRank(
       rows,
       (r) => (r.utm_source ? { name: r.utm_source } : null),
       "/admin/leads?source=",
       8,
+      signedAt,
     ),
     byPracticeArea: convRank(
       rows,
       (r) => r.practice_areas,
       "/admin/leads?pa=",
       8,
+      signedAt,
     ),
-    byCounty: convRank(rows, (r) => r.counties, "/admin/leads?county=", 10),
+    byCounty: convRank(
+      rows,
+      (r) => r.counties,
+      "/admin/leads?county=",
+      10,
+      signedAt,
+    ),
   };
 }
 
