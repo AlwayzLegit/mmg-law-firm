@@ -72,6 +72,13 @@ export const SITE = {
     "California personal-injury attorney based in Glendale. Free consultation. No recovery, no attorney fees or case expenses.",
   /** Generated at build time by src/app/opengraph-image.tsx. */
   defaultOgImage: "/opengraph-image",
+  /**
+   * The one origin search engines may index. Staging, workers.dev and
+   * preview hosts get `X-Robots-Tag: noindex` from the proxy by comparing
+   * against this, not against NEXT_PUBLIC_SITE_URL (which staging sets to
+   * itself). See src/lib/seo/host-guard.ts.
+   */
+  productionUrl: "https://www.mmg-lawfirm.com",
 } as const;
 
 export type FirmConfig = typeof FIRM;

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+import { SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
 import { isNonCanonicalHost } from "@/lib/seo/host-guard";
@@ -129,7 +130,7 @@ export async function proxy(request: NextRequest) {
       res.headers.set("referrer-policy", "no-referrer");
     }
     // Staging, workers.dev and preview hosts must not be indexed.
-    if (isNonCanonicalHost(requestHost, env.NEXT_PUBLIC_SITE_URL)) {
+    if (isNonCanonicalHost(requestHost, SITE.productionUrl)) {
       res.headers.set("x-robots-tag", "noindex, nofollow");
     }
     return res;
