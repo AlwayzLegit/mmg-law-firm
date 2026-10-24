@@ -183,6 +183,72 @@
   --sidebar-ring: #5d77f0;
 }
 
+/* Admin theme (v3 brand). Ivory surfaces and a charcoal sidebar with gold
+   accents so the admin reads as the same product as the public site, while
+   tables and forms keep neutral, high-contrast surfaces. Headings use the
+   public serif; body copy stays Inter for dense data screens. Applied on
+   <body> by the (admin) root layout. */
+.theme-admin {
+  --font-fraunces: Georgia, var(--font-libre), "Times New Roman", serif;
+  --radius: 0.25rem;
+
+  --background: #f8f4ed;
+  --foreground: #131a20;
+  --card: #fffdf8;
+  --card-foreground: #131a20;
+  --popover: #fffdf8;
+  --popover-foreground: #131a20;
+
+  /* Bronze primary: 5.0:1 against the light foreground. */
+  --primary: #86662f;
+  --primary-foreground: #fff8e8;
+  --secondary: #f4ecdb;
+  --secondary-foreground: #131a20;
+  --muted: #f2eadb;
+  --muted-foreground: #4a5157;
+  --accent: #f1e6cf;
+  --accent-foreground: #131a20;
+
+  --destructive: #a12a1d;
+  --success: #2f7a3e;
+  --warning: #9a5b10;
+
+  --border: #e3d6bb;
+  --input: #d9cbae;
+  --ring: #987022;
+
+  --chart-1: #86662f;
+  --chart-2: #d5b174;
+  --chart-3: #12171b;
+  --chart-4: #2f7a3e;
+  --chart-5: #8a8f94;
+
+  --sidebar: #12171b;
+  --sidebar-foreground: #f8f4ed;
+  --sidebar-primary: #e8c384;
+  --sidebar-primary-foreground: #12171b;
+  --sidebar-accent: #1b2228;
+  --sidebar-accent-foreground: #e8c384;
+  --sidebar-border: rgba(248, 244, 237, 0.1);
+  --sidebar-ring: #e8c384;
+
+  --color-brand-50: #fbf8f1;
+  --color-brand-100: #f4ecdb;
+  --color-brand-200: #e9d9b8;
+  --color-brand-300: #d5b174;
+  --color-brand-400: #b98b35;
+  --color-brand-500: #86662f;
+  --color-brand-600: #6f4512;
+  --color-brand-700: #1b2228;
+  --color-brand-800: #12202a;
+  --color-brand-900: #12171b;
+}
+
+.theme-admin ::selection {
+  background: #f1e6cf;
+  color: #12171b;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

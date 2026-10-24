@@ -97,13 +97,23 @@ export const viewport: Viewport = {
 export default function RootDocument({
   children,
   publicAnalytics = false,
-}: Readonly<{ children: React.ReactNode; publicAnalytics?: boolean }>) {
+  bodyClassName,
+}: Readonly<{
+  children: React.ReactNode;
+  publicAnalytics?: boolean;
+  /** Theme class for this root (e.g. "theme-admin"). */
+  bodyClassName?: string;
+}>) {
   return (
     <html
       lang="en"
       className={`${inter.variable} ${fraunces.variable} ${libre.variable} ${lato.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      <body
+        className={["flex min-h-full flex-col", bodyClassName]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
