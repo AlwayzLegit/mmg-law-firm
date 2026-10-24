@@ -11,9 +11,17 @@ import doShardedTagCache from "@opennextjs/cloudflare/overrides/tag-cache/do-sha
  * - A sharded Durable Object tag cache backs revalidatePath/revalidateTag,
  *   which the admin's content actions call ~200 times.
  */
-export default defineCloudflareConfig({
-  incrementalCache: r2IncrementalCache,
-  queue: doQueue,
-  tagCache: doShardedTagCache({ baseShardSize: 12 }),
-  enableCacheInterception: true,
-});
+export default {
+  ...defineCloudflareConfig({
+    incrementalCache: r2IncrementalCache,
+    queue: doQueue,
+    tagCache: doShardedTagCache({ baseShardSize: 12 }),
+    enableCacheInterception: true,
+  }),
+  // Turbopack output left the Sentry instrumentation hook pointing at a server
+  // chunk OpenNext did not carry into the bundle ("Not found
+  // server/chunks/[root-of-the-server]__….js"), so every request 500'd under
+  // workerd. The Worker build uses webpack, which OpenNext traces reliably;
+  // the Vercel build keeps Turbopack.
+  buildCommand: "pnpm exec next build --webpack",
+};
