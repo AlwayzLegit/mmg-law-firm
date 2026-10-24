@@ -49,6 +49,8 @@ jobs:
 
       - name: Bundle report
         run: |
+          pnpm exec wrangler deploy --dry-run --outdir dist-dry > /dev/null 2>&1 || true
+          [ -f dist-dry/worker.js ] && echo "deployable worker (wrangler bundle): $(du -h dist-dry/worker.js | cut -f1), gzipped $(gzip -c dist-dry/worker.js | wc -c | awk '{printf "%.2f", $1/1048576}') MB (limit 3 MB free / 10 MB paid)"
           echo "worker.js $(du -h .open-next/worker.js | cut -f1), gzipped $(gzip -c .open-next/worker.js | wc -c | awk '{printf "%.2f", $1/1048576}') MB; assets $(du -sh .open-next/assets | cut -f1); server-functions $(du -sh .open-next/server-functions | cut -f1)"
           echo "## Worker bundle" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"

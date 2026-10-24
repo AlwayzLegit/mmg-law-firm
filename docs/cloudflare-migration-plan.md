@@ -115,6 +115,8 @@ Workstream A was run. Facts, not expectations:
 | Do Cron Triggers work? | **Yes.** `wrangler dev --test-scheduled` + `/__scheduled?cron=0+*+*+*+*` invoked `cloudflare/worker.ts`'s `scheduled()`, which mapped the expression to `/api/cron/publish-scheduled` and called it in-process with the bearer (200). |
 | Sentry? | The server hook loads under the webpack bundle (no errors in the Worker log). Server-side event delivery still needs `@sentry/cloudflare` wiring and a real DSN test in B. |
 | Images, ISR invalidation, OG images | Not yet exercised: no Supabase data in CI, no Images binding configured. Covered in B. |
+| Bundle size vs. the Workers limit | Not measured yet: `.open-next/worker.js` is a 4 KB entry that imports `server-functions/` (131 MB unbundled); the deployable size only exists after wrangler bundles it. Next run adds `wrangler deploy --dry-run --outdir dist` and reports the gzipped size against the 3 MB free / 10 MB paid limit. |
+| Security headers | The per-request CSP, HSTS and referrer policy from `proxy.ts` are emitted under workerd exactly as on Vercel. |
 
 What the branch adds: `open-next.config.ts`, `wrangler.jsonc` (bindings, cron
 triggers mirrored from `src/lib/cron/schedules.ts` with a test), `cloudflare/worker.ts`
