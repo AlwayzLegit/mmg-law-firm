@@ -223,7 +223,11 @@ export default async function TodayPage() {
                   ? "—"
                   : formatMinutes(responseStats.medianMinutes)
               }
-              hint={`${responseStats.sample} leads`}
+              hint={
+                responseStats.sample === 0
+                  ? "no responses recorded yet"
+                  : `${responseStats.sample} leads`
+              }
             />
             <Stat
               label="Over 1 hour now"

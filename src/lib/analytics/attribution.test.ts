@@ -113,6 +113,8 @@ describe("channelOf", () => {
     expect(channelOf({ utm_source: "facebook", utm_medium: "paid-social" })).toBe("Paid Social");
     expect(channelOf({ utm_medium: "email" })).toBe("Email");
     expect(channelOf({ referrer: "https://www.google.com/" })).toBe("Google Organic");
+    expect(channelOf({ referrer: "https://duckduckgo.com/" })).toBe("Other Search");
+    expect(channelOf({ utm_source: "bing", utm_medium: "organic" })).toBe("Other Search");
     expect(channelOf({ referrer: "https://m.facebook.com/" })).toBe("Social");
     expect(channelOf({ referrer: "https://www.yelp.com/biz/x" })).toBe("Social");
     expect(channelOf({ referrer: "https://avvo.com/x" })).toBe("Referral");
