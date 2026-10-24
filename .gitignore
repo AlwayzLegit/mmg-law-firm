@@ -52,3 +52,7 @@ next-env.d.ts
 # v3 design converter: deps + run artifacts
 /tools/v3-design/node_modules/
 /tools/v3-design/out/
+
+# Cloudflare / OpenNext build output
+/.open-next/
+/.wrangler/

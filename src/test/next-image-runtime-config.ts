@@ -7,8 +7,19 @@ import { imageConfigDefault } from "next/dist/shared/lib/image-config";
 import defaultLoader from "next/dist/shared/lib/image-loader";
 
 export function getImageProps(input: ImageProps) {
+  // Next 16.4 prepares the config with `allSizes` (device + image sizes,
+  // sorted) and `output`; mirror what next/image's build step produces.
+  const allSizes = [
+    ...imageConfigDefault.deviceSizes,
+    ...imageConfigDefault.imageSizes,
+  ].sort((a, b) => a - b);
   return getImgProps(input, {
     defaultLoader,
-    imgConf: { ...imageConfigDefault, qualities: [65, 75] },
+    imgConf: {
+      ...imageConfigDefault,
+      qualities: [65, 75],
+      allSizes,
+      output: undefined,
+    },
   });
 }
