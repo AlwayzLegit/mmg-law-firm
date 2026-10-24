@@ -88,8 +88,9 @@ jobs:
           check /locations/los-angeles-county/glendale 200
           # /blog lists posts from Supabase; without the secrets it has nothing to
           # list and returns 404 by design. Either is fine; a 500 is not.
-          code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8787/blog); printf '%-55s %s
-' /blog "$code" | tee -a smoke.txt; [ "$code" = 200 ] || [ "$code" = 404 ] || echo FAIL >> smoke.txt
+          code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8787/blog)
+          printf '%-55s %s\n' /blog "$code" | tee -a smoke.txt
+          [ "$code" = 200 ] || [ "$code" = 404 ] || echo FAIL >> smoke.txt
           check /rear-end-car-accident-lawyer 200
           check /legal/privacy 200
           check /sitemap.xml 200
