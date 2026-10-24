@@ -151,3 +151,31 @@ describe("formatMinutes", () => {
     expect(formatMinutes(2880)).toBe("2.0d");
   });
 });
+
+describe("getConversionBreakdowns", () => {
+  it("ranks channels by signed and reports median days to sign from the audit log", async () => {
+    const leads = [
+      { id: "a", status: "signed", created_at: iso(-30 * DAY_MS), utm_source: "google", utm_medium: "cpc", gclid: null, referrer: null, practice_areas: null, counties: null },
+      { id: "b", status: "signed", created_at: iso(-20 * DAY_MS), utm_source: "google", utm_medium: "cpc", gclid: null, referrer: null, practice_areas: null, counties: null },
+      { id: "c", status: "contacted", created_at: iso(-5 * DAY_MS), utm_source: "google", utm_medium: "cpc", gclid: null, referrer: null, practice_areas: null, counties: null },
+      { id: "d", status: "signed", created_at: iso(-10 * DAY_MS), utm_source: null, utm_medium: null, gclid: null, referrer: null, practice_areas: null, counties: null },
+      { id: "e", status: "spam", created_at: iso(-1 * DAY_MS), utm_source: null, utm_medium: null, gclid: null, referrer: null, practice_areas: null, counties: null },
+    ];
+    const audit_log = [
+      { entity_id: "a", created_at: iso(-26 * DAY_MS), diff: { to: "signed" } }, // 4 days
+      { entity_id: "a", created_at: iso(-25 * DAY_MS), diff: { to: "signed" } }, // later duplicate ignored
+      { entity_id: "b", created_at: iso(-10 * DAY_MS), diff: { to: "signed" } }, // 10 days
+      { entity_id: "c", created_at: iso(-4 * DAY_MS), diff: { to: "contacted" } },
+      // "d" signed with no audit entry → excluded from the median, still counted as signed
+    ];
+    const { getConversionBreakdowns, medianDays } = await import("./lead-analytics");
+    const r = await getConversionBreakdowns(fakeSupabase({ leads, audit_log }), 90);
+    expect(r.byChannel.map((x) => [x.label, x.leads, x.signed, x.signedPct, x.medianDaysToSign])).toEqual([
+      ["Google Ads", 3, 2, 67, 7],
+      ["Direct", 1, 1, 100, null],
+    ]);
+    expect(medianDays([])).toBeNull();
+    expect(medianDays([1, 2, 10])).toBe(2);
+    expect(medianDays([1.26, 3])).toBe(2.1);
+  });
+});
