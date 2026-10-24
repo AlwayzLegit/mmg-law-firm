@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { isNonCanonicalHost } from "./host-guard";
+import { apexRedirect, isNonCanonicalHost } from "./host-guard";
+
+describe("apexRedirect", () => {
+  it("sends the bare domain to www, keeping path and query", () => {
+    expect(apexRedirect("mmg-lawfirm.com", "https://mmg-lawfirm.com/contact?utm_source=x", "https://www.mmg-lawfirm.com")).toBe(
+      "https://www.mmg-lawfirm.com/contact?utm_source=x",
+    );
+  });
+  it("leaves every other host alone", () => {
+    for (const h of ["www.mmg-lawfirm.com", "staging.mmg-lawfirm.com", "localhost:3000", null]) {
+      expect(apexRedirect(h, "https://x/", "https://www.mmg-lawfirm.com")).toBeNull();
+    }
+  });
+});
 
 const SITE = "https://www.mmg-lawfirm.com";
 

@@ -45,5 +45,45 @@
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://www.mmg-lawfirm.com"
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+
+  // Staging: a separate Worker (`mmg-law-firm-staging`) on
+  // staging.mmg-lawfirm.com with its own cache bucket and NO cron triggers —
+  // it reads and writes the production Supabase project, so scheduled jobs
+  // (breach alerts, agenda email, publish) must only ever run once, from
+  // production. Deploy with `wrangler deploy --env staging`. Bindings are
+  // repeated here on purpose: wrangler does not inherit them into envs.
+  "env": {
+    "staging": {
+      "name": "mmg-law-firm-staging",
+      "assets": {
+        "directory": ".open-next/assets",
+        "binding": "ASSETS"
+      },
+      "services": [
+        {
+          "binding": "WORKER_SELF_REFERENCE",
+          "service": "mmg-law-firm-staging"
+        }
+      ],
+      "images": { "binding": "IMAGES" },
+      "r2_buckets": [
+        {
+          "binding": "NEXT_INC_CACHE_R2_BUCKET",
+          "bucket_name": "mmg-law-firm-cache-staging"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+          { "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
+        ]
+      },
+      "triggers": { "crons": [] },
+      "vars": {
+        "NEXT_PUBLIC_SITE_URL": "https://staging.mmg-lawfirm.com"
+      },
+      "observability": { "enabled": true }
+    }
+  }
 }
