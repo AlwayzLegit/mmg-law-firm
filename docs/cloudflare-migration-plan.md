@@ -141,7 +141,7 @@ Lighthouse job), so the Worker renders live content.
 | Admin-managed redirect `/blog/…-5` (proxy.ts reads the `redirects` table live) | 308 to the original |
 | `/sitemaps/car-accidents.xml` | 200 |
 | OG image (`/opengraph-image`, resolved from the page's own tag) | 200, `image/png`, 255 KB — same as production (the per-route path 404s on production too) |
-| `/_next/image?…portrait.webp&w=640&q=75` | 200, `image/webp`, 166 KB. **Pass-through, not optimized**: the source is 162 KB, so no resize happened. Vercel serves this at w=640 as AVIF, far smaller. Needs the Cloudflare Images binding (or the `/cdn-cgi/image` loader) before cutover — see risks. |
+| `/_next/image?…portrait.webp&w=640&q=75` | First run: 200 but **pass-through** (166 KB for a 162 KB source — no resize). After adding `images: { binding: "IMAGES" }` to `wrangler.jsonc`: **91 KB WebP, resized**. Production needs Cloudflare Images enabled on the account for the binding to exist (first 5k transformations/month free at time of writing; verify in the dashboard). |
 | Head parity vs production (title, canonical, meta description, og:image, JSON-LD block count, disclaimer count) on 7 pages: home, contact, practice page, city page, guide, blog post, privacy | **Identical on all 7** |
 | Security headers | Per-request CSP, HSTS from `proxy.ts`; `Cache-Control: s-maxage=3589, stale-while-revalidate` on ISR pages |
 | Deployable bundle | 4.81 MB gzipped (Workers Paid) |
@@ -251,7 +251,7 @@ Cloudflare crons, ISR and image cache have run through a full month.
 |---|---|
 | OpenNext lags Next 16.x | Spike first (A). If blocked, pin Next to the last supported minor on the infra branch only; `main` keeps moving. |
 | ISR behaves differently (stale admin edits) | Tag cache + queue configured in A; explicit test in B; `revalidatePath` is the only invalidation path used, so one test covers the pattern. |
-| `/_next/image` output or cost differs | **Confirmed gap in B:** without an Images binding the Worker passes the original file through (no resize, no AVIF). Configure the Cloudflare Images binding (or `images.loader: "custom"` with `/cdn-cgi/image/`) and re-run the smoke; the LCP hero and every `next/image` depend on it for Lighthouse parity. |
+| `/_next/image` output or cost differs | **Closed in code:** the `IMAGES` binding is configured and the smoke run shows resized output. Remaining: enable Cloudflare Images on the account (billing line item) so the binding exists in production, then compare Lighthouse on staging. |
 | OG images break | Seven routes tested in B; worst case they pre-render to static files at build. |
 | Sentry gap during cutover | Client side is unaffected; server side wired in A and smoke-tested in B before DNS changes. |
 | DNS/cert hiccup | Custom domains + certs provisioned the day before; TTL 60 s; rollback is one record edit. |
