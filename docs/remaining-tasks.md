@@ -34,14 +34,15 @@ whether it is engineering work or something only the firm can do.
       Until then the SMS leg of the new-lead notify and the breach alert
       no-ops; email still goes out.
 - [ ] Cloudflare (workstream C in `docs/cloudflare-migration-plan.md` has
-      the exact steps). Done 2026-10-24: Workers Paid + R2 Paid confirmed,
-      bucket `mmg-law-firm-cache` created, Turnstile allow-lists staging and
-      workers.dev, `CLOUDFLARE_ACCOUNT_ID` repo secret set. **Owner:** create
-      the scoped API token, fill `.env.local` (token, Resend key, Turnstile
-      keys), run `pnpm github-secrets`. Then: run the "Cloudflare deploy
-      (staging)" workflow, smoke `mmg-law-firm.jetnine-inc.workers.dev`,
-      attach `staging.mmg-lawfirm.com`, parity crawl, cut over, 30-day
-      rollback hold.
+      the exact state). Done 2026-10-24: account prepared, API token and
+      11 repo secrets in place, first staging deploy live and smoked at
+      `https://mmg-law-firm.jetnine-inc.workers.dev`, head parity identical
+      on 7 pages. **Owner, two things:** (1) Workers & Pages → mmg-law-firm
+      → Domains → Add Domain → `staging.mmg-lawfirm.com` (DNS changes are
+      reserved for you); (2) add `RESEND_API_KEY` to `.env.local` and run
+      `pnpm github-secrets`, then re-run the deploy workflow so staging can
+      send email. Then: parity crawl on the staging host, cut over (§D),
+      30-day rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed, Spanish intake (yes/no — decides whether

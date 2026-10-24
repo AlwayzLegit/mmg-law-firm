@@ -17,6 +17,12 @@ describe("isNonCanonicalHost", () => {
     expect(isNonCanonicalHost("mmg-lawfirm.com", SITE)).toBe(true); // apex redirects to www anyway
   });
 
+  it("still flags staging when the deploy's own site URL is the staging host", () => {
+    // Staging sets NEXT_PUBLIC_SITE_URL to itself; the proxy must compare
+    // against the production origin, which is what it passes.
+    expect(isNonCanonicalHost("staging.mmg-lawfirm.com", SITE)).toBe(true);
+  });
+
   it("never fires for local development or when the site URL is local/invalid", () => {
     expect(isNonCanonicalHost("localhost:3000", SITE)).toBe(false);
     expect(isNonCanonicalHost("127.0.0.1:3000", SITE)).toBe(false);

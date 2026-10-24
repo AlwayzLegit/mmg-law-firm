@@ -86,7 +86,11 @@ jobs:
 
       - name: Smoke the deployed Worker
         run: |
-          url=$(pnpm exec wrangler deployments list --json 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log((j[0]&&j[0].url)||"")}catch{console.log("")}})')
+          # The account's workers.dev subdomain, from the API (wrangler has no
+          # command for it and `deployments list --json` carries no URL).
+          sub=$(curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).result.subdomain||"")}catch{console.log("")}})')
+          url=${sub:+https://mmg-law-firm.$sub.workers.dev}
           echo "workers.dev URL: ${url:-unknown}"
           [ -n "$url" ] || exit 0
           for p in / /contact /practice-areas/car-accidents /blog /car-accidents /admin; do

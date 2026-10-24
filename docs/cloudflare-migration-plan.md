@@ -207,8 +207,10 @@ zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
       allow-lists `staging.mmg-lawfirm.com` and
       `mmg-law-firm.jetnine-inc.workers.dev` alongside the production hosts.
 - [x] Repo secret `CLOUDFLARE_ACCOUNT_ID` set.
-- [ ] **API token** (owner creates it: dash → My Profile → API Tokens →
-      Create Token → Custom). Name `mmg-law-firm GitHub Actions deploy`.
+- [x] **API token** `mmg-law-firm GitHub Actions deploy` created
+      2026-10-24 (owner clicked Create on a pre-filled form), stored as
+      `CLOUDFLARE_API_TOKEN`. Scopes, for a future rotation (dash → My
+      Profile → API Tokens → Create Token → Custom):
       Account `Jetnine.inc@gmail.com's Account`: Workers Scripts **Edit**,
       Workers R2 Storage **Edit**, Workers KV Storage **Edit**, Queues
       **Edit**, Workers Observability **Edit**, Workers Tail **Read**,
@@ -217,25 +219,40 @@ zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
       **Edit**, Zone **Read**, Zone Settings **Read**. User: User Details
       **Read**, Memberships **Read**. Put the value in `.env.local` as
       `CLOUDFLARE_API_TOKEN=…`.
-- [ ] **Repo secrets**: fill `.env.local` with `RESEND_API_KEY`,
-      `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (`0x4AAAAAADoV9nhefGrITBfM`),
-      `TURNSTILE_SECRET_KEY` (Turnstile widget page) and optionally
-      `ADMIN_API_KEY`, `NEXT_PUBLIC_SENTRY_DSN`, then run
-      `pnpm github-secrets`. It pushes every listed key with `gh secret set`
-      and generates `CRON_SECRET` / `REVALIDATE_SECRET` once (appended to
-      `.env.local`). Values never appear in chat or logs.
-- [ ] Run the **Cloudflare deploy (staging)** workflow (Actions tab, default
-      `site_url` is `https://staging.mmg-lawfirm.com`). It builds, deploys
-      to `https://mmg-law-firm.jetnine-inc.workers.dev`, pushes the Worker
-      secrets and smokes six routes.
-- [ ] Custom domain: Workers & Pages → mmg-law-firm → Settings → Domains &
-      Routes → add `staging.mmg-lawfirm.com` (Cloudflare creates the proxied
-      DNS record and cert). Keep it `noindex` (the Worker already sends
-      `X-Robots-Tag: noindex` for any host other than `www.mmg-lawfirm.com`
-      — verify after the first deploy).
-- [ ] Staging points at **production** Supabase + Resend (read paths only
-      for the QA pass; use a throwaway lead to test the form).
-- [ ] Re-run the parity crawl against staging. This is the final go/no-go.
+- [x] **Repo secrets** (11): Cloudflare token + account id, Supabase (3),
+      Resend from/notify addresses, Turnstile site + secret key, and
+      generated `CRON_SECRET` / `REVALIDATE_SECRET` (also appended to
+      `.env.local` by `pnpm github-secrets`). Still missing:
+      `RESEND_API_KEY` (staging email is a no-op until it is added — get it
+      from Resend or Vercel and run `pnpm github-secrets` again),
+      `ADMIN_API_KEY`, `NEXT_PUBLIC_SENTRY_DSN`.
+- [x] **First staging deploy** 2026-10-24 (run 40120282302, 4m27s):
+      `https://mmg-law-firm.jetnine-inc.workers.dev`. Smoke by hand: `/`,
+      `/contact`, `/hy`, `/ru/contact`, practice hub, guide, `/blog`,
+      `/sitemap.xml`, `/robots.txt` → 200 with the right content types;
+      `/admin` → 307 to `/login`; `/api/cron/*` → 401 without the bearer and
+      200 with the Worker's `CRON_SECRET`; `/_next/image` → WebP 87 KB via the
+      Images binding; `X-Robots-Tag: noindex, nofollow` and the full CSP on
+      every page; ISR `x-opennext-cache: HIT` on repeat requests.
+      Head parity vs production identical on 7 pages (title, description,
+      canonical modulo origin, robots, JSON-LD count).
+      *Wrangler prints "no such Durable Object class is exported" for
+      `DOQueueHandler` / `DOShardedTagCache` at upload. False alarm from its
+      static check on the `export … from` re-export in `cloudflare/worker.ts`:
+      the tag-cache namespace held live objects minutes after deploy and the
+      cache hits. Ignore unless a future wrangler turns it into an error.*
+- [ ] **Custom domain** (owner; DNS changes are reserved): Workers & Pages →
+      mmg-law-firm → Settings → Domains & Routes → Add → Custom domain →
+      `staging.mmg-lawfirm.com`. Cloudflare creates the proxied record and
+      cert. The host stays `noindex` automatically (host ≠
+      `NEXT_PUBLIC_SITE_URL`'s host is enough for the proxy guard; staging's
+      `site_url` is the staging host itself, so the guard keys off the
+      canonical production host — see `src/lib/seo/host-guard.ts`).
+- [ ] Staging points at **production** Supabase (read paths only for the QA
+      pass; use a throwaway lead to test the form once `RESEND_API_KEY` is
+      set, and mark it spam afterwards).
+- [ ] Re-run the parity crawl against `staging.mmg-lawfirm.com` after the
+      domain is attached. This is the final go/no-go.
 
 ### D. Cutover (≈1 hour, low traffic window, e.g. Tuesday 6 am PT)
 
