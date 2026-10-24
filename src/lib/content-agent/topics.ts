@@ -2,6 +2,8 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { findCoveringPost } from "@/lib/api/blog-dedupe";
+
 import type { TopicData } from "./schemas";
 
 /**
@@ -118,6 +120,19 @@ export async function insertTopics(
   const out: InsertOutcome = { inserted: [], updated: [], skipped: [] };
   const select = opts.select ?? "*";
   for (const row of rows) {
+    // A keyword the site already has an article for never enters the queue;
+    // this is what stopped the agent from re-writing the same twenty topics.
+    const covering = await findCoveringPost(supabase, {
+      keyword: row.keyword,
+      title: row.title_hint,
+    });
+    if (covering) {
+      out.skipped.push({
+        keyword: row.keyword,
+        reason: `already covered by /blog/${covering.slug}`,
+      });
+      continue;
+    }
     const { data: existing } = await supabase
       .from("content_topics")
       .select("id, status")

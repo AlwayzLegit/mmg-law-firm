@@ -88,6 +88,31 @@ export async function linkPost(
   }
 }
 
+/**
+ * The post the agent was about to write already exists: take the topic out
+ * of the queue (status "skipped", pointing at the covering post) so the next
+ * run does not claim it again.
+ */
+export async function skipTopicAsCovered(
+  supabase: SupabaseClient,
+  topicId: string,
+  covering: { id: string; slug: string },
+): Promise<void> {
+  try {
+    await supabase
+      .from("content_topics")
+      .update({
+        status: "skipped",
+        post_id: covering.id,
+        notes: `Already covered by /blog/${covering.slug} (auto-skipped on duplicate attempt).`,
+      })
+      .eq("id", topicId)
+      .in("status", ["queued", "claimed"]);
+  } catch (err) {
+    console.warn("[content-agent] skipTopicAsCovered:", err);
+  }
+}
+
 /** When a linked post is published later, promote its topic. */
 export async function markTopicPublishedForPost(
   supabase: SupabaseClient,
