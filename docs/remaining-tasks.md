@@ -36,13 +36,11 @@ whether it is engineering work or something only the firm can do.
 - [ ] Cloudflare (workstream C in `docs/cloudflare-migration-plan.md` has
       the exact state). Done 2026-10-24: account prepared, API token and
       11 repo secrets in place, first staging deploy live and smoked at
-      `https://mmg-law-firm.jetnine-inc.workers.dev`, head parity identical
-      on 7 pages. **Owner, two things:** (1) Workers & Pages → mmg-law-firm
-      → Domains → Add Domain → `staging.mmg-lawfirm.com` (DNS changes are
-      reserved for you); (2) add `RESEND_API_KEY` to `.env.local` and run
-      `pnpm github-secrets`, then re-run the deploy workflow so staging can
-      send email. Then: parity crawl on the staging host, cut over (§D),
-      30-day rollback hold.
+      `https://staging.mmg-lawfirm.com` (custom domain, cert, noindex),
+      head parity identical to production on 9 pages. **Owner:** add
+      `RESEND_API_KEY` to `.env.local` and run `pnpm github-secrets`, then
+      re-run the deploy workflow so staging can send email. Then: one
+      throwaway lead through staging, cut over (§D), 30-day rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed, Spanish intake (yes/no — decides whether
