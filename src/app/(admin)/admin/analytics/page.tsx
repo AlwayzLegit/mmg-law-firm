@@ -203,6 +203,10 @@ export default async function AdminAnalyticsPage({
         <RankCard title={`Practice area (${range}d)`} rows={a.byPracticeArea} />
         <RankCard title={`Top counties (${range}d)`} rows={a.byCounty} />
         <RankCard
+          title={`Leads by channel (${range}d)`}
+          rows={a.byChannel}
+        />
+        <RankCard
           title={`Top landing pages (${range}d)`}
           rows={a.topLandingPages}
         />

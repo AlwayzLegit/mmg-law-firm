@@ -1,4 +1,5 @@
 import "server-only";
+import { channelOf } from "@/lib/analytics/attribution";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -41,6 +42,8 @@ export type LeadAnalytics = {
   weekOverWeekPct: number | null;
   daily: DailyPoint[];
   bySource: Ranked[];
+  /** Leads by derived channel (Google Ads, Organic, Referral, Direct…). */
+  byChannel: Ranked[];
   byPracticeArea: Ranked[];
   byCounty: Ranked[];
   topLandingPages: Ranked[];
@@ -58,7 +61,11 @@ type LeadRow = {
   status: LeadStatus;
   created_at: string;
   utm_source: string | null;
+  utm_medium: string | null;
+  gclid: string | null;
+  referrer: string | null;
   source_url: string | null;
+  landing_url: string | null;
   practice_areas: { name: string; slug: string } | null;
   counties: { name: string; slug: string } | null;
 };
@@ -138,7 +145,7 @@ export async function getLeadAnalytics(
   const { data } = await supabase
     .from("leads")
     .select(
-      "status, created_at, utm_source, source_url, practice_areas(name, slug), counties(name, slug)",
+      "status, created_at, utm_source, utm_medium, gclid, referrer, source_url, landing_url, practice_areas(name, slug), counties(name, slug)",
     )
     .gte("created_at", since)
     .order("created_at", { ascending: true });
@@ -220,7 +227,12 @@ export async function getLeadAnalytics(
       8,
     ),
     byCounty: rankBySlug(rows, (r) => r.counties, "/admin/leads?county=", 10),
-    topLandingPages: rank(rows, (r) => toPath(r.source_url), 8),
+    byChannel: rank(rows, (r) => channelOf(r), 8),
+    topLandingPages: rank(
+      rows,
+      (r) => toPath(r.landing_url ?? r.source_url),
+      8,
+    ),
   };
 }
 
@@ -228,6 +240,8 @@ export type ResponseStats = {
   /** Leads in the window (non-spam) that have received a first staff touch. */
   sample: number;
   medianMinutes: number | null;
+  /** Share answered within the 15-minute speed-to-lead target. */
+  within15mPct: number | null;
   within1hPct: number | null;
   within24hPct: number | null;
   /** Open leads in the window still awaiting any staff response. */
@@ -269,6 +283,7 @@ export async function getResponseTimeStats(
     return {
       sample: 0,
       medianMinutes: null,
+      within15mPct: null,
       within1hPct: null,
       within24hPct: null,
       pending: 0,
@@ -314,6 +329,7 @@ export async function getResponseTimeStats(
     return {
       sample: 0,
       medianMinutes: null,
+      within15mPct: null,
       within1hPct: null,
       within24hPct: null,
       pending,
@@ -329,6 +345,7 @@ export async function getResponseTimeStats(
   return {
     sample,
     medianMinutes: Math.round(median),
+    within15mPct: pct(minutes.filter((m) => m <= 15).length),
     within1hPct: pct(minutes.filter((m) => m <= 60).length),
     within24hPct: pct(minutes.filter((m) => m <= 1440).length),
     pending,

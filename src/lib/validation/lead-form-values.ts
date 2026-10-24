@@ -26,6 +26,7 @@ export type LeadFormValues = {
   gclid?: string;
   referrer?: string;
   source_url?: string;
+  landing_url?: string;
 };
 
 export const leadFormDefaults: LeadFormValues = {

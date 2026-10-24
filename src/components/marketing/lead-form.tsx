@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  ATTRIBUTION_FIELDS,
+  readAttributionInBrowser,
+} from "@/lib/analytics/attribution";
 import * as React from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -108,21 +112,11 @@ export function LeadForm({
 
   // Capture page metadata client-side once.
   React.useEffect(() => {
-    const sp = new URLSearchParams(window.location.search);
-    form.setValue("source_url", window.location.href);
-    form.setValue("referrer", document.referrer || undefined);
-    const utmSource = sp.get("utm_source");
-    if (utmSource) form.setValue("utm_source", utmSource);
-    const utmMedium = sp.get("utm_medium");
-    if (utmMedium) form.setValue("utm_medium", utmMedium);
-    const utmCampaign = sp.get("utm_campaign");
-    if (utmCampaign) form.setValue("utm_campaign", utmCampaign);
-    const utmTerm = sp.get("utm_term");
-    if (utmTerm) form.setValue("utm_term", utmTerm);
-    const utmContent = sp.get("utm_content");
-    if (utmContent) form.setValue("utm_content", utmContent);
-    const gclid = sp.get("gclid");
-    if (gclid) form.setValue("gclid", gclid);
+    const attribution = readAttributionInBrowser();
+    for (const k of ATTRIBUTION_FIELDS) {
+      const v = attribution[k];
+      if (v) form.setValue(k, v);
+    }
   }, [form]);
 
   // Funnel step 2: the form was rendered (an impression). Combined with

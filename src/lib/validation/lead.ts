@@ -87,6 +87,7 @@ export const LeadSchema = z
     gclid: z.string().max(200).optional(),
     referrer: z.string().max(2000).optional(),
     source_url: z.string().max(2000).optional(),
+    landing_url: z.string().max(2000).optional(),
   })
   .superRefine((val, ctx) => {
     // Heuristic spam check: links inside the name field, or 3+ URLs in
