@@ -7,6 +7,11 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { normalizeTags } from "@/lib/leads/tags";
+import {
+  deadlineFor,
+  ruleForPracticeArea,
+  type IntakeChecklist,
+} from "@/lib/leads/limitations";
 
 import { LEAD_STATUSES, type LeadStatus } from "./statuses";
 
@@ -745,6 +750,8 @@ export async function updateLeadCase(formData: FormData): Promise<ActionResult> 
     .eq("id", d.leadId);
   if (error) return { ok: false, error: error.message };
 
+  await syncLimitationsTask(supabase, d.leadId, user.id);
+
   logAudit({
     actor_id: user.id,
     entity: "leads",
@@ -761,5 +768,129 @@ export async function updateLeadCase(formData: FormData): Promise<ActionResult> 
   revalidatePath(`/admin/leads/${d.leadId}`);
   revalidatePath("/admin/leads");
   revalidatePath("/admin/analytics");
+  revalidatePath("/admin/today");
+  return { ok: true };
+}
+
+const SOL_TASK_PREFIX = "Statute of limitations";
+
+/**
+ * Keep one open "Statute of limitations" task per lead in step with the
+ * estimated deadline: due 60 days before it, assigned to whoever saved the
+ * case details. Replaces an earlier open SOL task if the estimate changed.
+ * No task when there is no incident date or the deadline has passed.
+ */
+async function syncLimitationsTask(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
+  leadId: string,
+  userId: string,
+): Promise<void> {
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("incident_date, intake, practice_areas(slug)")
+    .eq("id", leadId)
+    .maybeSingle();
+  if (!lead) return;
+  const slug =
+    (lead.practice_areas as { slug: string } | { slug: string }[] | null) ?? null;
+  const paSlug = Array.isArray(slug) ? slug[0]?.slug : slug?.slug;
+  const intake = (lead.intake ?? {}) as IntakeChecklist;
+  const deadline = deadlineFor(
+    lead.incident_date as string | null,
+    ruleForPracticeArea(paSlug, { governmentEntity: intake.government_entity }),
+  );
+
+  const { data: existing } = await supabase
+    .from("tasks")
+    .select("id, title, due_at")
+    .eq("lead_id", leadId)
+    .eq("done", false)
+    .ilike("title", SOL_TASK_PREFIX + "%")
+    .limit(1)
+    .maybeSingle();
+
+  if (!deadline || deadline.tone === "passed") {
+    if (existing) await supabase.from("tasks").delete().eq("id", existing.id);
+    return;
+  }
+
+  const due = new Date(deadline.date + "T16:00:00Z"); // 9 am Pacific-ish
+  due.setUTCDate(due.getUTCDate() - 60);
+  const title = `${SOL_TASK_PREFIX} — ${deadline.rule.label} — est. ${deadline.date}`;
+
+  if (existing) {
+    if (existing.title === title) return;
+    await supabase
+      .from("tasks")
+      .update({ title, due_at: due.toISOString() })
+      .eq("id", existing.id);
+    return;
+  }
+  await supabase.from("tasks").insert({
+    lead_id: leadId,
+    title,
+    due_at: due.toISOString(),
+    assigned_to: userId,
+    created_by: userId,
+  });
+}
+
+const IntakeInput = z.object({
+  leadId: z.string().uuid(),
+  intake: z.string().max(2000),
+});
+
+const INTAKE_KEYS = new Set([
+  "government_entity",
+  "treated_medically",
+  "police_report",
+  "insurance_info",
+  "evidence_collected",
+  "retainer_signed",
+]);
+
+/** Save the intake checklist (booleans only) and re-sync the SOL task. */
+export async function updateLeadIntake(formData: FormData): Promise<ActionResult> {
+  const { user } = await requireAdmin();
+  const parsed = IntakeInput.safeParse({
+    leadId: formData.get("leadId"),
+    intake: formData.get("intake"),
+  });
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(parsed.data.intake);
+  } catch {
+    return { ok: false, error: "Invalid checklist." };
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "Invalid checklist." };
+  }
+  const intake: IntakeChecklist = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (INTAKE_KEYS.has(k) && typeof v === "boolean") {
+      (intake as Record<string, boolean>)[k] = v;
+    }
+  }
+
+  const supabase = await getServerSupabase();
+  const { error } = await supabase
+    .from("leads")
+    .update({ intake })
+    .eq("id", parsed.data.leadId);
+  if (error) return { ok: false, error: error.message };
+
+  await syncLimitationsTask(supabase, parsed.data.leadId, user.id);
+
+  logAudit({
+    actor_id: user.id,
+    entity: "leads",
+    entity_id: parsed.data.leadId,
+    action: "intake_updated",
+    diff: intake,
+  });
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+  revalidatePath("/admin/today");
   return { ok: true };
 }

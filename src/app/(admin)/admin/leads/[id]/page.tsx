@@ -18,6 +18,13 @@ import AssignControl, { type AdminOption } from "./assign-control";
 import ConflictCheckButton from "./conflict-check";
 import FollowUpControl from "./follow-up-control";
 import CaseControl from "./case-control";
+import IntakeControl from "./intake-control";
+import DeadlineBadge from "@/components/admin/deadline-badge";
+import {
+  deadlineFor,
+  ruleForPracticeArea,
+  type IntakeChecklist,
+} from "@/lib/leads/limitations";
 import {
   MESSAGE_TEMPLATES,
   type MessageTemplate,
@@ -53,7 +60,7 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
     .select(
       `
         *,
-        practice_areas(name),
+        practice_areas(name, slug),
         counties(name),
         cities(name)
       `,
@@ -63,6 +70,17 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
 
   if (error) throw error;
   if (!lead) notFound();
+
+  const intake = ((lead.intake as IntakeChecklist | null) ?? {}) as IntakeChecklist;
+  const paSlug =
+    (lead.practice_areas as { slug?: string } | null)?.slug ?? null;
+  const limitationRule = ruleForPracticeArea(paSlug, {
+    governmentEntity: intake.government_entity,
+  });
+  const deadline = deadlineFor(
+    lead.incident_date as string | null,
+    limitationRule,
+  );
 
   // Option lists for the editable Case card.
   const [{ data: paOptions }, { data: countyOptions }, { data: cityOptions }] =
@@ -464,6 +482,38 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
         </div>
 
         <div className="space-y-6">
+          <Card className={deadline && deadline.tone !== "ok" ? "border-destructive/40" : undefined}>
+            <CardHeader>
+              <CardTitle className="text-base">Deadline</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2 text-sm">
+              {deadline ? (
+                <>
+                  <DeadlineBadge deadline={deadline} className="w-fit text-sm" />
+                  <p className="text-muted-foreground text-xs">
+                    {limitationRule.label} · {limitationRule.authority}. Estimate
+                    from the incident date; tolling, minors and discovery rules
+                    change it. The attorney confirms the operative date.
+                  </p>
+                </>
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  Set the incident date in the Case card to estimate the
+                  statute of limitations and get a reminder task 60 days before.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Intake checklist</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <IntakeControl leadId={lead.id as string} current={intake} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Communications</CardTitle>

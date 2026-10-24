@@ -14,6 +14,12 @@ import {
   type SlaTone,
 } from "@/lib/leads/sla";
 import { getServerSupabase } from "@/lib/supabase/server";
+import DeadlineBadge from "@/components/admin/deadline-badge";
+import {
+  deadlineFor,
+  ruleForPracticeArea,
+  type IntakeChecklist,
+} from "@/lib/leads/limitations";
 import { cn } from "@/lib/utils";
 
 import { TaskList, AddTaskForm, type TaskItem } from "../tasks/task-ui";
@@ -153,6 +159,31 @@ export default async function TodayPage() {
     .order("follow_up_at", { ascending: true })
     .limit(50);
   const followUps = dueRows ?? [];
+
+  // Statute-of-limitations estimates within 180 days (or passed) on open
+  // leads with an incident date. Oldest deadline first.
+  const { data: solRows } = await supabase
+    .from("leads")
+    .select("id, full_name, incident_date, intake, status, practice_areas(slug)")
+    .not("incident_date", "is", null)
+    .not("status", "in", `(${CLOSED.join(",")})`)
+    .is("merged_into", null)
+    .limit(500);
+  const deadlines = (solRows ?? [])
+    .map((l) => {
+      const pa = l.practice_areas as { slug?: string } | { slug?: string }[] | null;
+      const slug = Array.isArray(pa) ? pa[0]?.slug : pa?.slug;
+      const intake = ((l.intake as IntakeChecklist | null) ?? {}) as IntakeChecklist;
+      const d = deadlineFor(
+        l.incident_date as string | null,
+        ruleForPracticeArea(slug ?? null, { governmentEntity: intake.government_entity }),
+        now,
+      );
+      return d ? { id: l.id as string, name: l.full_name as string, deadline: d } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null && x.deadline.daysLeft <= 180)
+    .sort((a, b) => a.deadline.daysLeft - b.deadline.daysLeft)
+    .slice(0, 20);
 
   const openCount = tasks.length;
 
@@ -314,6 +345,50 @@ export default async function TodayPage() {
         <Section title={`No due date (${noDate.length})`}>
           <TaskList tasks={noDate} />
         </Section>
+      ) : null}
+
+      {deadlines.length > 0 ? (
+        <Card
+          className={cn(
+            "mt-6",
+            deadlines.some((d) => d.deadline.tone !== "ok") &&
+              "border-destructive/40",
+          )}
+        >
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarClock className="h-4 w-4 text-primary" aria-hidden />
+              Statute deadlines within 6 months ({deadlines.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border">
+              {deadlines.map((d) => (
+                <li
+                  key={d.id}
+                  className="flex items-center justify-between gap-3 py-2.5 first:pt-0"
+                >
+                  <div className="min-w-0">
+                    <Link
+                      href={`/admin/leads/${d.id}`}
+                      className="text-sm font-medium hover:text-primary"
+                    >
+                      {d.name}
+                    </Link>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {d.deadline.rule.label}
+                    </p>
+                  </div>
+                  <DeadlineBadge deadline={d.deadline} />
+                </li>
+              ))}
+            </ul>
+            <p className="text-muted-foreground mt-3 text-xs">
+              Estimates from incident dates. The attorney confirms every
+              operative deadline.
+            </p>
+          </CardContent>
+        </Card>
       ) : null}
 
       <Card className="mt-6">
