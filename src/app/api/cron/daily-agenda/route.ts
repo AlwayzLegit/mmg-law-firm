@@ -13,9 +13,11 @@ export const maxDuration = 60;
 
 /**
  * Daily agenda email. Authorized by CRON_SECRET as
- * "Authorization: Bearer <CRON_SECRET>" (see src/lib/cron/auth.ts). Emails the day's overdue/due tasks, due follow-ups, and new
- * unassigned intake to LEAD_NOTIFY_EMAIL. Skips sending on an empty day so it
- * never becomes noise. PII-light by construction (see getDailyAgenda).
+ * "Authorization: Bearer <CRON_SECRET>" (see src/lib/cron/auth.ts). Emails
+ * leads waiting for a first call, the day's overdue/due tasks, due follow-ups
+ * and near statute deadlines to LEAD_NOTIFY_EMAIL. Skips sending on an empty
+ * day so it never becomes noise. PII-light by construction (see
+ * getDailyAgenda).
  */
 async function handle(request: NextRequest) {
   const denied = requireCronAuth(request);
@@ -54,7 +56,9 @@ async function handle(request: NextRequest) {
     overdue: agenda.overdueTasks.length,
     dueToday: agenda.todayTasks.length,
     followUps: agenda.followUps.length,
-    newLeads: agenda.newLeads.length,
+    waiting: agenda.waiting.length,
+    breaches: agenda.breaches,
+    deadlines: agenda.deadlines.length,
   });
 }
 

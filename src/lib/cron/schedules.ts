@@ -26,7 +26,7 @@ export const CRON_JOBS: readonly CronJob[] = [
     path: "/api/cron/daily-agenda",
     schedule: "0 15 * * 1-5",
     description:
-      "Weekdays 15:00 UTC: overdue tasks, due follow-ups and unassigned intake.",
+      "Weekdays 15:00 UTC: leads waiting for a first call, overdue tasks, due follow-ups, near statute deadlines.",
   },
   {
     path: "/api/cron/publish-scheduled",
