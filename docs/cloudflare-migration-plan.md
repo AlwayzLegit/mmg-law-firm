@@ -241,18 +241,27 @@ zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
       static check on the `export … from` re-export in `cloudflare/worker.ts`:
       the tag-cache namespace held live objects minutes after deploy and the
       cache hits. Ignore unless a future wrangler turns it into an error.*
-- [ ] **Custom domain** (owner; DNS changes are reserved): Workers & Pages →
-      mmg-law-firm → Settings → Domains & Routes → Add → Custom domain →
-      `staging.mmg-lawfirm.com`. Cloudflare creates the proxied record and
-      cert. The host stays `noindex` automatically (host ≠
+- [x] **Custom domain** `staging.mmg-lawfirm.com` attached 2026-10-24 after a
+      redeploy carrying the production-origin noindex guard (run
+      40124402122; the workflow's own smoke now resolves the workers.dev
+      URL and passes). Cloudflare created the proxied record; cert from
+      Google Trust Services, valid to 2027-01-14. Serving within a minute:
+      `/`, `/contact`, `/hy`, `/ru/contact`, practice hub, `/blog`,
+      sitemap, robots → 200; `/admin` → 307 login; cron → 401;
+      `X-Robots-Tag: noindex, nofollow`; ISR HIT. Production
+      (`www`) still answers from Vercel, untouched. The host stays `noindex` automatically (host ≠
       `NEXT_PUBLIC_SITE_URL`'s host is enough for the proxy guard; staging's
       `site_url` is the staging host itself, so the guard keys off the
       canonical production host — see `src/lib/seo/host-guard.ts`).
 - [ ] Staging points at **production** Supabase (read paths only for the QA
       pass; use a throwaway lead to test the form once `RESEND_API_KEY` is
       set, and mark it spam afterwards).
-- [ ] Re-run the parity crawl against `staging.mmg-lawfirm.com` after the
-      domain is attached. This is the final go/no-go.
+- [x] Parity crawl against `staging.mmg-lawfirm.com` 2026-10-24: title,
+      description, canonical (modulo origin), robots and JSON-LD count
+      identical to production on 9 pages (home, contact, car hub, a guide,
+      Glendale, blog, attorney bio, `/hy`, `/ru/contact`). Go for
+      cutover planning (§D) once `RESEND_API_KEY` is on the Worker and a
+      throwaway lead has gone through staging end to end.
 
 ### D. Cutover (≈1 hour, low traffic window, e.g. Tuesday 6 am PT)
 
