@@ -12,6 +12,15 @@ describe("cron schedule registry", () => {
     expect(vercel.crons).toEqual(fromRegistry);
   });
 
+  it("matches the Cloudflare cron triggers in wrangler.jsonc", () => {
+    // wrangler.jsonc allows comments; strip them before parsing.
+    const raw = readFileSync("wrangler.jsonc", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    const wrangler = JSON.parse(raw) as { triggers?: { crons?: string[] } };
+    expect(wrangler.triggers?.crons).toEqual(CRON_JOBS.map((j) => j.schedule));
+  });
+
   it("uses distinct five-field UTC expressions", () => {
     const seen = new Set<string>();
     for (const job of CRON_JOBS) {

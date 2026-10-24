@@ -1,0 +1,132 @@
+name: Cloudflare build spike
+
+# Workstream A of docs/cloudflare-migration-plan.md: prove the app builds
+# with @opennextjs/cloudflare and serves under workerd, without touching
+# production. Runs on Linux because OpenNext's build replicates pnpm's
+# symlink layout, which Windows refuses without Developer Mode.
+#
+# No Cloudflare account is needed: `wrangler dev` runs the Worker locally
+# (miniflare) with in-memory R2 / Durable Objects. Supabase secrets are
+# optional; without them public pages fall back to in-code seed content.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["infra/**"]
+  pull_request:
+    branches: [main]
+    paths:
+      - "wrangler.jsonc"
+      - "open-next.config.ts"
+      - "cloudflare/**"
+      - ".github/workflows/cloudflare-spike.yml"
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Worker (next build + OpenNext)
+        run: pnpm cf:build
+        env:
+          NEXT_PUBLIC_SITE_URL: https://www.mmg-lawfirm.com
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Bundle report
+        run: |
+          pnpm exec wrangler deploy --dry-run --outdir dist-dry > /dev/null 2>&1 || true
+          [ -f dist-dry/worker.js ] && echo "deployable worker (wrangler bundle): $(du -h dist-dry/worker.js | cut -f1), gzipped $(gzip -c dist-dry/worker.js | wc -c | awk '{printf "%.2f", $1/1048576}') MB (limit 3 MB free / 10 MB paid)"
+          echo "worker.js $(du -h .open-next/worker.js | cut -f1), gzipped $(gzip -c .open-next/worker.js | wc -c | awk '{printf "%.2f", $1/1048576}') MB; assets $(du -sh .open-next/assets | cut -f1); server-functions $(du -sh .open-next/server-functions | cut -f1)"
+          echo "## Worker bundle" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ls -la .open-next/ >> "$GITHUB_STEP_SUMMARY"
+          echo "worker.js: $(du -h .open-next/worker.js | cut -f1) ($(gzip -c .open-next/worker.js | wc -c | awk '{printf "%.1f", $1/1048576}') MB gzipped)" >> "$GITHUB_STEP_SUMMARY"
+          echo "assets:    $(du -sh .open-next/assets | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo "server-functions: $(du -sh .open-next/server-functions | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Workers limit: 3 MB gzipped (free) / 10 MB gzipped (paid)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Start wrangler dev
+        run: |
+          nohup pnpm exec wrangler dev --port 8787 --test-scheduled \
+            --var NEXT_PUBLIC_SITE_URL:http://localhost:8787 \
+            --var CRON_SECRET:spike-secret \
+            > wrangler.log 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -s -o /dev/null http://localhost:8787/robots.txt; then echo "up after ${i}s"; break; fi
+            sleep 1
+          done
+          tail -20 wrangler.log
+
+      - name: Smoke routes
+        run: |
+          set -e
+          check() { # path expected-status [redirect-substring]
+            code=$(curl -s -o /tmp/body -w "%{http_code}" -D /tmp/h "http://localhost:8787$1")
+            loc=$(grep -i '^location:' /tmp/h | tr -d '\r' | cut -d' ' -f2-)
+            printf '%-55s %s %s\n' "$1" "$code" "$loc" | tee -a smoke.txt
+            [ "$code" = "$2" ] || { echo "  expected $2"; echo "FAIL" >> smoke.txt; }
+            if [ -n "$3" ]; then echo "$loc" | grep -q "$3" || { echo "  expected redirect to $3"; echo "FAIL" >> smoke.txt; }; fi
+          }
+          check / 200
+          check /contact 200
+          check /practice-areas 200
+          check /practice-areas/car-accidents 200
+          check /locations/los-angeles-county/glendale 200
+          # /blog lists posts from Supabase; without the secrets it has nothing to
+          # list and returns 404 by design. Either is fine; a 500 is not.
+          code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8787/blog)
+          printf '%-55s %s\n' /blog "$code" | tee -a smoke.txt
+          [ "$code" = 200 ] || [ "$code" = 404 ] || echo FAIL >> smoke.txt
+          check /rear-end-car-accident-lawyer 200
+          check /legal/privacy 200
+          check /sitemap.xml 200
+          check /robots.txt 200
+          check /llms.txt 200
+          check /car-accidents 308 /practice-areas/car-accidents
+          check /admin 307 /login
+          check /login 200
+          check /api/cron/publish-scheduled 401
+          check /this-page-does-not-exist 404
+          # Cron Trigger path: wrangler's test endpoint invokes scheduled().
+          check "/__scheduled?cron=0+*+*+*+*" 200
+          echo "## Smoke routes (wrangler dev)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          grep -v '^FAIL$' smoke.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ! grep -q '^FAIL$' smoke.txt
+
+      - name: Headers and HTML sanity
+        run: |
+          curl -s -D - -o /tmp/home.html http://localhost:8787/ | grep -iE '^(content-security-policy|strict-transport|x-frame|cache-control)' | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -o '<link rel="canonical" href="[^"]*"' /tmp/home.html | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -c 'Attorney Advertising' /tmp/home.html
+
+      - name: Worker log
+        if: always()
+        run: tail -80 wrangler.log
+
+      - name: Upload bundle report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-spike
+          path: |
+            smoke.txt
+            wrangler.log
+          if-no-files-found: ignore

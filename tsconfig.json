@@ -30,5 +30,12 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    // Cloudflare Worker entry + OpenNext config: built by wrangler/esbuild, not
+    // part of the app typecheck (they import generated .open-next output).
+    "cloudflare",
+    "open-next.config.ts",
+    ".open-next"
+  ]
 }
