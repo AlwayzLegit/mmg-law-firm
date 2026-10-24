@@ -1,0 +1,97 @@
+name: Cloudflare deploy (staging)
+
+# Deploys the Worker to Cloudflare. Manual only until cutover (workstream D
+# of docs/cloudflare-migration-plan.md). Production DNS is never touched by
+# this job: the Worker is reachable at its workers.dev URL and at whatever
+# custom domains are attached in the Cloudflare dashboard (staging first).
+#
+# Repository secrets required:
+#   CLOUDFLARE_API_TOKEN   scoped token: Workers Scripts, R2, Images, DNS read
+#   CLOUDFLARE_ACCOUNT_ID
+# Optional (each is set as a Worker secret when present):
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+#   SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL,
+#   LEAD_NOTIFY_EMAIL, NEXT_PUBLIC_TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY,
+#   CRON_SECRET, REVALIDATE_SECRET, ADMIN_API_KEY, NEXT_PUBLIC_SENTRY_DSN
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: Public origin the Worker should consider itself (canonicals, emails)
+        default: https://staging.mmg-lawfirm.com
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Worker
+        run: pnpm cf:build
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ inputs.site_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Deploy
+        run: pnpm exec wrangler deploy --var "NEXT_PUBLIC_SITE_URL:${{ inputs.site_url }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Worker secrets
+        # Only the secrets that exist in this repository are pushed; the rest
+        # are left as they are on the Worker.
+        run: |
+          node -e '
+            const names = ["NEXT_PUBLIC_SUPABASE_URL","NEXT_PUBLIC_SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","RESEND_API_KEY","RESEND_FROM_EMAIL","LEAD_NOTIFY_EMAIL","NEXT_PUBLIC_TURNSTILE_SITE_KEY","TURNSTILE_SECRET_KEY","CRON_SECRET","REVALIDATE_SECRET","ADMIN_API_KEY","NEXT_PUBLIC_SENTRY_DSN"];
+            const out = {};
+            for (const n of names) if (process.env["S_" + n]) out[n] = process.env["S_" + n];
+            require("fs").writeFileSync("secrets.json", JSON.stringify(out));
+            console.log("setting:", Object.keys(out).join(", ") || "(none)");
+          '
+          pnpm exec wrangler secret bulk secrets.json
+          rm -f secrets.json
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          S_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          S_NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          S_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          S_RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          S_RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          S_LEAD_NOTIFY_EMAIL: ${{ secrets.LEAD_NOTIFY_EMAIL }}
+          S_NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          S_TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          S_CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          S_REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+          S_ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          S_NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+
+      - name: Smoke the deployed Worker
+        run: |
+          url=$(pnpm exec wrangler deployments list --json 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log((j[0]&&j[0].url)||"")}catch{console.log("")}})')
+          echo "workers.dev URL: ${url:-unknown}"
+          [ -n "$url" ] || exit 0
+          for p in / /contact /practice-areas/car-accidents /blog /car-accidents /admin; do
+            curl -s -o /dev/null -w "$p -> %{http_code} %{redirect_url}\n" --max-time 60 "$url$p"
+          done
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

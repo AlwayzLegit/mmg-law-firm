@@ -17,6 +17,10 @@
       "service": "mmg-law-firm"
     }
   ],
+  // Cloudflare Images binding: with it, OpenNext resizes/encodes /_next/image
+  // requests (AVIF/WebP at the requested width). Without it the original file
+  // is passed through unoptimized, which workstream B measured.
+  "images": { "binding": "IMAGES" },
   "r2_buckets": [
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
