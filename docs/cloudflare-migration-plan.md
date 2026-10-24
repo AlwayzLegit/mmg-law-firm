@@ -102,6 +102,31 @@ Images: budget the **Images** transformations line item (first 5k/month free
 at time of writing — verify in the dashboard). R2/D1/DO usage will be in
 the free allowance at this traffic.
 
+## 1b. Spike results (2026-10-24, branch `infra/cloudflare-spike`)
+
+Workstream A was run. Facts, not expectations:
+
+| Question | Answer |
+|---|---|
+| Does the adapter support our Next version? | **Not 16.2.6.** `@opennextjs/cloudflare` 1.20.13 needs Next `>=16.4.1`. The branch upgrades Next, `eslint-config-next` and `@next/mdx` to **16.4.3**; typecheck, lint and tests pass after one test-helper fix (`PreparedImageConfig` gained `allSizes`/`output`). |
+| Does the Worker build? | **Yes, on Linux.** `next build` (940 static pages) + OpenNext bundling completes in the CI job in ~2.5 min. On Windows the OpenNext step fails (`EPERM: symlink`) because it replicates pnpm's symlink layout; the adapter warns Windows is unsupported. Build on CI or WSL. |
+| Turbopack or webpack? | **webpack for the Worker.** With Turbopack output, the Sentry instrumentation hook referenced a server chunk OpenNext didn't carry (`Not found server/chunks/[root-of-the-server]__….js`) and every request 500'd. `open-next.config.ts` sets `buildCommand: "pnpm exec next build --webpack"`; Vercel keeps Turbopack. |
+| Does it serve under workerd? | **Yes.** `wrangler dev` (local R2 + Durable Objects, no account) answered 16 of 17 smoke routes exactly as production does: home, contact, practice hub and page, a city page, a guide, legal, sitemap, robots, llms.txt all 200; legacy `/car-accidents` 308 → practice page; `/admin` 307 → `/login?next=/admin`; `/login` 200; `/api/cron/*` 401 without the bearer; unknown path 404. `/blog` returned 404 only because CI has no Supabase secrets (nothing to list). |
+| Do Cron Triggers work? | **Yes.** `wrangler dev --test-scheduled` + `/__scheduled?cron=0+*+*+*+*` invoked `cloudflare/worker.ts`'s `scheduled()`, which mapped the expression to `/api/cron/publish-scheduled` and called it in-process with the bearer (200). |
+| Sentry? | The server hook loads under the webpack bundle (no errors in the Worker log). Server-side event delivery still needs `@sentry/cloudflare` wiring and a real DSN test in B. |
+| Images, ISR invalidation, OG images | Not yet exercised: no Supabase data in CI, no Images binding configured. Covered in B. |
+
+What the branch adds: `open-next.config.ts`, `wrangler.jsonc` (bindings, cron
+triggers mirrored from `src/lib/cron/schedules.ts` with a test), `cloudflare/worker.ts`
+(handler + `scheduled()`), `pnpm cf:build | cf:preview | cf:deploy`, and
+`.github/workflows/cloudflare-spike.yml`, which rebuilds and smoke-tests the Worker
+on every push to `infra/**`.
+
+Next for B: add `NEXT_PUBLIC_SUPABASE_URL` / `_ANON_KEY` as repository secrets so the
+smoke run renders real data (the Lighthouse workflow wants the same two), then
+extend the smoke list with `/blog`, a blog post, an OG image route and
+`/_next/image?url=…`.
+
 ## 2. Workstreams
 
 ### A. Build compatibility spike (1–2 days, no production impact)

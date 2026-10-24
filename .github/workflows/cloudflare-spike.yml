@@ -49,6 +49,7 @@ jobs:
 
       - name: Bundle report
         run: |
+          echo "worker.js $(du -h .open-next/worker.js | cut -f1), gzipped $(gzip -c .open-next/worker.js | wc -c | awk '{printf "%.2f", $1/1048576}') MB; assets $(du -sh .open-next/assets | cut -f1); server-functions $(du -sh .open-next/server-functions | cut -f1)"
           echo "## Worker bundle" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           ls -la .open-next/ >> "$GITHUB_STEP_SUMMARY"
@@ -85,7 +86,10 @@ jobs:
           check /practice-areas 200
           check /practice-areas/car-accidents 200
           check /locations/los-angeles-county/glendale 200
-          check /blog 200
+          # /blog lists posts from Supabase; without the secrets it has nothing to
+          # list and returns 404 by design. Either is fine; a 500 is not.
+          code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8787/blog); printf '%-55s %s
+' /blog "$code" | tee -a smoke.txt; [ "$code" = 200 ] || [ "$code" = 404 ] || echo FAIL >> smoke.txt
           check /rear-end-car-accident-lawyer 200
           check /legal/privacy 200
           check /sitemap.xml 200
