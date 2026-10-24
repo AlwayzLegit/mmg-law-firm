@@ -222,6 +222,7 @@ In **Settings → Environment Variables**, add every variable from
 | `TURNSTILE_SECRET_KEY` | Yes | From step 5 |
 | `REVALIDATE_SECRET` | Yes | Any random string — `openssl rand -hex 32` |
 | `CRON_SECRET` | Yes | Any random string — `openssl rand -hex 32`. Without it the four scheduled jobs (`src/lib/cron/schedules.ts`) return 503. Production only; the scheduler sends it as `Authorization: Bearer`. |
+| `NEXT_PUBLIC_LOCALE_PAGES_LIVE` | No | `1` publishes the Armenian and Russian pages (`/hy`, `/ru`, `/hy/contact`, `/ru/contact`): indexable, hreflang on the English home/contact pages, sitemap entries, language links in the footer and mobile menu. Unset (default) the pages still render but `noindex`, for attorney review of the translations (`src/lib/i18n/dictionaries/{hy,ru}.ts`). Build-time variable: redeploy after changing it. |
 | `TWILIO_*` | No | Leave blank until 10DLC is registered |
 | `NEXT_PUBLIC_GA_ID` | No | Add when GA4 is set up |
 

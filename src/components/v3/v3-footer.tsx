@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { DISCLAIMERS, FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
+import { LOCALE_NAMES, ROUTED_LOCALES, localePath } from "@/lib/i18n/config";
+import { localePagesLive } from "@/lib/i18n/routes";
 import { getFirmSettings } from "@/lib/data/firm-settings";
 import {
   ABOUT_LINKS,
@@ -73,7 +75,18 @@ export async function V3Footer() {
           <a href={`mailto:${FIRM.email}`} className="v3f-email">
             {FIRM.email}
           </a>
-          <p className="v3f-langs">{FIRM.languages.join(" / ")}</p>
+          <div className="v3f-langs">
+            {FIRM.languages.join(" / ")}
+            {localePagesLive() ? (
+              <div className="v3f-langs-links">
+                {ROUTED_LOCALES.map((l) => (
+                  <Link key={l} href={localePath(l, "/")} hrefLang={l} lang={l}>
+                    {LOCALE_NAMES[l].native}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <Link href="/contact" className="v3f-cta">
             Free Case Consultation
           </Link>

@@ -5,7 +5,10 @@ import type { CSSProperties } from "react";
 import { useForm } from "react-hook-form";
 
 import { Turnstile } from "@/components/marketing/turnstile";
-import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
+import { FIRM } from "@/lib/constants";
+import { fmt } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n/config";
+import { en, type Dictionary } from "@/lib/i18n/dictionaries/en";
 import {
   ATTRIBUTION_FIELDS,
   readAttributionInBrowser,
@@ -25,7 +28,9 @@ type Field = {
   required: boolean;
   tag: string;
   row?: boolean;
-  options?: { value: string; label: string }[];
+  /** `slug` maps the option straight to a practice-area slug; without it the
+   *  English label is matched (practiceFromLabel), which localized labels can't use. */
+  options?: { value: string; label: string; slug?: string }[];
   style?: string;
 };
 
@@ -42,7 +47,14 @@ type Props = {
   buttonClassName?: string;
   note?: string;
   noteStyle?: CSSProperties;
+  /** Language of the page; sent with the lead so consent is snapshotted in
+   *  that language and intake calls back in it. Defaults to English. */
+  locale?: Locale;
+  /** Localized form copy (status text, errors, consent). Defaults to English. */
+  copy?: LeadFormCopy;
 };
+
+export type LeadFormCopy = Dictionary["leadForm"];
 
 const DESCRIPTION_MAX = 500;
 
@@ -77,12 +89,14 @@ export function V3LeadForm({
   buttonClassName,
   note,
   noteStyle,
+  locale = "en",
+  copy = en.leadForm,
 }: Props) {
   const uid = React.useId();
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
     resolver: lazyLeadResolver,
     mode: "onBlur",
-    defaultValues: { ...leadFormDefaults, practice_area: practiceArea },
+    defaultValues: { ...leadFormDefaults, practice_area: practiceArea, locale },
   });
   const [sent, setSent] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -114,7 +128,7 @@ export function V3LeadForm({
         signal: controller.signal,
       });
       if (res.status === 429) {
-        setError(`You've sent several requests recently. Please call ${FIRM.phone}.`);
+        setError(fmt(copy.errors.rateLimited, { phone: FIRM.phone }));
         return;
       }
       if (!res.ok) {
@@ -126,26 +140,25 @@ export function V3LeadForm({
           for (const [f, msgs] of Object.entries(data.issues)) {
             if (msgs?.[0]) form.setError(f as keyof LeadFormValues, { message: msgs[0] });
           }
-          setError("Please check the highlighted fields.");
+          setError(copy.errors.checkFields);
           return;
         }
         setError(
-          data.error === "turnstile-failed"
-            ? `Bot protection failed to load. Please call ${FIRM.phone}.`
-            : `We couldn't submit your request. Please try again or call ${FIRM.phone}.`,
+          fmt(
+            data.error === "turnstile-failed" ? copy.errors.turnstile : copy.errors.generic,
+            { phone: FIRM.phone },
+          ),
         );
         return;
       }
       void recordStoredLead(res);
       setSent(values.full_name.trim().split(/\s+/)[0] || "for reaching out");
       capture("lead_submitted", { variant: "v3", practice_area: values.practice_area || undefined });
-      form.reset({ ...leadFormDefaults, practice_area: practiceArea });
+      form.reset({ ...leadFormDefaults, practice_area: practiceArea, locale });
     } catch (err) {
       const aborted = err instanceof DOMException && err.name === "AbortError";
       setError(
-        aborted
-          ? `This is taking longer than expected. Please call ${FIRM.phone}.`
-          : `Network error. Please try again or call ${FIRM.phone}.`,
+        fmt(aborted ? copy.errors.timeout : copy.errors.network, { phone: FIRM.phone }),
       );
     } finally {
       clearTimeout(timeout);
@@ -155,10 +168,9 @@ export function V3LeadForm({
   if (sent) {
     return (
       <div id={id} role="status" aria-live="polite">
-        <p style={{ fontSize: 26, lineHeight: 1.25, color: "#131a20" }}>Thank you, {sent}.</p>
+        <p style={{ fontSize: 26, lineHeight: 1.25, color: "#131a20" }}>{fmt(copy.successTitle, { name: sent })}</p>
         <p style={{ marginTop: 12, fontSize: 16.5, lineHeight: 1.6, color: "#3a434a" }}>
-          Your request has been received. We follow up during office hours. For immediate help,
-          call{" "}
+          {copy.successBody}{" "}
           <a href={`tel:${FIRM.phoneTel}`} style={{ color: "#987022" }}>
             {FIRM.phone}
           </a>
@@ -224,7 +236,7 @@ export function V3LeadForm({
             defaultValue=""
             onChange={(e) => {
               const opt = f.options?.find((o) => o.value === e.target.value);
-              form.setValue("practice_area", opt ? practiceFromLabel(opt.label) ?? practiceArea : practiceArea);
+              form.setValue("practice_area", opt ? (opt.slug ?? practiceFromLabel(opt.label) ?? practiceArea) : practiceArea);
             }}
           >
             {(f.options ?? []).map((o) => (
@@ -260,7 +272,7 @@ export function V3LeadForm({
       }}
     >
       <div aria-hidden style={{ position: "absolute", left: -9999, width: 0, height: 0, overflow: "hidden" }}>
-        <label htmlFor={`${uid}-company`}>Company (leave blank)</label>
+        <label htmlFor={`${uid}-company`}>{copy.honeypot}</label>
         <input id={`${uid}-company`} type="text" tabIndex={-1} autoComplete="off" {...form.register("company")} />
       </div>
       {rowFields.length ? <div style={rowStyle}>{rowFields.map(renderField)}</div> : null}
@@ -268,7 +280,7 @@ export function V3LeadForm({
 
       <label style={{ display: "grid", gridTemplateColumns: "20px 1fr", gap: 10, alignItems: "start", fontSize: 13, lineHeight: 1.5, color: "#3a434a", cursor: "pointer" }}>
         <input type="checkbox" style={{ width: 18, height: 18, marginTop: 2, accentColor: "#987022" }} aria-invalid={!!errors.consent_contact} {...form.register("consent_contact")} />
-        <span>{TCPA_CONSENT_TEXT}</span>
+        <span>{copy.consent}</span>
       </label>
       {errors.consent_contact ? <p style={errStyle}>{errors.consent_contact.message}</p> : null}
 
@@ -294,7 +306,7 @@ export function V3LeadForm({
           opacity: form.formState.isSubmitting ? 0.7 : 1,
         }}
       >
-        {form.formState.isSubmitting ? "Sending…" : submitLabel}
+        {form.formState.isSubmitting ? copy.sending : submitLabel}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}>
           <path d="M5 12h14" />
           <path d="M13 18l6-6" />

@@ -10,6 +10,8 @@ import {
 } from "@/lib/data/queries";
 import { canonicalUrl, siteUrl } from "@/lib/seo/canonical";
 import { sharedContentRevision } from "@/lib/seo/content-revisions";
+import { ROUTED_LOCALES, localePath } from "@/lib/i18n/config";
+import { LOCALIZED_PATHS, localeAlternates, localePagesLive } from "@/lib/i18n/routes";
 import { V3_GUIDES } from "@/lib/v3/pages";
 
 /** Normalize a possibly-relative image URL to absolute for the sitemap. */
@@ -72,6 +74,23 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       : {}),
   }));
 
+  // Localized landing + contact pages, once published (hreflang in both
+  // directions so Google pairs them with the English originals).
+  if (localePagesLive()) {
+    for (const enPath of LOCALIZED_PATHS) {
+      const languages = localeAlternates(enPath);
+      const en = entries.find((e) => e.url === canonicalUrl(enPath));
+      if (en && languages) en.alternates = { languages };
+      for (const loc of ROUTED_LOCALES) {
+        entries.push({
+          url: canonicalUrl(localePath(loc, enPath)),
+          changeFrequency: "monthly",
+          priority: enPath === "/" ? 0.8 : 0.6,
+          ...(languages ? { alternates: { languages } } : {}),
+        });
+      }
+    }
+  }
   // Guide pages from the v3 design (root-level slugs).
   for (const g of V3_GUIDES) {
     entries.push({

@@ -5,6 +5,7 @@ import { FIRM } from "@/lib/constants";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { buildFaqPage, buildService } from "@/lib/seo/schema";
+import { localeAlternates } from "@/lib/i18n/routes";
 import { V3_BY_KEY, v3Crumbs } from "@/lib/v3/pages";
 
 import { V3_FAQS } from "./v3-faqs";
@@ -12,7 +13,12 @@ import { V3_FAQS_EXTRACTED } from "./v3-faqs-extracted";
 
 export function v3Metadata(key: string) {
   const m = V3_BY_KEY[key];
-  return buildMetadata({ title: m.title, description: m.description, path: m.path });
+  const meta = buildMetadata({ title: m.title, description: m.description, path: m.path });
+  // hreflang to the Armenian / Russian versions of the home and contact pages
+  // once those are published (src/lib/i18n/routes.ts).
+  const languages = localeAlternates(m.path);
+  if (languages) meta.alternates = { ...meta.alternates, languages };
+  return meta;
 }
 
 /**

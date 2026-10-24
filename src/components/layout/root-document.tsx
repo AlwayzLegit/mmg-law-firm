@@ -98,16 +98,25 @@ export default function RootDocument({
   children,
   publicAnalytics = false,
   bodyClassName,
+  lang = "en",
+  htmlClassName,
+  skipLabel = "Skip to main content",
 }: Readonly<{
   children: React.ReactNode;
   publicAnalytics?: boolean;
   /** Theme class for this root (e.g. "theme-admin"). */
   bodyClassName?: string;
+  /** <html lang>, BCP-47. Localized roots pass their locale. */
+  lang?: string;
+  /** Extra <html> classes (e.g. a locale font variable). */
+  htmlClassName?: string;
+  /** Localized skip-link text. */
+  skipLabel?: string;
 }>) {
   return (
     <html
-      lang="en"
-      className={`${inter.variable} ${fraunces.variable} ${libre.variable} ${lato.variable} h-full antialiased`}
+      lang={lang}
+      className={[inter.variable, fraunces.variable, libre.variable, lato.variable, htmlClassName, "h-full antialiased"].filter(Boolean).join(" ")}
     >
       <body
         className={["flex min-h-full flex-col", bodyClassName]
@@ -115,7 +124,7 @@ export default function RootDocument({
           .join(" ")}
       >
         <a href="#main-content" className="skip-link">
-          Skip to main content
+          {skipLabel}
         </a>
 
         <SchemaGraph />
