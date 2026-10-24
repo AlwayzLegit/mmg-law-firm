@@ -95,7 +95,11 @@ jobs:
           # Admin-managed redirect: proxy.ts reads the redirects table live.
           check /blog/dog-bite-lawyer-california-5 308 /blog/dog-bite-lawyer-california
           check /sitemaps/car-accidents.xml 200
-          check /practice-areas/car-accidents/opengraph-image 200
+          # OG image: Next serves it at a hashed URL; take it from the page's own
+          # og:image tag rather than guessing the path.
+          og=$(curl -s http://localhost:8787/practice-areas/car-accidents | grep -o '<meta property="og:image" content="[^"]*"' | head -1 | sed 's/.*content="//;s/"$//' | sed -E 's#^https?://[^/]+##')
+          echo "og:image path: $og"
+          check "$og" 200
           # Image optimizer route. Without an Images binding OpenNext may pass the
           # original through; what matters here is 200 + an image content type.
           check "/_next/image?url=%2Fv3%2Fportraits%2Fattorney-standing-transparent-portrait.webp&w=640&q=75" 200
@@ -119,7 +123,8 @@ jobs:
 
       - name: Content types
         run: |
-          for u in /practice-areas/car-accidents/opengraph-image "/_next/image?url=%2Fv3%2Fportraits%2Fattorney-standing-transparent-portrait.webp&w=640&q=75"; do
+          og=$(curl -s http://localhost:8787/practice-areas/car-accidents | grep -o '<meta property="og:image" content="[^"]*"' | head -1 | sed 's/.*content="//;s/"$//' | sed -E 's#^https?://[^/]+##')
+          for u in "$og" "/_next/image?url=%2Fv3%2Fportraits%2Fattorney-standing-transparent-portrait.webp&w=640&q=75"; do
             ct=$(curl -s -o /dev/null -w "%{content_type} %{size_download}B" "http://localhost:8787$u")
             printf '%-70s %s\n' "$u" "$ct" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "$ct" | grep -q '^image/' || { echo "  not an image"; exit 1; }
