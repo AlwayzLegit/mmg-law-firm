@@ -1,54 +1,45 @@
 import { redirect } from "next/navigation";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import AuthCard from "@/components/admin/auth-card";
 import PasswordForm from "@/components/admin/password-form";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export const metadata = {
-  title: "Set your password",
+  title: "Set up your account",
   robots: { index: false, follow: false },
 };
 
-type Props = { searchParams: Promise<{ reset?: string }> };
-
 /**
- * The one "choose a password" page. Every one-time link (invite, re-sent
- * invite, sign-in link) lands here after /auth/callback signs the admin in:
+ * Account set-up for a newly invited admin. The invite email's link lands
+ * here after /auth/callback signs them in; they choose a password and go on
+ * to /admin. requireAdmin() sends any admin without a password here from
+ * anywhere in /admin, so the step can't be skipped. An admin who already
+ * has a password is sent straight to /admin.
  *
- * - An admin with no password yet (invite not completed) sees the welcome
- *   copy. requireAdmin() sends them here from anywhere in /admin until they
- *   finish, so the step can't be skipped.
- * - An admin who already has a password only gets here through a sign-in
- *   link (`?reset=1`); they choose a new password. Without `?reset=1` they
- *   are sent on to /admin.
+ * Password resets do not use this page; see /reset-password.
  */
-export default async function OnboardingPage({ searchParams }: Props) {
-  const { reset } = await searchParams;
+export default async function OnboardingPage() {
   // allowUnonboarded so this page doesn't bounce the very user it's meant for.
-  const { profile } = await requireAdmin({ allowUnonboarded: true });
-  if (profile.password_set && !reset) redirect("/admin");
+  const { profile, user } = await requireAdmin({ allowUnonboarded: true });
+  if (profile.password_set) redirect("/admin");
 
-  const firstRun = !profile.password_set;
   return (
-    <main className="bg-secondary/40 flex min-h-screen flex-col items-center justify-center px-4 py-16">
-      <div className="border-border bg-card w-full max-w-md rounded-2xl border p-8 shadow-sm">
-        <p className="text-primary text-xs font-medium tracking-[0.18em] uppercase">
-          MMG Law Firm
-        </p>
-        <h1 className="font-display mt-3 text-2xl font-medium tracking-tight">
-          {firstRun ? "Set your password" : "Choose a new password"}
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm">
-          {firstRun
-            ? `Welcome${profile.full_name ? `, ${profile.full_name}` : ""}. You're signed in. Create a password to finish setting up your account; from then on you sign in with your email and this password.`
-            : "You're signed in through your link. Pick a new password to finish; your old one stops working."}
-        </p>
-        <PasswordForm
-          idPrefix="onboarding"
-          className="mt-6 grid gap-3"
-          submitLabel="Set password & continue"
-          redirectTo="/admin"
-        />
-      </div>
-    </main>
+    <AuthCard
+      title="Set up your account"
+      subtitle={
+        <>
+          Welcome{profile.full_name ? `, ${profile.full_name}` : ""}. Choose a
+          password for <span className="font-medium">{user.email}</span>.
+          You&apos;ll use it with your email to sign in from now on.
+        </>
+      }
+    >
+      <PasswordForm
+        idPrefix="onboarding"
+        className="mt-6 grid gap-3"
+        submitLabel="Save password & continue"
+        redirectTo="/admin"
+      />
+    </AuthCard>
   );
 }

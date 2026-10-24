@@ -36,8 +36,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Keep the destination on this site. `next` may carry its own query
-  // (e.g. /onboarding?reset=1), so parse it rather than assigning pathname.
+  // Keep the destination on this site. Our links set `next` to /onboarding
+  // (invite) or /reset-password (recovery); parse it rather than assigning
+  // pathname so a query string survives.
   const dest = new URL(
     next.startsWith("/") && !next.startsWith("//") ? next : "/admin",
     url.origin,

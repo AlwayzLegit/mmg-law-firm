@@ -6,7 +6,7 @@ export function isPrivateAnalyticsPath(pathname: string): boolean {
   } catch {
     /* Match the literal path. */
   }
-  return /^\/(?:admin|login|onboarding|auth)(?:\/|$)/i.test(path);
+  return /^\/(?:admin|login|forgot-password|reset-password|onboarding|auth)(?:\/|$)/i.test(path);
 }
 
 export function isPrivateAnalyticsUrl(value: string, origin: string): boolean {

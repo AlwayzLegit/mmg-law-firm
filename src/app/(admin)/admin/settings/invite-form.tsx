@@ -68,11 +68,10 @@ export default function InviteForm() {
         {pending ? "Sending invite..." : "Send invite"}
       </Button>
       <p className="text-xs text-muted-foreground">
-        The invitee gets an email with a one-time link (expires in one hour).
-        Opening it signs them in and asks them to choose a password; after
-        that they sign in with email and password. Until they do, their row
-        above shows &ldquo;Invite pending&rdquo; with resend and copy-link
-        buttons.
+        The invitee gets an email with a one-time link (expires in one hour)
+        that opens their account set-up page to choose a password. After that
+        they sign in with email and password. Until they do, their row above
+        shows &ldquo;Invite pending&rdquo; with resend and copy-link buttons.
       </p>
     </form>
   );

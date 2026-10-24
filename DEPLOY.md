@@ -129,16 +129,16 @@ for a fresh one.
 
 No email is sent by this step on purpose — it works before Resend is
 verified (§4). Once Resend is live, every later admin is invited from
-`/admin/settings` and every stuck admin can self-serve with
-“Email me a sign-in link” on `/login`.
+`/admin/settings` and anyone locked out can self-serve with
+“Forgot password?” on `/login`.
 
 ### How admin access works after that
 
 | Situation | What to do |
 |---|---|
-| Add a colleague | Owner: `/admin/settings` → Invite. They get a one-time link → choose a password → done. Until then their row shows **Invite pending** with **Resend invite** / **Copy link**. |
-| Invite email never arrived / link expired | Invitee: `/login` → “Email me a sign-in link”. Or owner: **Resend invite**, or **Copy link** and send it by text. |
-| Forgot password | `/login` → “Email me a sign-in link” → choose a new password. |
+| Add a colleague | Owner: `/admin/settings` → Invite. They get an email → “Set up your account” page → choose a password → `/admin`. Until then their row shows **Invite pending** with **Resend invite** / **Copy link**. |
+| Invite email never arrived / link expired | Owner: **Resend invite**, or **Copy link** and send it by text. The invitee can also use “Forgot password?” on `/login`; it works before a password exists. |
+| Forgot password | `/login` → “Forgot password?” → email → “Choose a new password” → sign in again. |
 | Change your own password | `/admin/settings` → Security. |
 | Revoke access | Owner: `/admin/settings` → Remove on their row (the last owner can't be removed). |
 
@@ -259,7 +259,7 @@ Walk through this checklist on the deployed URL:
       `leads` table for the row, check the LEAD_NOTIFY_EMAIL inbox for
       the notification
 - [ ] `/login` → sign in with the owner email + password → land in `/admin`
-- [ ] `/login` → “Email me a sign-in link” → email arrives → opens `/onboarding`
+- [ ] `/login` → “Forgot password?” → email arrives → opens `/reset-password`
 - [ ] [Google Rich Results Test](https://search.google.com/test/rich-results)
       against the homepage — should detect LegalService + WebSite + Person
 
@@ -327,8 +327,8 @@ sender is stubbed and no-ops.
   `pnpm bootstrap-owner` for the owner, or invite the person from
   `/admin/settings`.
 - **“Invalid email or password” for a new admin** — they never chose a
-  password (invite link unused or expired). They should use “Email me a
-  sign-in link” on `/login`; no owner action needed.
+  password (invite link unused or expired). Resend the invite from
+  `/admin/settings`, or they can use “Forgot password?” on `/login`.
 - **Lead form submits but no email arrives** — usually `RESEND_FROM_EMAIL`
   is on an unverified domain. Check Resend → Logs for the 422.
 - **Static pages show stale content after editing in admin** — the

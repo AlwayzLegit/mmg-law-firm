@@ -10,10 +10,10 @@ import { sendEmail } from "@/lib/email/resend";
 import { FIRM } from "@/lib/constants";
 
 /**
- * Admin login: email + password, nothing else.
+ * Admin sign-in: email + password, plus the standard forgot-password flow.
  *
  * The only emails this flow ever sends are the admin invite (settings) and
- * the sign-in link below. Both are generated server-side with
+ * the password-reset link below. Both are generated server-side with
  * `auth.admin.generateLink` and delivered through Resend, so Supabase's own
  * mailer (default SMTP, heavily rate-limited) is never involved. Both links
  * are `token_hash` links verified by /auth/callback, which needs no prior
@@ -61,18 +61,14 @@ export async function loginWithPassword(input: {
     password: password.data,
   });
   if (error || !data.user) {
-    return {
-      ok: false,
-      error:
-        "Invalid email or password. Never set a password, or forgot it? Use “Email me a sign-in link” below.",
-    };
+    return { ok: false, error: "Incorrect email or password." };
   }
 
   if (!(await isAdminUser(data.user.id))) {
     await supabase.auth.signOut();
     return {
       ok: false,
-      error: "This account isn't authorized for admin access.",
+      error: "This account isn't authorized for the admin.",
     };
   }
 
@@ -80,22 +76,21 @@ export async function loginWithPassword(input: {
 }
 
 /**
- * Email a one-time sign-in link. This is the single self-service recovery
- * for every stuck state: forgot the password, invite link expired before a
- * password was chosen, or the first owner created from the CLI. The link
- * signs the admin in and lands on /onboarding to choose a password.
+ * Email a password-reset link. The link signs the admin in and lands on
+ * /reset-password to choose a new password. It also works for an invited
+ * admin who never finished setting one up.
  *
  * Always reports success so the form cannot be used to discover which
  * addresses are admins; the email is only sent when the address belongs to
  * an admin_profiles user. Limited to 5 requests per address per hour.
  */
-export async function requestSignInLink(input: {
+export async function requestPasswordReset(input: {
   email: string;
 }): Promise<{ ok: true }> {
   const email = Email.safeParse(input.email);
   if (!email.success) return { ok: true };
 
-  const limit = await checkRateLimit(`signin-link:${email.data}`, 5);
+  const limit = await checkRateLimit(`pw-reset:${email.data}`, 5);
   if (!limit.allowed) return { ok: true };
 
   const admin = getServiceSupabase();
@@ -110,27 +105,27 @@ export async function requestSignInLink(input: {
 
   const url = `${siteUrl()}/auth/callback?token_hash=${encodeURIComponent(
     link.properties.hashed_token,
-  )}&type=recovery&next=${encodeURIComponent("/onboarding?reset=1")}`;
+  )}&type=recovery&next=${encodeURIComponent("/reset-password")}`;
 
   await sendEmail({
     to: email.data,
-    subject: `Your ${FIRM.legalName} admin sign-in link`,
+    subject: `Reset your ${FIRM.legalName} admin password`,
     html: `
       <div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
-        <h2 style="margin: 0 0 12px;">Sign in and choose a password</h2>
+        <h2 style="margin: 0 0 12px;">Reset your password</h2>
         <p style="font-size: 14px; line-height: 1.6; color: #444;">
-          Someone asked for a sign-in link for the admin account at this
-          address. The button signs you in and asks you to choose a
-          password. It works once and expires in one hour.
+          We received a request to reset the admin password for this address.
+          Click the button to choose a new one. The link works once and
+          expires in one hour.
         </p>
         <p style="margin: 24px 0;">
           <a href="${url}" style="display: inline-block; background: #2b46d8; color: #fff; text-decoration: none; padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-            Sign in &amp; choose a password
+            Reset password
           </a>
         </p>
         <p style="font-size: 12px; line-height: 1.6; color: #888;">
-          If you didn't ask for this, you can ignore this email. Nothing
-          changes until the link is opened.
+          If you didn't request this, you can ignore this email. Your password
+          stays the same until you choose a new one.
         </p>
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
         <p style="font-size: 12px; color: #aaa;">${FIRM.legalName}</p>
