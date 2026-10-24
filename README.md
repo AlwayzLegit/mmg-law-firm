@@ -91,14 +91,15 @@ These are not required for the site to run, but each unlocks a feature when set 
 
 | Var             | Enables                                                                                                                                                                | When unset                                  |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `CRON_SECRET`   | Weekly lead-digest email (`/api/cron/weekly-digest`, scheduled in `vercel.json` for Mondays 14:00 UTC). Vercel Cron sends it as `Authorization: Bearer <CRON_SECRET>`. | Endpoint returns `503 cron-not-configured`. |
+| `CRON_SECRET`   | The three scheduled jobs in `src/lib/cron/schedules.ts` (weekly digest, daily agenda, publish-scheduled). The scheduler sends it as `Authorization: Bearer <CRON_SECRET>`; `vercel.json` mirrors the registry (a test enforces it). | Endpoints return `503 cron-not-configured`. |
+| `LEAD_NOTIFY_EMAIL` | New-lead notification emails, the weekly digest and the daily agenda. | No lead emails are sent; digest/agenda return `503 no-recipient`. |
 | `ADMIN_API_KEY` | **Legacy** shared token for the admin REST API at `/api/admin/*` (all scopes). Prefer scoped keys from `/admin/settings/api-keys`; see `docs/admin-api.md` and `docs/content-agent-runbook.md`. | Only scoped keys are accepted.             |
 | `CONTENT_NOTIFY_EMAIL` | Where content-agent run reports / questions are emailed.                                                                                                        | Falls back to `LEAD_NOTIFY_EMAIL`.         |
 
-Manually test the digest after setting `CRON_SECRET` (requires `LEAD_NOTIFY_EMAIL` + Resend, already configured):
+Manually run a job after setting `CRON_SECRET` (the secret is accepted in the header only, never as a query string):
 
 ```sh
-curl -i "https://www.mmg-lawfirm.com/api/cron/weekly-digest?secret=$CRON_SECRET"
+curl -i -H "Authorization: Bearer $CRON_SECRET" https://www.mmg-lawfirm.com/api/cron/publish-scheduled
 ```
 
 ## Bar compliance reminders

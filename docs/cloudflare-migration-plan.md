@@ -41,11 +41,59 @@ keep working through the cutover), no downtime, no performance regression
 - **Cloudflare Images binding** = `/_next/image` optimization (AVIF/WebP,
   quality 65/75). Keeps the hero/LCP strategy and the `minimumCacheTTL`.
 - **Cron Triggers** on the same Worker call the three `/api/cron/*` routes
-  internally with `Authorization: Bearer CRON_SECRET`.
+  internally with `Authorization: Bearer CRON_SECRET`. The routes are already
+  platform-neutral (`src/lib/cron/auth.ts`, header-only secret) and the
+  schedules live in one registry (`src/lib/cron/schedules.ts`), so the
+  Worker side is a few lines — see §1a.
 - **Secrets** via `wrangler secret` (same names as today's Vercel env).
 - **Sentry**: client side unchanged (`instrumentation-client.ts`); server
   side via `@sentry/cloudflare` `withSentry()` wrapping the Worker, with the
   same DSN. Source-map upload moves from the Vercel build to the CI build.
+
+### 1a. Cron on Workers
+
+`wrangler.jsonc` lists the same expressions as the registry (UTC on both
+platforms):
+
+```jsonc
+{
+  "triggers": { "crons": ["0 14 * * 1", "0 15 * * 1-5", "0 * * * *"] }
+}
+```
+
+The Worker entry wraps OpenNext's handler and adds `scheduled()`, which maps
+the fired expression back to its route and calls it with the bearer secret
+(`CRON_SECRET` set with `wrangler secret put`):
+
+```ts
+// worker.ts
+import handler from "./.open-next/worker.js";
+import { jobForSchedule } from "./src/lib/cron/schedules";
+
+export default {
+  fetch: handler.fetch,
+  async scheduled(event, env, ctx) {
+    const job = jobForSchedule(event.cron);
+    if (!job) return;
+    ctx.waitUntil(
+      handler.fetch(
+        new Request(`${env.NEXT_PUBLIC_SITE_URL}${job.path}`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${env.CRON_SECRET}` },
+        }),
+        env,
+        ctx,
+      ),
+    );
+  },
+} satisfies ExportedHandler;
+```
+
+Calling `handler.fetch` directly keeps the request inside the Worker (no
+public round trip), and `wrangler dev --test-scheduled` plus
+`curl "http://localhost:8787/__scheduled?cron=0+*+*+*+*"` exercises it
+locally. Add a `schedules.test.ts` case that compares `wrangler.jsonc`
+triggers to the registry, the same way `vercel.json` is checked today.
 
 Plan tier: **Workers Paid ($5/mo)** is required — the Worker bundle for this
 app (Sentry + MDX + recharts admin) will exceed the free 3 MB compressed

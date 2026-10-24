@@ -219,6 +219,7 @@ In **Settings → Environment Variables**, add every variable from
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Yes | From step 5 |
 | `TURNSTILE_SECRET_KEY` | Yes | From step 5 |
 | `REVALIDATE_SECRET` | Yes | Any random string — `openssl rand -hex 32` |
+| `CRON_SECRET` | Yes | Any random string — `openssl rand -hex 32`. Without it the three scheduled jobs (`src/lib/cron/schedules.ts`) return 503. Production only; the scheduler sends it as `Authorization: Bearer`. |
 | `TWILIO_*` | No | Leave blank until 10DLC is registered |
 | `NEXT_PUBLIC_GA_ID` | No | Add when GA4 is set up |
 

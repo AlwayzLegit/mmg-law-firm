@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 
 import { env } from "@/lib/env";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getDailyAgenda } from "@/lib/data/daily-agenda";
 import { renderDailyAgendaEmail } from "@/lib/email/daily-agenda";
@@ -11,36 +11,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function safeEqual(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ab.length !== bb.length) return false;
-  return timingSafeEqual(ab, bb);
-}
-
 /**
- * Daily agenda email. Authorized by CRON_SECRET (Vercel Cron sends it as
- * "Authorization: Bearer <CRON_SECRET>"; "?secret=" also works for manual
- * testing). Emails the day's overdue/due tasks, due follow-ups, and new
+ * Daily agenda email. Authorized by CRON_SECRET as
+ * "Authorization: Bearer <CRON_SECRET>" (see src/lib/cron/auth.ts). Emails the day's overdue/due tasks, due follow-ups, and new
  * unassigned intake to LEAD_NOTIFY_EMAIL. Skips sending on an empty day so it
  * never becomes noise. PII-light by construction (see getDailyAgenda).
  */
 async function handle(request: NextRequest) {
-  if (!env.CRON_SECRET) {
-    return NextResponse.json(
-      { ok: false, error: "cron-not-configured" },
-      { status: 503 },
-    );
-  }
-
-  const bearer = request.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "");
-  const query = new URL(request.url).searchParams.get("secret");
-  const provided = bearer ?? query ?? "";
-  if (!safeEqual(provided, env.CRON_SECRET)) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
+  const denied = requireCronAuth(request);
+  if (denied) return denied;
 
   const to = env.LEAD_NOTIFY_EMAIL;
   if (!to) {

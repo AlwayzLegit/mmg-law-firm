@@ -67,9 +67,10 @@ const ServerEnvSchema = z.object({
   // an external tool). Secret. When unset, /api/admin/* returns 503.
   ADMIN_API_KEY: z.string().default(""),
 
-  // Shared secret for cron-triggered routes (weekly digest). Vercel Cron
-  // sends it as "Authorization: Bearer <CRON_SECRET>". When unset, the cron
-  // endpoints return 401 so they can't be hit anonymously.
+  // Shared secret for the /api/cron/* routes (see src/lib/cron). Every
+  // scheduler — Vercel Cron today, a Cloudflare Worker scheduled() handler
+  // later — sends it as "Authorization: Bearer <CRON_SECRET>". When unset the
+  // routes return 503 so nothing runs anonymously.
   CRON_SECRET: z.string().default(""),
 
   // Safety valve for the strict Content-Security-Policy emitted by proxy.ts.
