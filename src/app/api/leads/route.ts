@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
         consent_ip: ip,
         consent_ts: consentAt,
         source_url: parsed.data.source_url ?? null,
+        landing_url: parsed.data.landing_url ?? null,
         utm_source: parsed.data.utm_source ?? null,
         utm_medium: parsed.data.utm_medium ?? null,
         utm_campaign: parsed.data.utm_campaign ?? null,

@@ -79,6 +79,7 @@ in order. Paste the contents of each file into a new query and click
 | 33 | `0033_private_auth_helpers.sql` | Moves `is_admin()` / `is_owner()` into the unexposed `app_private` schema. (There is no 0032 on `main`.) |
 | 34 | `0034_drop_trusted_devices.sql` | Drops the device-trust table; admin login is email + password only. |
 | 35 | `0035_admin_password_set.sql` | Adds `admin_profiles.password_set` (idempotent — a no-op where it was already added by hand). Required before `pnpm bootstrap-owner`. |
+| 36 | `0036_lead_landing_url.sql` | Adds `leads.landing_url` (first-touch landing page; `source_url` stays the page the form was submitted from). |
 
 If you prefer the CLI:
 

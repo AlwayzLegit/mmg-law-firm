@@ -76,6 +76,7 @@ Live in `supabase/migrations/`. Apply in numbered order:
 | `0008_homepage_faqs.sql`         | Adds homepage FAQs jsonb column                          |
 | `0009` – `0034`                  | Incremental features; see `DEPLOY.md` §2b for the list  |
 | `0035_admin_password_set.sql`    | `admin_profiles.password_set` (onboarding flag)          |
+| `0036_lead_landing_url.sql`      | `leads.landing_url` (first-touch attribution)            |
 
 ## Deployment
 

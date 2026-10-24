@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+
+import { channelOf } from "@/lib/analytics/attribution";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Copy, Mail, Phone } from "lucide-react";
 
@@ -430,7 +432,9 @@ export default async function LeadDetailPage({ params, searchParams }: Props) {
               <CardTitle className="text-base">Attribution</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm">
-              <Pair label="Source URL" value={lead.source_url ?? "—"} />
+              <Pair label="Channel" value={channelOf(lead)} />
+              <Pair label="Landing page" value={lead.landing_url ?? "—"} />
+              <Pair label="Submitted from" value={lead.source_url ?? "—"} />
               <Pair label="Referrer" value={lead.referrer ?? "—"} />
               <Pair label="UTM source" value={lead.utm_source ?? "—"} />
               <Pair label="UTM medium" value={lead.utm_medium ?? "—"} />

@@ -6,6 +6,10 @@ import { useForm } from "react-hook-form";
 
 import { Turnstile } from "@/components/marketing/turnstile";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
+import {
+  ATTRIBUTION_FIELDS,
+  readAttributionInBrowser,
+} from "@/lib/analytics/attribution";
 import { track } from "@/lib/analytics/track";
 import { recordStoredLead } from "@/lib/analytics/stored-lead";
 import { practiceFromLabel } from "@/lib/data/practice-area-options";
@@ -85,11 +89,9 @@ export function V3LeadForm({
   const errors = form.formState.errors;
 
   React.useEffect(() => {
-    const sp = new URLSearchParams(window.location.search);
-    form.setValue("source_url", window.location.href);
-    form.setValue("referrer", document.referrer || undefined);
-    for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid"] as const) {
-      const v = sp.get(k);
+    const attribution = readAttributionInBrowser();
+    for (const k of ATTRIBUTION_FIELDS) {
+      const v = attribution[k];
       if (v) form.setValue(k, v);
     }
     capture("lead_form_viewed", { variant: "v3", practice_area: practiceArea ?? null });
