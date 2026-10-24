@@ -37,10 +37,13 @@ whether it is engineering work or something only the firm can do.
       the exact state). Done 2026-10-24: account prepared, API token and
       11 repo secrets in place, first staging deploy live and smoked at
       `https://staging.mmg-lawfirm.com` (custom domain, cert, noindex),
-      head parity identical to production on 9 pages. **Owner:** add
-      `RESEND_API_KEY` to `.env.local` and run `pnpm github-secrets`, then
-      re-run the deploy workflow so staging can send email. Then: one
-      throwaway lead through staging, cut over (§D), 30-day rollback hold.
+      head parity identical to production on 17 pages (`pnpm parity`).
+      Staging is its own cron-free Worker; the cutover is a written runbook
+      (§D). **Owner:** add `RESEND_API_KEY` (to `.env.local` + `pnpm
+      github-secrets`, or straight into GitHub secrets). Then: one throwaway
+      lead through staging, production secrets into the
+      `cloudflare-production` environment, pick the cutover window, 30-day
+      rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed, Spanish intake (yes/no — decides whether

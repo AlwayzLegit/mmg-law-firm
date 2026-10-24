@@ -1,32 +1,54 @@
-name: Cloudflare deploy (staging)
+name: Cloudflare deploy
 
-# Deploys the Worker to Cloudflare. Manual only until cutover (workstream D
-# of docs/cloudflare-migration-plan.md). Production DNS is never touched by
-# this job: the Worker is reachable at its workers.dev URL and at whatever
-# custom domains are attached in the Cloudflare dashboard (staging first).
+# Builds the site with OpenNext and uploads it to a Cloudflare Worker.
+# DNS is never touched here: custom domains are attached in the dashboard
+# (docs/cloudflare-migration-plan.md §C/§D).
 #
-# Repository secrets required:
-#   CLOUDFLARE_API_TOKEN   scoped token: Workers Scripts, R2, Images, DNS read
-#   CLOUDFLARE_ACCOUNT_ID
-# Optional (each is set as a Worker secret when present):
-#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
-#   SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL,
-#   LEAD_NOTIFY_EMAIL, NEXT_PUBLIC_TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY,
-#   CRON_SECRET, REVALIDATE_SECRET, ADMIN_API_KEY, NEXT_PUBLIC_SENTRY_DSN
+#   target=staging     → Worker `mmg-law-firm-staging` (wrangler --env staging)
+#                        on staging.mmg-lawfirm.com. No cron triggers, no
+#                        analytics keys. Shares the production database.
+#   target=production  → Worker `mmg-law-firm`. Uploading it is safe before
+#                        cutover: nothing routes to it until www/apex DNS
+#                        is switched. Its cron triggers are registered but
+#                        the scheduled() handler no-ops unless
+#                        cron_enabled=true (set that only on cutover day,
+#                        after Vercel's crons are off — otherwise jobs run
+#                        twice against the same database).
+#
+# Secrets resolve from the matching GitHub environment first
+# (`cloudflare-staging` / `cloudflare-production`), then the repository.
+# Required: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
+# NEXT_PUBLIC_* values are inlined at build time, so they go to the build
+# step as well as to the Worker.
 
 on:
   workflow_dispatch:
     inputs:
-      site_url:
-        description: Public origin the Worker should consider itself (canonicals, emails)
-        default: https://staging.mmg-lawfirm.com
+      target:
+        description: Which Worker to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
         required: true
+      cron_enabled:
+        description: "production only: let the Worker run scheduled jobs (cutover day, after Vercel crons are removed)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: cloudflare-deploy-${{ inputs.target }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: cloudflare-staging
+    environment: cloudflare-${{ inputs.target }}
+    env:
+      IS_PROD: ${{ inputs.target == 'production' }}
+      SITE_URL: ${{ inputs.target == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
+      WORKER: ${{ inputs.target == 'production' && 'mmg-law-firm' || 'mmg-law-firm-staging' }}
+      ENV_FLAG: ${{ inputs.target == 'production' && '' || '--env staging' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,34 +61,52 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Guard
+        run: |
+          if [ "${{ inputs.target }}" != "production" ] && [ "${{ inputs.cron_enabled }}" = "true" ]; then
+            echo "::error::cron_enabled is only valid for target=production (staging shares the production database)"; exit 1
+          fi
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
       - name: Build Worker
         run: pnpm cf:build
         env:
-          NEXT_PUBLIC_SITE_URL: ${{ inputs.site_url }}
+          NEXT_PUBLIC_SITE_URL: ${{ env.SITE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          NEXT_PUBLIC_LOCALE_PAGES_LIVE: ${{ vars.NEXT_PUBLIC_LOCALE_PAGES_LIVE }}
+          # Analytics and search verification belong to production only, so
+          # staging traffic never lands in the firm's GA / PostHog properties.
+          NEXT_PUBLIC_GA_ID: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_GA_ID || '' }}
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_POSTHOG_KEY || '' }}
+          NEXT_PUBLIC_POSTHOG_HOST: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_POSTHOG_HOST || '' }}
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '' }}
 
       - name: Deploy
-        run: pnpm exec wrangler deploy --var "NEXT_PUBLIC_SITE_URL:${{ inputs.site_url }}"
+        run: |
+          pnpm exec wrangler deploy $ENV_FLAG \
+            --var "NEXT_PUBLIC_SITE_URL:$SITE_URL" \
+            --var "CRON_ENABLED:${{ inputs.target == 'production' && inputs.cron_enabled && '1' || '0' }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Worker secrets
-        # Only the secrets that exist in this repository are pushed; the rest
-        # are left as they are on the Worker.
+        # Only secrets that exist are pushed; the rest stay as they are on
+        # the Worker.
         run: |
           node -e '
-            const names = ["NEXT_PUBLIC_SUPABASE_URL","NEXT_PUBLIC_SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","RESEND_API_KEY","RESEND_FROM_EMAIL","LEAD_NOTIFY_EMAIL","NEXT_PUBLIC_TURNSTILE_SITE_KEY","TURNSTILE_SECRET_KEY","CRON_SECRET","REVALIDATE_SECRET","ADMIN_API_KEY","NEXT_PUBLIC_SENTRY_DSN"];
+            const names = ["NEXT_PUBLIC_SUPABASE_URL","NEXT_PUBLIC_SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","RESEND_API_KEY","RESEND_FROM_EMAIL","LEAD_NOTIFY_EMAIL","NEXT_PUBLIC_TURNSTILE_SITE_KEY","TURNSTILE_SECRET_KEY","CRON_SECRET","REVALIDATE_SECRET","ADMIN_API_KEY","NEXT_PUBLIC_SENTRY_DSN","SENTRY_AUTH_TOKEN","POSTHOG_PERSONAL_API_KEY","POSTHOG_PROJECT_ID","TWILIO_ACCOUNT_SID","TWILIO_AUTH_TOKEN","TWILIO_FROM_NUMBER","RESEND_WEBHOOK_SECRET","CONTENT_NOTIFY_EMAIL"];
             const out = {};
             for (const n of names) if (process.env["S_" + n]) out[n] = process.env["S_" + n];
             require("fs").writeFileSync("secrets.json", JSON.stringify(out));
             console.log("setting:", Object.keys(out).join(", ") || "(none)");
           '
-          pnpm exec wrangler secret bulk secrets.json
+          pnpm exec wrangler secret bulk secrets.json $ENV_FLAG
           rm -f secrets.json
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -83,6 +123,14 @@ jobs:
           S_REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
           S_ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
           S_NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          S_SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          S_POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+          S_POSTHOG_PROJECT_ID: ${{ secrets.POSTHOG_PROJECT_ID }}
+          S_TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          S_TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          S_TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+          S_RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+          S_CONTENT_NOTIFY_EMAIL: ${{ secrets.CONTENT_NOTIFY_EMAIL }}
 
       - name: Smoke the deployed Worker
         run: |
@@ -90,12 +138,26 @@ jobs:
           # command for it and `deployments list --json` carries no URL).
           sub=$(curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).result.subdomain||"")}catch{console.log("")}})')
-          url=${sub:+https://mmg-law-firm.$sub.workers.dev}
+          url=${sub:+https://$WORKER.$sub.workers.dev}
           echo "workers.dev URL: ${url:-unknown}"
           [ -n "$url" ] || exit 0
-          for p in / /contact /practice-areas/car-accidents /blog /car-accidents /admin; do
-            curl -s -o /dev/null -w "$p -> %{http_code} %{redirect_url}\n" --max-time 60 "$url$p"
-          done
+          fail=0
+          check() {
+            got=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$url$1")
+            echo "$1 -> $got (want $2)"
+            [ "$got" = "$2" ] || fail=1
+          }
+          check / 200
+          check /contact 200
+          check /practice-areas/car-accidents 200
+          check /hy 200
+          check /sitemap.xml 200
+          check /admin 307
+          check /api/cron/sla-alerts 401
+          robots=$(curl -s -D - -o /dev/null --max-time 60 "$url/" | tr -d '\r' | grep -i '^x-robots-tag:' || true)
+          echo "workers.dev ${robots:-x-robots-tag: (none)}"
+          echo "$robots" | grep -qi noindex || { echo "::error::workers.dev host must be noindex"; fail=1; }
+          exit $fail
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

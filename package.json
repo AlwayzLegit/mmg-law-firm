@@ -17,7 +17,8 @@
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && wrangler dev",
     "cf:deploy": "opennextjs-cloudflare build && wrangler deploy",
-    "github-secrets": "node scripts/github-secrets-from-env.mjs"
+    "github-secrets": "node scripts/github-secrets-from-env.mjs",
+    "parity": "node scripts/parity-check.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

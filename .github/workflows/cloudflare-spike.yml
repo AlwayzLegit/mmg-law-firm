@@ -66,6 +66,7 @@ jobs:
           nohup pnpm exec wrangler dev --port 8787 --test-scheduled \
             --var NEXT_PUBLIC_SITE_URL:https://www.mmg-lawfirm.com \
             --var CRON_SECRET:spike-secret \
+            --var CRON_ENABLED:1 \
             --var "NEXT_PUBLIC_SUPABASE_URL:${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
             --var "NEXT_PUBLIC_SUPABASE_ANON_KEY:${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
             > wrangler.log 2>&1 &

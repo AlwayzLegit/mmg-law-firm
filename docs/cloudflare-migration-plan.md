@@ -253,6 +253,17 @@ zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
       `NEXT_PUBLIC_SITE_URL`'s host is enough for the proxy guard; staging's
       `site_url` is the staging host itself, so the guard keys off the
       canonical production host — see `src/lib/seo/host-guard.ts`).
+- [x] **Staging split off** 2026-10-24: the first deploys put staging on the
+      `mmg-law-firm` Worker *with* the four cron triggers and a
+      `CRON_SECRET`, i.e. a second scheduler on the production database.
+      Caught within the hour; schedules removed by API; verified no lead
+      stamped and nothing published in the meantime. Now staging is its own
+      Worker (`wrangler --env staging` → `mmg-law-firm-staging`, bucket
+      `mmg-law-firm-cache-staging`, `triggers.crons: []` pinned by
+      `src/lib/cron/schedules.test.ts`), and every Worker's `scheduled()`
+      no-ops unless `CRON_ENABLED=1`. The build now also receives the
+      `NEXT_PUBLIC_*` keys it inlines (the first staging build had no
+      Turnstile site key, so the form showed "verification unavailable").
 - [ ] Staging points at **production** Supabase (read paths only for the QA
       pass; use a throwaway lead to test the form once `RESEND_API_KEY` is
       set, and mark it spam afterwards).
@@ -265,33 +276,61 @@ zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
 
 ### D. Cutover (≈1 hour, low traffic window, e.g. Tuesday 6 am PT)
 
-Pre-work the day before:
+Two Workers since 2026-10-24: `mmg-law-firm-staging` (staging.mmg-lawfirm.com,
+no crons) and `mmg-law-firm` (production, nothing routed to it yet). Both
+read and write the same Supabase project, which is why only one scheduler
+may ever be on: Vercel Cron until cutover step 4, the production Worker
+after.
 
-- Lower TTLs on `www` and apex to 60 s (they're already on Cloudflare DNS).
-- Add `www.mmg-lawfirm.com` and `mmg-lawfirm.com` as Custom Domains on the
-  Worker (Cloudflare issues the certs ahead of time).
-- Set all production secrets on the Worker. Copy every key from Vercel's
-  list: Supabase (3), Resend (2), Turnstile (2), PostHog (4), Sentry (3),
-  GA, Site URL, `REVALIDATE_SECRET`, `ADMIN_API_KEY`. **Also set
-  `CRON_SECRET`** — set on Vercel since PR #164; the Worker gets its own
-  value from the repo secret (workstream C); without it the four crons
-  return `503 cron-not-configured`.
-- Freeze admin content edits for the window (tell the team).
+**Day before**
 
-Cutover:
+1. Production secrets in the GitHub environment `cloudflare-production`
+   (repo → Settings → Environments; add a required reviewer there so a
+   production deploy always needs a click). Anything missing falls back to
+   the repository secret of the same name. Vercel values are write-only, so
+   copy them from their sources: Resend (`RESEND_API_KEY`,
+   `RESEND_WEBHOOK_SECRET`), PostHog (`NEXT_PUBLIC_POSTHOG_KEY`,
+   `NEXT_PUBLIC_POSTHOG_HOST`, `POSTHOG_PERSONAL_API_KEY`,
+   `POSTHOG_PROJECT_ID`), Sentry (`NEXT_PUBLIC_SENTRY_DSN`,
+   `SENTRY_AUTH_TOKEN`), `NEXT_PUBLIC_GA_ID`,
+   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `ADMIN_API_KEY`, Twilio (3) if
+   live. `CRON_SECRET` / `REVALIDATE_SECRET` can stay the repository values
+   (after cutover only the Worker calls the cron routes).
+2. Run **Cloudflare deploy** with `target=production`, `cron_enabled`
+   unchecked. It uploads `mmg-law-firm` with the production site URL and
+   analytics keys and smokes its workers.dev URL. No traffic moves.
+3. `pnpm parity https://www.mmg-lawfirm.com https://mmg-law-firm.jetnine-inc.workers.dev`
+   → every page SAME (the workers.dev host is noindex by design).
+4. Tell the team: no admin content edits during the window.
 
-1. Switch `www` CNAME from `*.vercel-dns-016.com` to the Worker (proxied) and
-   replace the apex A records with the Worker custom domain (proxied).
-   Apex → `www` 308 moves to a Cloudflare Bulk Redirect (or a Worker route).
-2. Watch for 10 minutes: Cloudflare analytics for 5xx, Sentry for new
-   errors, submit one test lead, open `/admin`.
-3. Re-run the parity crawl against the live domain.
-4. Submit the sitemap in Search Console (same URL; just a re-ping).
+**Cutover**
+
+1. Cloudflare DNS: set the `www` and apex records' TTL to 60 s; wait out the
+   old TTL.
+2. Workers & Pages → `mmg-law-firm` → Domains → Add Domain →
+   `www.mmg-lawfirm.com`. Cloudflare asks to replace the existing CNAME to
+   Vercel: confirm. **This is the switch.** Repeat for `mmg-lawfirm.com`
+   (replaces the two A records). Certs issue in about a minute (staging
+   took under 60 s). The app itself 308s apex → www (`apexRedirect` in
+   `src/lib/seo/host-guard.ts`).
+3. Watch 10 minutes: Workers → mmg-law-firm → Observability for 5xx, Sentry
+   for new errors; a HEAD request to `https://www.mmg-lawfirm.com/` shows
+   `server: cloudflare` and no `x-robots-tag`; submit one test lead and mark
+   it spam; open `/admin`.
+4. **Schedulers:** Vercel → Project → Settings → Cron Jobs → Disable (Vercel
+   Cron calls its deployment directly, so it keeps firing after DNS moves).
+   Then run **Cloudflare deploy** again with `target=production` and
+   `cron_enabled` checked. At the next quarter hour, confirm one
+   `/api/cron/sla-alerts` invocation in the Worker logs.
+5. `pnpm parity https://www.mmg-lawfirm.com https://staging.mmg-lawfirm.com`
+   (both on Cloudflare now) and resubmit the sitemap in Search Console.
 
 ### E. Rollback (any time in the first 30 days)
 
-Flip the `www` CNAME and apex A records back to the Vercel values (kept in
-this doc's appendix) — propagation is ~1 minute at 60 s TTL. Keep the Vercel
+Remove the `www` and apex custom domains from the `mmg-law-firm` Worker,
+recreate the Vercel records (kept in this doc's appendix), and re-enable
+Vercel Cron *after* redeploying the Worker with `cron_enabled` unchecked —
+propagation is ~1 minute at 60 s TTL. Keep the Vercel
 project and its env vars untouched for 30 days; do not delete it until the
 Cloudflare crons, ISR and image cache have run through a full month.
 

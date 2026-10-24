@@ -17,8 +17,13 @@ describe("cron schedule registry", () => {
     const raw = readFileSync("wrangler.jsonc", "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/^\s*\/\/.*$/gm, "");
-    const wrangler = JSON.parse(raw) as { triggers?: { crons?: string[] } };
+    const wrangler = JSON.parse(raw) as {
+      triggers?: { crons?: string[] };
+      env?: Record<string, { triggers?: { crons?: string[] } }>;
+    };
     expect(wrangler.triggers?.crons).toEqual(CRON_JOBS.map((j) => j.schedule));
+    // Staging shares the production database: it must never schedule jobs.
+    expect(wrangler.env?.staging?.triggers?.crons).toEqual([]);
   });
 
   it("uses distinct five-field UTC expressions", () => {

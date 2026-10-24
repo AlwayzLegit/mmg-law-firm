@@ -15,6 +15,12 @@ export { DOQueueHandler, DOShardedTagCache } from "../.open-next/worker.js";
 
 type Env = {
   CRON_SECRET?: string;
+  /**
+   * "1" only on the Worker that is serving production traffic. Until the
+   * DNS cutover, Vercel Cron runs the jobs; a second scheduler against the
+   * same database would double-send alerts and race on `sla_alerted_at`.
+   */
+  CRON_ENABLED?: string;
   NEXT_PUBLIC_SITE_URL?: string;
 };
 
@@ -25,6 +31,10 @@ export default {
     const job = jobForSchedule(event.cron);
     if (!job) {
       console.warn(`[cron] no job for expression "${event.cron}"`);
+      return;
+    }
+    if (env.CRON_ENABLED !== "1") {
+      console.log("[cron] CRON_ENABLED is not 1; skipping", job.path);
       return;
     }
     if (!env.CRON_SECRET) {

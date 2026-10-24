@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
-import { isNonCanonicalHost } from "@/lib/seo/host-guard";
+import { apexRedirect, isNonCanonicalHost } from "@/lib/seo/host-guard";
 
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` and pinned it to the
@@ -141,6 +141,11 @@ export async function proxy(request: NextRequest) {
   });
 
   const { pathname } = request.nextUrl;
+
+  // Bare domain → www (Vercel does this at the edge; on Cloudflare the app
+  // has to). Runs before anything else so cookies and redirects key off www.
+  const toWww = apexRedirect(requestHost, request.url, SITE.productionUrl);
+  if (toWww) return withCsp(NextResponse.redirect(toWww, 308));
 
   // Admin-managed redirects run first (cheapest path, cached). Skip the
   // admin app and login so an errant rule can't lock anyone out.
