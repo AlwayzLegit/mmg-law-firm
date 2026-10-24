@@ -271,6 +271,7 @@ export async function logContact(formData: FormData): Promise<ActionResult> {
 
   revalidatePath(`/admin/leads/${parsed.data.leadId}`);
   revalidatePath("/admin/leads");
+  revalidatePath("/admin/today");
   revalidatePath("/admin");
   return { ok: true };
 }

@@ -15,6 +15,8 @@ import {
 } from "@/lib/leads/sla";
 import { getServerSupabase } from "@/lib/supabase/server";
 import DeadlineBadge from "@/components/admin/deadline-badge";
+import FirstResponseActions from "@/components/admin/first-response-actions";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import {
   deadlineFor,
   ruleForPracticeArea,
@@ -75,7 +77,7 @@ export default async function TodayPage() {
     supabase
       .from("leads")
       .select(
-        "id, full_name, created_at, assigned_to, utm_source, utm_medium, gclid, referrer, practice_areas(name)",
+        "id, full_name, phone, created_at, assigned_to, utm_source, utm_medium, gclid, referrer, practice_areas(name)",
       )
       .eq("status", "new")
       .order("created_at", { ascending: true })
@@ -87,6 +89,10 @@ export default async function TodayPage() {
     return {
       id: l.id as string,
       name: l.full_name as string,
+      phoneTel: l.phone as string,
+      phoneDisplay:
+        parsePhoneNumberFromString(l.phone as string)?.formatNational() ??
+        (l.phone as string),
       minutes,
       tone: slaTone(minutes),
       channel: channelOf({
@@ -276,7 +282,7 @@ export default async function TodayPage() {
               {waiting.map((l) => (
                 <li
                   key={l.id}
-                  className="flex items-center justify-between gap-3 py-2.5 first:pt-0"
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5 first:pt-0"
                 >
                   <div className="min-w-0">
                     <Link
@@ -291,6 +297,11 @@ export default async function TodayPage() {
                         .join(" · ")}
                     </p>
                   </div>
+                  <FirstResponseActions
+                    leadId={l.id}
+                    phoneTel={l.phoneTel}
+                    phoneDisplay={l.phoneDisplay}
+                  />
                   <span
                     className={cn(
                       "flex-none rounded-sm px-2 py-0.5 font-mono text-xs font-medium tabular-nums",
