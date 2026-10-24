@@ -21,6 +21,11 @@ export default async function MediaPage() {
     .map((f) => ({
       name: f.name,
       url: supabase.storage.from(BUCKET).getPublicUrl(f.name).data.publicUrl,
+      createdAt: f.created_at ?? null,
+      bytes:
+        typeof (f.metadata as { size?: number } | null)?.size === "number"
+          ? ((f.metadata as { size: number }).size as number)
+          : null,
     }));
 
   return (

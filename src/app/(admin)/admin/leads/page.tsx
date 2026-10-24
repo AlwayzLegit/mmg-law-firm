@@ -14,6 +14,7 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { getTagVocabulary } from "@/lib/data/lead-tags";
 import { sanitizeSearchTerm as sanitize, slugish } from "@/lib/search";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { channelOf } from "@/lib/analytics/attribution";
 
 import LeadsTable, { type LeadRow } from "./leads-table";
 import SavedViews, { type SavedView } from "./saved-views";
@@ -104,7 +105,7 @@ export default async function LeadsPage({
   let query = supabase
     .from("leads")
     .select(
-      "id, full_name, phone, email, status, created_at, follow_up_at, tags",
+      "id, full_name, phone, email, status, created_at, follow_up_at, tags, utm_source, utm_medium, gclid, referrer",
       {
         count: "exact",
       },
@@ -141,7 +142,15 @@ export default async function LeadsPage({
   }
 
   const { data, error, count } = await query;
-  const rows = (data ?? []) as LeadRow[];
+  const rows = ((data ?? []) as Array<LeadRow & {
+    utm_source: string | null;
+    utm_medium: string | null;
+    gclid: string | null;
+    referrer: string | null;
+  }>).map(({ utm_source, utm_medium, gclid, referrer, ...rest }) => ({
+    ...rest,
+    channel: channelOf({ utm_source, utm_medium, gclid, referrer }),
+  }));
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
