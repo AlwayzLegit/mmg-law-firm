@@ -66,13 +66,11 @@ whether it is engineering work or something only the firm can do.
       and `/ru` (dictionary `leadForm.fieldErrors`; English pages keep the
       schema's own wording). Included in the attorney review of the two
       dictionaries.
-- [ ] Analytics: median days from lead to signed per channel (leads vs
-      signed per channel already exists).
+- [x] Analytics: median days from lead to signed per channel (PR #176).
 - [ ] Cloudflare: after cutover, remove `vercel.json`, drop the Vercel
       hosts from the CSP in `src/proxy.ts`, update `DEPLOY.md` §6, enable
       WAF / rate limiting at the edge.
-- [ ] Doc drift: `docs/cloudflare-migration-plan.md` §D still says
-      `CRON_SECRET` is unset on Vercel; it has been set since PR #164.
+- [x] Doc drift: migration plan §D `CRON_SECRET` note (fixed in PR #177).
 
 ## Done in this sprint (for reference)
 
@@ -82,4 +80,6 @@ deploy workflow) · cron registry + `CRON_SECRET` · admin v3 restyle ·
 speed-to-lead (Today queue, SLA stats, attribution, agenda email, 15-minute
 breach alert, one-tap first response) · admin QA rounds 1–2 + audit RLS
 fix · blog dedupe (53 copies) · intake deadlines + checklist · Armenian /
-Russian pages (review mode). Migrations applied through 0038.
+Russian / Spanish pages (review mode) · Cloudflare staging Worker on
+staging.mmg-lawfirm.com · attorney review packet (shared doc). Migrations
+applied through 0038.
