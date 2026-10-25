@@ -45,6 +45,13 @@
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://www.mmg-lawfirm.com"
   },
+  // The production hostnames (cutover, docs/cloudflare-migration-plan.md §D).
+  // A CI deploy replaces any conflicting DNS record, which is how the Vercel
+  // records were swapped out. The app 308s apex → www itself.
+  "routes": [
+    { "pattern": "www.mmg-lawfirm.com", "custom_domain": true },
+    { "pattern": "mmg-lawfirm.com", "custom_domain": true }
+  ],
   "observability": { "enabled": true },
 
   // Staging: a separate Worker (`mmg-law-firm-staging`) on
@@ -80,6 +87,8 @@
         ]
       },
       "triggers": { "crons": [] },
+      // Must be set: routes are inherited, and staging must never claim www.
+      "routes": [{ "pattern": "staging.mmg-lawfirm.com", "custom_domain": true }],
       "vars": {
         "NEXT_PUBLIC_SITE_URL": "https://staging.mmg-lawfirm.com"
       },

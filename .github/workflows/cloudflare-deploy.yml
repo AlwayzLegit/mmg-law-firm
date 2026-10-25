@@ -1,8 +1,9 @@
 name: Cloudflare deploy
 
 # Builds the site with OpenNext and uploads it to a Cloudflare Worker.
-# DNS is never touched here: custom domains are attached in the dashboard
-# (docs/cloudflare-migration-plan.md §C/§D).
+# Each Worker's custom domains come from `routes` in wrangler.jsonc
+# (production: www + apex; staging: staging.). In CI wrangler replaces any
+# conflicting DNS record, so removing a route here detaches that host.
 #
 #   target=staging     → Worker `mmg-law-firm-staging` (wrangler --env staging)
 #                        on staging.mmg-lawfirm.com. No cron triggers, no
