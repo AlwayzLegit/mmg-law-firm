@@ -6,15 +6,17 @@ whether it is engineering work or something only the firm can do.
 
 ## Attorney review (blocks publishing, not deploys)
 
-- [ ] **Armenian, Russian and Spanish pages** — review
-      `src/lib/i18n/dictionaries/hy.ts`, `ru.ts` and `es.ts` (landing +
-      contact copy, form labels and errors, TCPA consent wording, "Attorney
-      Advertising" label). Live in review mode at `/hy`, `/ru`, `/es` and
-      their `/contact` pages (noindex, unlisted). After sign-off set
-      `NEXT_PUBLIC_LOCALE_PAGES_LIVE=1` on Vercel production and redeploy;
-      that turns on indexing, hreflang, sitemap entries and the language
-      links. One flag publishes all three; if Spanish needs to wait, say so
-      and it can be split. *(code: none)*
+- [ ] **Armenian, Russian and Spanish pages — PUBLISHED before attorney
+      review.** On 2026-10-25 the owner (AlwayzLegit) chose to publish all
+      three before Mihran's sign-off and accepted the risk.
+      `NEXT_PUBLIC_LOCALE_PAGES_LIVE=1` is set on Vercel production and as a
+      GitHub repository variable (Cloudflare builds read it), so `/hy`,
+      `/ru`, `/es` and their `/contact` pages are indexable, in the sitemap,
+      cross-linked with hreflang and in the language menus. **Still needed:**
+      Mihran reviews `src/lib/i18n/dictionaries/hy.ts`, `ru.ts`, `es.ts`
+      (the review packet lists every line); any change ships as a normal
+      code change. To pull the pages back, set the variable to `0` (or
+      delete it) and redeploy.
 - [ ] **Decide how Spanish-speaking callers are served.** The attorney does
       not speak Spanish, so the Spanish pages never claim Spanish-language
       service: they ask visitors to mention a Spanish preference, and those
