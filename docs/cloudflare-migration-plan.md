@@ -322,7 +322,32 @@ after.
    canonicals, robots, JSON-LD). Re-run after the day-before redeploy.
 4. Tell the team: no admin content edits during the window.
 
-**Cutover**
+**Cutover — done 2026-10-25, ~21:15 UTC**
+
+What actually happened (the dashboard wasn't reachable, so it went through
+config and CI):
+
+- PR #192 put `www` and the apex in `wrangler.jsonc` `routes` as custom
+  domains and emptied `vercel.json` crons (Vercel Cron off from that
+  Vercel deploy, ~20:44 UTC). The first production deploy failed at the
+  domain step: Cloudflare refuses to attach a custom domain while an
+  ordinary DNS record exists for the host (code 100117), and wrangler's
+  override doesn't cover it. Nothing had changed for visitors.
+- PR #193 added the workflow step **Move hosts off Vercel**: it deletes the
+  Vercel CNAME/A records and attaches each host to the Worker a second
+  later (restoring the records if attaching fails). Also `workers_dev:
+  true`, because setting `routes` turns workers.dev off by default.
+  Run 40234118773 switched both hosts; `server: cloudflare`, no
+  `x-robots-tag` on www, apex 308 → www, pages 200, `/admin` 307,
+  cron routes 401 without the bearer.
+- Run 40234629342 redeployed with `cron_enabled`; the Worker is the only
+  scheduler. First firing confirmed: `*/15` at 21:31:00 UTC, outcome ok,
+  no skip message (`wrangler tail mmg-law-firm`). The jobs due between
+  ~20:44 and 21:30 were skipped; each catches up on its next run.
+- The 60 s TTL step was skipped (the API token is CI-only and the
+  records were DNS-only, TTL auto = 300 s).
+
+The original manual steps, kept for reference:
 
 1. Cloudflare DNS: set the `www` and apex records' TTL to 60 s; wait out the
    old TTL.
@@ -344,12 +369,18 @@ after.
 5. `pnpm parity https://www.mmg-lawfirm.com https://staging.mmg-lawfirm.com`
    (both on Cloudflare now) and resubmit the sitemap in Search Console.
 
-### E. Rollback (any time in the first 30 days)
+### E. Rollback (any time in the first 30 days, until 2026-11-24)
 
-Remove the `www` and apex custom domains from the `mmg-law-firm` Worker,
-recreate the Vercel records (kept in this doc's appendix), and re-enable
-Vercel Cron *after* redeploying the Worker with `cron_enabled` unchecked —
-propagation is ~1 minute at 60 s TTL. Keep the Vercel
+1. Run **Cloudflare deploy** `target=production` with `cron_enabled`
+   unchecked (stops the Worker's jobs first).
+2. Workers & Pages → `mmg-law-firm` → Domains: remove `www` and the apex
+   (or drop them from `routes` in `wrangler.jsonc` and deploy — wrangler
+   replaces the domain set). Recreate the Vercel records from this doc's
+   appendix, DNS only.
+3. Restore `vercel.json` crons from git history (before PR #192) and
+   merge, which redeploys Vercel with its crons back.
+
+Propagation is a few minutes (TTL 300 s). Keep the Vercel
 project and its env vars untouched for 30 days; do not delete it until the
 Cloudflare crons, ISR and image cache have run through a full month.
 

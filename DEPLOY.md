@@ -196,6 +196,17 @@ Without these, the lead form will fail every submission server-side.
 
 ## 6. Deploy to Vercel
 
+> **Since 2026-10-25 production is served by Cloudflare**, not Vercel:
+> `www.mmg-lawfirm.com` and the apex are custom domains of the
+> `mmg-law-firm` Worker (`routes` in `wrangler.jsonc`), deployed by the
+> "Cloudflare deploy" workflow (`target=production`, your approval
+> required), and the Worker runs the scheduled jobs (`vercel.json` crons
+> are empty). Vercel still builds every push but serves no traffic; it is
+> kept, env vars untouched, as the rollback until 2026-11-24
+> (`docs/cloudflare-migration-plan.md` §E). Production env vars therefore
+> change in the GitHub environment `cloudflare-production`, then a
+> production deploy. The rest of this section is the original Vercel setup.
+
 ### 6a. Import the GitHub repo
 
 [Vercel → Add New → Project](https://vercel.com/new) → import the
@@ -222,7 +233,7 @@ In **Settings → Environment Variables**, add every variable from
 | `TURNSTILE_SECRET_KEY` | Yes | From step 5 |
 | `REVALIDATE_SECRET` | Yes | Any random string — `openssl rand -hex 32` |
 | `CRON_SECRET` | Yes | Any random string — `openssl rand -hex 32`. Without it the four scheduled jobs (`src/lib/cron/schedules.ts`) return 503. Production only; the scheduler sends it as `Authorization: Bearer`. |
-| `NEXT_PUBLIC_LOCALE_PAGES_LIVE` | No | `1` publishes the Armenian, Russian and Spanish pages (`/hy`, `/ru`, `/es` and their `/contact` pages): indexable, hreflang on the English home/contact pages, sitemap entries, language links in the footer and mobile menu. Unset (default) the pages still render but `noindex`, for attorney review of the translations (`src/lib/i18n/dictionaries/{hy,ru,es}.ts`). Build-time variable: redeploy after changing it. **Set to `1` on Vercel production and as a GitHub repository variable since 2026-10-25** (owner decision, before attorney review). |
+| `NEXT_PUBLIC_LOCALE_PAGES_LIVE` | No | `1` publishes the Armenian, Russian and Spanish pages (`/hy`, `/ru`, `/es` and their `/contact` pages): indexable, hreflang on the English home/contact pages, sitemap entries, language links in the footer and mobile menu. Unset (default) the pages still render but `noindex`, for attorney review of the translations (`src/lib/i18n/dictionaries/{hy,ru,es}.ts`). Build-time variable: redeploy after changing it. **Set to `1` since 2026-10-25** (owner decision, before attorney review) as a GitHub repository variable, which the Cloudflare builds read, and on Vercel production. |
 | `TWILIO_*` | No | Leave blank until 10DLC is registered |
 | `NEXT_PUBLIC_GA_ID` | No | Add when GA4 is set up |
 
@@ -249,7 +260,7 @@ attorney bio + legal pages + admin shell).
 
 ---
 
-### 6e. Cloudflare staging (optional, pre-migration)
+### 6e. Cloudflare staging and production
 
 The site also builds as a Cloudflare Worker (`pnpm cf:build`, deployed by
 the "Cloudflare deploy (staging)" GitHub Actions workflow). The account

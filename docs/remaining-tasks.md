@@ -55,10 +55,14 @@ whether it is engineering work or something only the firm can do.
       Cloudflare cancelling post-response work: lead saved, nobody
       notified). Day-before prep done the same day: production Worker
       uploaded with crons off, 17-page parity with the live site, and
-      production deploys now need AlwayzLegit's approval. **Next (owner):**
-      confirm the staging test email reached Mihran (Resend dashboard),
-      set up the Resend webhook, pick the cutover window. Then §D, 30-day
-      rollback hold.
+      production deploys now need AlwayzLegit's approval. **Cut over
+      2026-10-25 ~21:15 UTC:** www and apex are served by the Worker and
+      it runs the scheduled jobs (Vercel Cron off). Rollback stays
+      possible until 2026-11-24 (plan §E); keep the Vercel project and its
+      env vars until then. **Next (owner):** submit one real-browser test
+      lead on www and mark it spam; confirm the notification reached
+      Mihran (Resend dashboard); set up the Resend webhook; resubmit the
+      sitemap in Search Console.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed.
@@ -72,9 +76,10 @@ whether it is engineering work or something only the firm can do.
       schema's own wording). Included in the attorney review of the two
       dictionaries.
 - [x] Analytics: median days from lead to signed per channel (PR #176).
-- [ ] Cloudflare: after cutover, remove `vercel.json`, drop the Vercel
-      hosts from the CSP in `src/proxy.ts`, update `DEPLOY.md` §6, enable
-      WAF / rate limiting at the edge.
+- [ ] Cloudflare, after the 30-day hold (2026-11-24): remove `vercel.json`,
+      drop the Vercel hosts from the CSP in `src/proxy.ts`, rewrite
+      `DEPLOY.md` §6 for Workers, enable WAF / rate limiting at the edge,
+      cancel Vercel Pro.
 - [x] Doc drift: migration plan §D `CRON_SECRET` note (fixed in PR #177).
 
 ## Done in this sprint (for reference)
