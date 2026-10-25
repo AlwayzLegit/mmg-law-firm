@@ -47,14 +47,14 @@ whether it is engineering work or something only the firm can do.
       `https://staging.mmg-lawfirm.com` (custom domain, cert, noindex),
       head parity identical to production on 17 pages (`pnpm parity`).
       Staging is its own cron-free Worker; the cutover is a written runbook
-      (§D). Paused at the owner's request on 2026-10-24. **Owner:** add
-      `RESEND_API_KEY` as a GitHub repository secret (Settings → Secrets and
-      variables → Actions; both deploy targets read it). Then: redeploy
-      staging, one throwaway lead from a real browser (also confirms
-      Turnstile, which never completed in the automated browser pane),
-      production secrets into the `cloudflare-production` environment (one
-      Vercel redeploy with a temporary token copies all of them;
-      `DEPLOY.md` §6e), pick the cutover window, 30-day rollback hold.
+      (§D). Paused at the owner's request on 2026-10-24. All 19 Vercel
+      production secrets were imported into both GitHub Cloudflare
+      environments on 2026-10-25 (`DEPLOY.md` §6e), so the Resend key is
+      no longer missing. **Next:** redeploy staging (`target=staging`), one
+      throwaway lead from a real browser (also confirms Turnstile, which
+      never completed in the automated browser pane), add a required
+      reviewer to the `cloudflare-production` environment, pick the cutover
+      window, 30-day rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed.
