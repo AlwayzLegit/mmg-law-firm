@@ -270,9 +270,17 @@ zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
       no-ops unless `CRON_ENABLED=1`. The build now also receives the
       `NEXT_PUBLIC_*` keys it inlines (the first staging build had no
       Turnstile site key, so the form showed "verification unavailable").
-- [ ] Staging points at **production** Supabase (read paths only for the QA
-      pass; use a throwaway lead to test the form once `RESEND_API_KEY` is
-      set, and mark it spam afterwards).
+- [ ] **Throwaway lead through staging.** First attempt 2026-10-25 (owner,
+      real browser): Turnstile passed and the lead row was written, but the
+      route's background work (audit "create" row, email to Mihran, SMS)
+      never ran. Every Vercel lead has its "create" row; the staging one did
+      not. Cause: `void promise` after the response is cancelled by a
+      Cloudflare Worker (Vercel lets it finish). Fixed by running that work
+      through `after()` (`src/lib/after-response.ts`), which OpenNext maps to
+      `waitUntil`. **Blocker for cutover until a second staging lead shows
+      the audit "create" row and the email arrives.** The test lead was
+      marked spam and tagged `test`, `staging`. The automated browser pane
+      cannot complete Turnstile, so these tests need a real browser.
 - [x] Parity crawl against `staging.mmg-lawfirm.com` 2026-10-24: title,
       description, canonical (modulo origin), robots and JSON-LD count
       identical to production on 9 pages (home, contact, car hub, a guide,

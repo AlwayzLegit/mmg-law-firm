@@ -2,6 +2,7 @@ import "server-only";
 
 import { timingSafeEqual } from "node:crypto";
 
+import { runAfterResponse } from "@/lib/after-response";
 import { env } from "@/lib/env";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -173,19 +174,15 @@ async function lookupKey(token: string): Promise<ApiPrincipal | null> {
 function touchLastUsed(row: KeyRow): void {
   const last = row.last_used_at ? new Date(row.last_used_at).getTime() : 0;
   if (Date.now() - last < 5 * 60 * 1000) return;
-  try {
+  // After the response, kept alive by runAfterResponse (a bare `void` is
+  // cancelled on Cloudflare Workers). Never fails auth.
+  runAfterResponse("api-key-last-used", async () => {
     const supabase = getServiceSupabase();
-    void supabase
+    await supabase
       .from("api_keys")
       .update({ last_used_at: new Date().toISOString() })
-      .eq("id", row.id)
-      .then(
-        () => undefined,
-        () => undefined,
-      );
-  } catch {
-    // never fail auth over a bookkeeping write
-  }
+      .eq("id", row.id);
+  });
 }
 
 function bearerToken(req: Request): string {

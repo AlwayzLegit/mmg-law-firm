@@ -183,13 +183,16 @@ export async function runConflictCheck(
   }
 
   // Stamp the conflict_checked_at column so we can see the check ran.
-  void supabase
+  // Awaited: a Supabase query builder only executes when awaited, so the
+  // earlier bare `void` never wrote anything.
+  const { error: stampErr } = await supabase
     .from("leads")
     .update({
       conflict_checked_at: new Date().toISOString(),
       conflict_clear: hits.length === 0,
     })
     .eq("id", subject.id);
+  if (stampErr) console.warn("[conflict-check] stamp failed:", stampErr.message);
 
   logAudit({
     actor_id: user.id,
