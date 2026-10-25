@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ROUTED_LOCALES, localePath } from "./config";
 import { consentTextFor, fmt, getDictionary } from "./index";
 import { en } from "./dictionaries/en";
+import { es } from "./dictionaries/es";
 import { hy } from "./dictionaries/hy";
 import { ru } from "./dictionaries/ru";
 
@@ -26,6 +27,7 @@ describe("routed locale dictionaries", () => {
   it.each([
     ["hy", hy],
     ["ru", ru],
+    ["es", es],
   ])("%s translates every English key and keeps its placeholders", (_name, dict) => {
     const got = new Map(leaves(dict as unknown as Tree));
     for (const [path, enValue] of base) {
@@ -38,7 +40,7 @@ describe("routed locale dictionaries", () => {
   });
 
   it("keeps the firm name and bar number out of the translated strings that need them", () => {
-    for (const dict of [hy, ru]) {
+    for (const dict of [hy, ru, es]) {
       expect(dict.leadForm.consent).toContain("MMG Law Firm");
       expect(dict.leadForm.consent).toContain("STOP");
       expect(dict.landing.attorneyBody).toContain("{bar}");
@@ -46,18 +48,26 @@ describe("routed locale dictionaries", () => {
   });
 
   it("never fabricates a guarantee", () => {
-    const banned = [/guarantee/i, /երաշխ/i, /гарант/i];
-    for (const dict of [en, hy, ru]) {
+    const banned = [/guarantee/i, /երաշխ/i, /гарант/i, /garant/i];
+    for (const dict of [en, hy, ru, es]) {
       for (const [path, v] of leaves(dict as unknown as Tree)) {
         for (const re of banned) expect(v, path).not.toMatch(re);
       }
     }
   });
+
+  it("Spanish never implies a Spanish-speaking attorney or consultation", () => {
+    // The attorney speaks English, Armenian and Russian (FIRM.languages).
+    const claims = [/habl\w* (en )?español/i, /en su idioma/i, /abogado que habla/i, /consulta en español/i];
+    for (const [path, v] of leaves(es as unknown as Tree)) {
+      for (const re of claims) expect(v, path).not.toMatch(re);
+    }
+  });
 });
 
 describe("getDictionary / fmt / consentTextFor", () => {
-  it("falls back to English for the Spanish stub and resolves routed locales fully", () => {
-    expect(getDictionary("es").leadForm.submit).toBe(en.leadForm.submit);
+  it("resolves routed locales fully and defaults to English", () => {
+    expect(getDictionary("es").leadForm.submit).toBe(es.leadForm.submit);
     expect(getDictionary("hy").leadForm.submit).toBe(hy.leadForm.submit);
     expect(getDictionary(undefined).meta.languageName).toBe("English");
   });
@@ -80,6 +90,7 @@ describe("localePath", () => {
     expect(localePath("en", "/contact")).toBe("/contact");
     expect(localePath("hy", "/")).toBe("/hy");
     expect(localePath("ru", "/contact/")).toBe("/ru/contact");
-    expect(ROUTED_LOCALES).toEqual(["hy", "ru"]);
+    expect(localePath("es", "/contact")).toBe("/es/contact");
+    expect(ROUTED_LOCALES).toEqual(["hy", "ru", "es"]);
   });
 });

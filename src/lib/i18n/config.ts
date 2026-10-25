@@ -2,9 +2,11 @@
  * Internationalization configuration.
  *
  * `LOCALES` is every language the dictionaries know about. `ROUTED_LOCALES`
- * is the subset that has its own pages (`/hy`, `/ru`): the languages the
- * attorney actually serves (see FIRM.languages). Spanish has a dictionary
- * stub but no routes until the firm decides on Spanish intake (spec §18).
+ * is the subset that has its own pages (`/hy`, `/ru`, `/es`). Armenian and
+ * Russian are languages the attorney speaks (FIRM.languages); Spanish is
+ * offered for Los Angeles reach, and its copy is written so it never
+ * implies a Spanish-speaking attorney (see dictionaries/es.ts). How
+ * Spanish-speaking callers are served is an open owner decision (spec §18).
  *
  * The routed pages exist in every environment but stay `noindex`, out of
  * the sitemap and out of the language switcher until
@@ -21,7 +23,7 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en";
 
 /** Locales with their own routes under `/<locale>`. */
-export const ROUTED_LOCALES = ["hy", "ru"] as const satisfies readonly Locale[];
+export const ROUTED_LOCALES = ["hy", "ru", "es"] as const satisfies readonly Locale[];
 
 export type RoutedLocale = (typeof ROUTED_LOCALES)[number];
 

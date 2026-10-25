@@ -12,7 +12,9 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("locale routes", () => {
+// Each test re-imports the module graph (env is read at import time), which
+// can exceed the default 5 s on a cold, parallel run.
+describe("locale routes", { timeout: 30_000 }, () => {
   it("is unpublished by default: no alternates, switcher still resolves", async () => {
     const r = await load(undefined);
     expect(r.localePagesLive()).toBe(false);
@@ -21,6 +23,7 @@ describe("locale routes", () => {
       { locale: "en", href: "/contact" },
       { locale: "hy", href: "/hy/contact" },
       { locale: "ru", href: "/ru/contact" },
+      { locale: "es", href: "/es/contact" },
     ]);
   });
 
@@ -31,6 +34,7 @@ describe("locale routes", () => {
       "en-US": "https://www.example.com/contact",
       hy: "https://www.example.com/hy/contact",
       ru: "https://www.example.com/ru/contact",
+      es: "https://www.example.com/es/contact",
       "x-default": "https://www.example.com/contact",
     });
     expect(r.localeAlternates("/practice-areas")).toBeUndefined();
