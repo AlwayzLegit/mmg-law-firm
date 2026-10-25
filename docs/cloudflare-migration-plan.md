@@ -222,10 +222,16 @@ zone `mmg-lawfirm.com` id `b3dea43809a3d1e1eeefb70df4e433af`, Free plan):
 - [x] **Repo secrets** (11): Cloudflare token + account id, Supabase (3),
       Resend from/notify addresses, Turnstile site + secret key, and
       generated `CRON_SECRET` / `REVALIDATE_SECRET` (also appended to
-      `.env.local` by `pnpm github-secrets`). Still missing:
-      `RESEND_API_KEY` (staging email is a no-op until it is added — get it
-      from Resend or Vercel and run `pnpm github-secrets` again),
-      `ADMIN_API_KEY`, `NEXT_PUBLIC_SENTRY_DSN`.
+      `.env.local` by `pnpm github-secrets`).
+- [x] **All Vercel production secrets imported** 2026-10-25 by the in-build
+      sync (`DEPLOY.md` §6e): 19/19 keys into both GitHub environments
+      `cloudflare-production` and `cloudflare-staging`, including
+      `RESEND_API_KEY`, `ADMIN_API_KEY`, Sentry, GA and PostHog. The
+      temporary `SYNC_SECRETS_GITHUB_TOKEN` was deleted from Vercel the
+      same hour. Not on Vercel, so still absent: `RESEND_WEBHOOK_SECRET`,
+      `CONTENT_NOTIFY_EMAIL`, `SENTRY_AUTH_TOKEN`,
+      `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, Twilio (3). The next staging
+      deploy will send email.
 - [x] **First staging deploy** 2026-10-24 (run 40120282302, 4m27s):
       `https://mmg-law-firm.jetnine-inc.workers.dev`. Smoke by hand: `/`,
       `/contact`, `/hy`, `/ru/contact`, practice hub, guide, `/blog`,
@@ -284,15 +290,14 @@ after.
 
 **Day before**
 
-1. Production secrets into the GitHub environment `cloudflare-production`
-   (created 2026-10-25) in one pass, straight from Vercel: 19 of the 20
-   Vercel variables are "sensitive" and can never be read back, so a
-   production build exports them itself (`scripts/vercel-secrets-to-github.mjs`,
-   steps in `DEPLOY.md` §6e: a 1-day fine-grained token on Vercel, one
-   redeploy, delete the token). Anything not on Vercel falls back to the
-   repository secret of the same name (e.g. `CLOUDFLARE_API_TOKEN`). Then
-   add a required reviewer to the environment so a production deploy
-   always needs a click.
+1. ~~Production secrets into the GitHub environment `cloudflare-production`~~
+   **Done 2026-10-25** (§C): the in-build sync copied all 19 Vercel values
+   into both environments. Re-run it (`DEPLOY.md` §6e) only if a value is
+   rotated on Vercel before cutover. Anything not on Vercel falls back to
+   the repository secret of the same name (e.g. `CLOUDFLARE_API_TOKEN`).
+   Still to do here: add a required reviewer to `cloudflare-production`
+   (repo → Settings → Environments) so a production deploy always needs a
+   click.
 2. Run **Cloudflare deploy** with `target=production`, `cron_enabled`
    unchecked. It uploads `mmg-law-firm` with the production site URL and
    analytics keys and smokes its workers.dev URL. No traffic moves.
