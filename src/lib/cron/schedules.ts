@@ -1,9 +1,9 @@
 /**
- * The one list of scheduled jobs. Both schedulers are derived from it:
- *   - vercel.json `crons` (a test asserts it matches, since that file is
- *     static JSON Vercel reads at deploy time).
- *   - Cloudflare `wrangler` cron triggers + the Worker `scheduled()` handler,
- *     which maps a fired cron expression back to the route to call.
+ * The one list of scheduled jobs, run by Cloudflare: the `wrangler` cron
+ * triggers (a test asserts they match) + the Worker `scheduled()` handler,
+ * which maps a fired cron expression back to the route to call. vercel.json
+ * `crons` has been empty since the cutover (2026-10-25); to roll back to
+ * Vercel, restore its entries from git history.
  *
  * Expressions are UTC on both platforms. 14:00 UTC = 7 am Pacific (PDT) /
  * 6 am (PST).

@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { CRON_JOBS, jobForSchedule } from "./schedules";
 
 describe("cron schedule registry", () => {
-  it("matches vercel.json exactly, so the two never drift", () => {
-    const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as {
-      crons: Array<{ path: string; schedule: string }>;
-    };
-    const fromRegistry = CRON_JOBS.map(({ path, schedule }) => ({ path, schedule }));
-    expect(vercel.crons).toEqual(fromRegistry);
+  it("leaves vercel.json without crons, so only Cloudflare schedules jobs", () => {
+    // Since the cutover the production Worker is the one scheduler. Vercel
+    // Cron calls its own deployment directly, so leaving entries here would
+    // run every job twice against the same database.
+    const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as { crons?: unknown[] };
+    expect(vercel.crons ?? []).toEqual([]);
   });
 
   it("matches the Cloudflare cron triggers in wrangler.jsonc", () => {
@@ -24,6 +24,19 @@ describe("cron schedule registry", () => {
     expect(wrangler.triggers?.crons).toEqual(CRON_JOBS.map((j) => j.schedule));
     // Staging shares the production database: it must never schedule jobs.
     expect(wrangler.env?.staging?.triggers?.crons).toEqual([]);
+  });
+
+  it("keeps the production hostnames on the production Worker only", () => {
+    const raw = readFileSync("wrangler.jsonc", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    const wrangler = JSON.parse(raw) as {
+      routes?: Array<{ pattern: string }>;
+      env?: Record<string, { routes?: Array<{ pattern: string }> }>;
+    };
+    expect(wrangler.routes?.map((r) => r.pattern)).toEqual(["www.mmg-lawfirm.com", "mmg-lawfirm.com"]);
+    // Routes are inherited into envs, so staging has to declare its own.
+    expect(wrangler.env?.staging?.routes?.map((r) => r.pattern)).toEqual(["staging.mmg-lawfirm.com"]);
   });
 
   it("uses distinct five-field UTC expressions", () => {
