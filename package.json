@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/vercel-secrets-to-github.mjs && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -67,6 +67,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "jsdom": "27.4.0",
+    "libsodium-wrappers": "0.7.15",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",

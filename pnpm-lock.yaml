@@ -141,6 +141,9 @@ importers:
       jsdom:
         specifier: 27.4.0
         version: 27.4.0(@noble/hashes@1.8.0)
+      libsodium-wrappers:
+        specifier: 0.7.15
+        version: 0.7.15
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -4221,6 +4224,12 @@ packages:
 
   libphonenumber-js@1.13.0:
     resolution: {integrity: sha512-N12qmdu0BM1wVNkMKYOoJR4fTOZDblrKNsOqGbKoUZrYsYLX2zx1O5X+vhK0WJPBU/+/kh9tCr8x0a7t1puGWg==}
+
+  libsodium-wrappers@0.7.15:
+    resolution: {integrity: sha512-E4anqJQwcfiC6+Yrl01C1m8p99wEhLmJSs0VQqST66SbQXXBoaJY0pF4BNjRYa/sOQAxx6lXAaAFIlx+15tXJQ==}
+
+  libsodium@0.7.16:
+    resolution: {integrity: sha512-3HrzSPuzm6Yt9aTYCDxYEG8x8/6C0+ag655Y7rhhWZM9PT4NpdnbqlzXhGZlDnkgR6MeSTnOt/VIyHLs9aSf+Q==}
 
   lightningcss-android-arm64@1.32.0:
     resolution: {integrity: sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==}
@@ -10654,6 +10663,12 @@ snapshots:
       type-check: 0.4.0
 
   libphonenumber-js@1.13.0: {}
+
+  libsodium-wrappers@0.7.15:
+    dependencies:
+      libsodium: 0.7.16
+
+  libsodium@0.7.16: {}
 
   lightningcss-android-arm64@1.32.0:
     optional: true

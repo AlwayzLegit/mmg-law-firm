@@ -260,6 +260,27 @@ other than `NEXT_PUBLIC_SITE_URL` gets `X-Robots-Tag: noindex` from
 `src/proxy.ts`, so staging and the workers.dev URL never compete with
 production in search.
 
+**Moving the production secrets from Vercel (one pass, no copying).**
+Vercel never reveals "sensitive" values, so they are exported from inside a
+production build instead: `pnpm build` first runs
+`scripts/vercel-secrets-to-github.mjs`, which does nothing unless
+`SYNC_SECRETS_GITHUB_TOKEN` is set. To run it once:
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → Generate:
+   repository `mmg-law-firm` only, permissions **Secrets: Read and write**
+   and **Environments: Read and write**, expiry 1 day.
+2. Vercel → Project → Settings → Environment Variables → add
+   `SYNC_SECRETS_GITHUB_TOKEN` = that token, Production only.
+3. Vercel → Deployments → latest production → Redeploy (without the build
+   cache). The build log shows `[secrets-sync] set N/N: <key names>`.
+4. Delete `SYNC_SECRETS_GITHUB_TOKEN` from Vercel and revoke the token.
+
+The values land in the GitHub environments `cloudflare-production` and
+`cloudflare-staging`, which the "Cloudflare deploy" workflow reads for the
+build and forwards to the matching Worker (staging's build drops the
+analytics keys). Keys not set on Vercel are listed as skipped. The
+sync never fails the build.
+
 ## 7. Smoke test the live site
 
 Walk through this checklist on the deployed URL:
