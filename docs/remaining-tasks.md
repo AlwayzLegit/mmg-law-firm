@@ -52,8 +52,9 @@ whether it is engineering work or something only the firm can do.
       variables → Actions; both deploy targets read it). Then: redeploy
       staging, one throwaway lead from a real browser (also confirms
       Turnstile, which never completed in the automated browser pane),
-      production secrets into the `cloudflare-production` environment, pick
-      the cutover window, 30-day rollback hold.
+      production secrets into the `cloudflare-production` environment (one
+      Vercel redeploy with a temporary token copies all of them;
+      `DEPLOY.md` §6e), pick the cutover window, 30-day rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed.

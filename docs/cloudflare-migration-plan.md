@@ -284,18 +284,15 @@ after.
 
 **Day before**
 
-1. Production secrets in the GitHub environment `cloudflare-production`
-   (repo → Settings → Environments; add a required reviewer there so a
-   production deploy always needs a click). Anything missing falls back to
-   the repository secret of the same name. Vercel values are write-only, so
-   copy them from their sources: Resend (`RESEND_API_KEY`,
-   `RESEND_WEBHOOK_SECRET`), PostHog (`NEXT_PUBLIC_POSTHOG_KEY`,
-   `NEXT_PUBLIC_POSTHOG_HOST`, `POSTHOG_PERSONAL_API_KEY`,
-   `POSTHOG_PROJECT_ID`), Sentry (`NEXT_PUBLIC_SENTRY_DSN`,
-   `SENTRY_AUTH_TOKEN`), `NEXT_PUBLIC_GA_ID`,
-   `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `ADMIN_API_KEY`, Twilio (3) if
-   live. `CRON_SECRET` / `REVALIDATE_SECRET` can stay the repository values
-   (after cutover only the Worker calls the cron routes).
+1. Production secrets into the GitHub environment `cloudflare-production`
+   (created 2026-10-25) in one pass, straight from Vercel: 19 of the 20
+   Vercel variables are "sensitive" and can never be read back, so a
+   production build exports them itself (`scripts/vercel-secrets-to-github.mjs`,
+   steps in `DEPLOY.md` §6e: a 1-day fine-grained token on Vercel, one
+   redeploy, delete the token). Anything not on Vercel falls back to the
+   repository secret of the same name (e.g. `CLOUDFLARE_API_TOKEN`). Then
+   add a required reviewer to the environment so a production deploy
+   always needs a click.
 2. Run **Cloudflare deploy** with `target=production`, `cron_enabled`
    unchecked. It uploads `mmg-law-firm` with the production site URL and
    analytics keys and smokes its workers.dev URL. No traffic moves.
