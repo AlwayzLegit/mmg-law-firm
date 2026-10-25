@@ -48,7 +48,9 @@ jobs:
       IS_PROD: ${{ inputs.target == 'production' }}
       SITE_URL: ${{ inputs.target == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
       WORKER: ${{ inputs.target == 'production' && 'mmg-law-firm' || 'mmg-law-firm-staging' }}
-      ENV_FLAG: ${{ inputs.target == 'production' && '' || '--env staging' }}
+      # Careful: in Actions expressions '' is falsy, so `cond && '' || x`
+      # always yields x. Put the non-empty value on the && side.
+      ENV_FLAG: ${{ inputs.target == 'staging' && '--env staging' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -66,6 +68,16 @@ jobs:
           if [ "${{ inputs.target }}" != "production" ] && [ "${{ inputs.cron_enabled }}" = "true" ]; then
             echo "::error::cron_enabled is only valid for target=production (staging shares the production database)"; exit 1
           fi
+          # The target, Worker name, wrangler env flag and site URL must agree.
+          case "${{ inputs.target }}" in
+            production) want_flag=""; want_worker="mmg-law-firm"; want_url="https://www.mmg-lawfirm.com" ;;
+            staging) want_flag="--env staging"; want_worker="mmg-law-firm-staging"; want_url="https://staging.mmg-lawfirm.com" ;;
+            *) echo "::error::unknown target"; exit 1 ;;
+          esac
+          if [ "$ENV_FLAG" != "$want_flag" ] || [ "$WORKER" != "$want_worker" ] || [ "$SITE_URL" != "$want_url" ]; then
+            echo "::error::target mismatch: ENV_FLAG='$ENV_FLAG' WORKER='$WORKER' SITE_URL='$SITE_URL'"; exit 1
+          fi
+          echo "deploying ${{ inputs.target }} → $WORKER ($SITE_URL) flag='$ENV_FLAG'"
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -157,6 +169,12 @@ jobs:
           robots=$(curl -s -D - -o /dev/null --max-time 60 "$url/" | tr -d '\r' | grep -i '^x-robots-tag:' || true)
           echo "workers.dev ${robots:-x-robots-tag: (none)}"
           echo "$robots" | grep -qi noindex || { echo "::error::workers.dev host must be noindex"; fail=1; }
+          # Prove this run reached the intended Worker: its pages must carry
+          # this target's canonical origin (a passing smoke on the wrong
+          # Worker is how the first production run went unnoticed).
+          canon=$(curl -s --max-time 60 "$url/contact" | grep -o '<link rel="canonical" href="[^"]*' | head -1 | sed 's/.*href="//')
+          echo "canonical: ${canon:-(none)}"
+          [ "$canon" = "$SITE_URL/contact" ] || { echo "::error::canonical '$canon' is not $SITE_URL/contact — wrong Worker or wrong build"; fail=1; }
           exit $fail
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
