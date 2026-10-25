@@ -33,12 +33,21 @@ const PATHS = [
   "/ru/contact",
 ];
 
-function head(html, origin) {
+/**
+ * Canonicals are compared with both origins normalised away, so a Worker
+ * whose canonical correctly points at the production origin (the
+ * production Worker on workers.dev) still compares equal.
+ */
+function normaliseOrigin(url) {
+  return [a, b].reduce((u, o) => u.replace(o, "ORIGIN"), url);
+}
+
+function head(html) {
   const pick = (re) => (html.match(re)?.[1] ?? "").trim();
   return {
     title: pick(/<title>([^<]*)<\/title>/i),
     description: pick(/<meta name="description" content="([^"]*)"/i),
-    canonical: pick(/<link rel="canonical" href="([^"]*)"/i).replace(origin, "ORIGIN"),
+    canonical: normaliseOrigin(pick(/<link rel="canonical" href="([^"]*)"/i)),
     robots: pick(/<meta name="robots" content="([^"]*)"/i),
     jsonLd: (html.match(/<script type="application\/ld\+json"/gi) ?? []).length,
   };
@@ -47,7 +56,7 @@ function head(html, origin) {
 async function get(origin, path) {
   const res = await fetch(origin + path, { redirect: "manual", headers: { "user-agent": "mmg-parity-check" } });
   const html = res.status === 200 ? await res.text() : "";
-  return { status: res.status, xRobots: res.headers.get("x-robots-tag") ?? "", head: head(html, origin) };
+  return { status: res.status, xRobots: res.headers.get("x-robots-tag") ?? "", head: head(html) };
 }
 
 let diffs = 0;

@@ -306,14 +306,20 @@ after.
    into both environments. Re-run it (`DEPLOY.md` §6e) only if a value is
    rotated on Vercel before cutover. Anything not on Vercel falls back to
    the repository secret of the same name (e.g. `CLOUDFLARE_API_TOKEN`).
-   Still to do here: add a required reviewer to `cloudflare-production`
-   (repo → Settings → Environments) so a production deploy always needs a
-   click.
-2. Run **Cloudflare deploy** with `target=production`, `cron_enabled`
-   unchecked. It uploads `mmg-law-firm` with the production site URL and
-   analytics keys and smokes its workers.dev URL. No traffic moves.
-3. `pnpm parity https://www.mmg-lawfirm.com https://mmg-law-firm.jetnine-inc.workers.dev`
-   → every page SAME (the workers.dev host is noindex by design).
+   **Done 2026-10-25:** `cloudflare-production` now requires AlwayzLegit's
+   approval and only deploys from `main`, so every production run waits
+   for a click in the Actions tab.
+2. ~~Run **Cloudflare deploy** with `target=production`, `cron_enabled`
+   unchecked.~~ **Done 2026-10-25** (run 40223576994): `mmg-law-firm`
+   carries the production build (www canonical, analytics keys) with
+   `CRON_ENABLED=0`; its four schedules are registered but `scheduled()`
+   skips them. The first attempt hit a workflow bug (`'' ||` made every
+   production run deploy to the staging Worker); PR #189 fixed it and the
+   smoke step now fails unless the deployed canonical matches the target.
+   Redeploy this the day before cutover so it carries the latest `main`.
+3. ~~`pnpm parity https://www.mmg-lawfirm.com https://mmg-law-firm.jetnine-inc.workers.dev`~~
+   **Done 2026-10-25:** all 17 pages match (titles, descriptions,
+   canonicals, robots, JSON-LD). Re-run after the day-before redeploy.
 4. Tell the team: no admin content edits during the window.
 
 **Cutover**
