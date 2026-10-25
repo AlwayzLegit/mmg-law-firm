@@ -6,13 +6,21 @@ whether it is engineering work or something only the firm can do.
 
 ## Attorney review (blocks publishing, not deploys)
 
-- [ ] **Armenian and Russian pages** — review `src/lib/i18n/dictionaries/hy.ts`
-      and `ru.ts` (landing + contact copy, form labels, TCPA consent wording,
-      "Attorney Advertising" label). Live in review mode at
-      `/hy`, `/hy/contact`, `/ru`, `/ru/contact` (noindex, unlisted). After
-      sign-off set `NEXT_PUBLIC_LOCALE_PAGES_LIVE=1` on Vercel production and
-      redeploy; that turns on indexing, hreflang, sitemap entries and the
-      language links. *(code: none)*
+- [ ] **Armenian, Russian and Spanish pages** — review
+      `src/lib/i18n/dictionaries/hy.ts`, `ru.ts` and `es.ts` (landing +
+      contact copy, form labels and errors, TCPA consent wording, "Attorney
+      Advertising" label). Live in review mode at `/hy`, `/ru`, `/es` and
+      their `/contact` pages (noindex, unlisted). After sign-off set
+      `NEXT_PUBLIC_LOCALE_PAGES_LIVE=1` on Vercel production and redeploy;
+      that turns on indexing, hreflang, sitemap entries and the language
+      links. One flag publishes all three; if Spanish needs to wait, say so
+      and it can be split. *(code: none)*
+- [ ] **Decide how Spanish-speaking callers are served.** The attorney does
+      not speak Spanish, so the Spanish pages never claim Spanish-language
+      service: they ask visitors to mention a Spanish preference, and those
+      leads arrive tagged `spanish`. Options: a Spanish-speaking staff member
+      or interpreter for intake, or a referral. Whatever is chosen, tell me
+      and I'll reflect it in `es.ts` (`landing.why.language`).
 - [ ] **Statute-of-limitations rules** — confirm the four headline deadlines
       in `src/lib/leads/limitations.ts` (PI 2y, public-entity claim 6mo,
       FEHA 3y, wage 3y) and the 60-days-before reminder task. They drive the
@@ -48,8 +56,7 @@ whether it is engineering work or something only the firm can do.
       the cutover window, 30-day rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
-      existing case results to seed, Spanish intake (yes/no — decides whether
-      the `es` dictionary gets routes).
+      existing case results to seed.
 - [ ] Content agent: still publishes directly with the legacy shared
       `ADMIN_API_KEY` (owner has a separate plan; leave as is).
 

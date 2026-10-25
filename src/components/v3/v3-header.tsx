@@ -205,7 +205,7 @@ export async function V3Header() {
               </details>
               {localePagesLive() ? (
                 <details>
-                  <summary>Հայերեն / Русский</summary>
+                  <summary>{ROUTED_LOCALES.map((l) => LOCALE_NAMES[l].native).join(" / ")}</summary>
                   <List links={ROUTED_LOCALES.map((l) => ({ label: LOCALE_NAMES[l].native, href: localePath(l, "/") }))} />
                 </details>
               ) : null}
