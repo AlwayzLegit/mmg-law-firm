@@ -51,9 +51,12 @@ whether it is engineering work or something only the firm can do.
       Cloudflare environments on 2026-10-25 (`DEPLOY.md` §6e). Staging lead
       test passed on 2026-10-25 after PR #187 (the first test showed
       Cloudflare cancelling post-response work: lead saved, nobody
-      notified). **Next:** add a required reviewer to the
-      `cloudflare-production` environment, pick the cutover window, follow
-      §D, 30-day rollback hold.
+      notified). Day-before prep done the same day: production Worker
+      uploaded with crons off, 17-page parity with the live site, and
+      production deploys now need AlwayzLegit's approval. **Next (owner):**
+      confirm the staging test email reached Mihran (Resend dashboard),
+      set up the Resend webhook, pick the cutover window. Then §D, 30-day
+      rollback hold.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed.
