@@ -80,6 +80,38 @@ jobs:
           fi
           echo "deploying ${{ inputs.target }} → $WORKER ($SITE_URL) flag='$ENV_FLAG'"
 
+      # Cloudflare refuses to attach a Worker custom domain while an ordinary
+      # DNS record exists for the host ("externally managed DNS records",
+      # code 100117), and wrangler's override does not cover it. So for each
+      # production host still pointing at Vercel: delete that record and
+      # attach the host to the already-deployed Worker straight after, a
+      # gap of about a second. A no-op once the hosts are on the Worker.
+      # Rollback (migration plan §E) recreates the Vercel records.
+      - name: Move hosts off Vercel
+        if: inputs.target == 'production'
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZONE_ID: b3dea43809a3d1e1eeefb70df4e433af
+        run: |
+          api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
+          zone="https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"
+          for host in www.mmg-lawfirm.com mmg-lawfirm.com; do
+            recs=$(api "$zone?name=$host&per_page=50"               | jq -c '[.result[] | select((.type=="CNAME" and (.content|test("vercel-dns"))) or (.type=="A" and (.content|startswith("216.150."))))]')
+            if [ "$recs" = "[]" ]; then echo "$host: no Vercel records"; continue; fi
+            for id in $(echo "$recs" | jq -r '.[].id'); do api -X DELETE "$zone/$id" >/dev/null; done
+            res=$(api -X PUT "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/domains"               -d "{\"hostname\":\"$host\",\"service\":\"$WORKER\",\"zone_id\":\"$ZONE_ID\",\"environment\":\"production\"}")
+            if ! echo "$res" | jq -e '.success' >/dev/null; then
+              echo "$res" | jq -c '.errors'
+              # Put the Vercel records back so the site keeps answering.
+              echo "$recs" | jq -c '.[] | {type, name, content, ttl, proxied}' | while read -r rec; do
+                api -X POST "$zone" -d "$rec" | jq -c '{success, errors}'
+              done
+              echo "::error::attaching $host failed; its Vercel records were restored"; exit 1
+            fi
+            echo "$host: Vercel records removed, attached to $WORKER"
+          done
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
