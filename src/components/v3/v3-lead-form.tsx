@@ -192,6 +192,10 @@ export function V3LeadForm({
     ...textareaStyle,
   };
   const errStyle: CSSProperties = { marginTop: 4, fontSize: 13.5, color: "#a12a1d" };
+  // English pages keep the schema's specific wording; localized pages show
+  // the dictionary's per-field text (the Zod schema is English-only).
+  const fieldError = (field: keyof LeadFormCopy["fieldErrors"]): string | undefined =>
+    errors[field] ? (locale === "en" ? errors[field]?.message : copy.fieldErrors[field]) : undefined;
 
   const renderField = (f: Field) => {
     const label = f.placeholder.replace(/\s*\*$/, "");
@@ -206,7 +210,7 @@ export function V3LeadForm({
         <div key={f.name} style={{ minWidth: 0 }}>
           {sr}
           <input id={fid} type="text" autoComplete="name" placeholder={f.placeholder} style={input} className="v3-field" aria-invalid={!!errors.full_name} {...form.register("full_name")} />
-          {errors.full_name ? <p style={errStyle}>{errors.full_name.message}</p> : null}
+          {errors.full_name ? <p style={errStyle}>{fieldError("full_name")}</p> : null}
         </div>
       );
     if (f.name === "phone")
@@ -214,7 +218,7 @@ export function V3LeadForm({
         <div key={f.name} style={{ minWidth: 0 }}>
           {sr}
           <input id={fid} type="tel" autoComplete="tel" placeholder={f.placeholder} style={input} className="v3-field" aria-invalid={!!errors.phone} {...form.register("phone")} />
-          {errors.phone ? <p style={errStyle}>{errors.phone.message}</p> : null}
+          {errors.phone ? <p style={errStyle}>{fieldError("phone")}</p> : null}
         </div>
       );
     if (f.name === "email")
@@ -222,7 +226,7 @@ export function V3LeadForm({
         <div key={f.name} style={{ minWidth: 0 }}>
           {sr}
           <input id={fid} type="email" autoComplete="email" placeholder={f.placeholder} style={input} className="v3-field" aria-invalid={!!errors.email} {...form.register("email")} />
-          {errors.email ? <p style={errStyle}>{errors.email.message}</p> : null}
+          {errors.email ? <p style={errStyle}>{fieldError("email")}</p> : null}
         </div>
       );
     if (f.tag === "select")
@@ -252,7 +256,7 @@ export function V3LeadForm({
       <div key={f.name} style={{ minWidth: 0 }}>
         {sr}
         <textarea id={fid} rows={3} maxLength={DESCRIPTION_MAX} placeholder={f.placeholder} style={textarea} className="v3-field" aria-invalid={!!errors.description} {...form.register("description")} />
-        {errors.description ? <p style={errStyle}>{errors.description.message}</p> : null}
+        {errors.description ? <p style={errStyle}>{fieldError("description")}</p> : null}
       </div>
     );
   };
@@ -282,10 +286,10 @@ export function V3LeadForm({
         <input type="checkbox" style={{ width: 18, height: 18, marginTop: 2, accentColor: "#987022" }} aria-invalid={!!errors.consent_contact} {...form.register("consent_contact")} />
         <span>{copy.consent}</span>
       </label>
-      {errors.consent_contact ? <p style={errStyle}>{errors.consent_contact.message}</p> : null}
+      {errors.consent_contact ? <p style={errStyle}>{fieldError("consent_contact")}</p> : null}
 
       <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""} onToken={onToken} action="lead-form" />
-      {errors.turnstileToken ? <p style={errStyle}>{errors.turnstileToken.message}</p> : null}
+      {errors.turnstileToken ? <p style={errStyle}>{fieldError("turnstileToken")}</p> : null}
 
       <button
         type="submit"
