@@ -138,6 +138,16 @@ export const en = {
     successBody:
       "Your request has been received. We follow up during office hours. For immediate help, call",
     honeypot: "Company (leave blank)",
+    /** Per-field validation text for localized pages. English pages show the
+     *  schema's own (more specific) messages instead. */
+    fieldErrors: {
+      full_name: "Please enter your full name.",
+      phone: "Enter a valid US phone number.",
+      email: "Enter a valid email address.",
+      description: "Please keep the description under 500 characters, without links.",
+      consent_contact: "We need your consent before we can contact you.",
+      turnstileToken: "Please complete the verification step.",
+    },
     errors: {
       rateLimited: "You've sent several requests recently. Please call {phone}.",
       checkFields: "Please check the highlighted fields.",
