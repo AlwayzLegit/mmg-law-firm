@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { runAfterResponse } from "@/lib/after-response";
 import { FIRM, FIRM_FULL_ADDRESS } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/resend";
 import { env } from "@/lib/env";
@@ -164,19 +165,18 @@ export async function POST(request: NextRequest) {
     const leadId = insertResult.data?.id ?? null;
     persisted = Boolean(leadId);
 
-    // Audit log entry. Best-effort; don't fail the request on this.
+    // Audit log entry. Best-effort, after the response; never fails the
+    // request. runAfterResponse keeps it alive on Cloudflare Workers.
     if (leadId) {
-      void supabase
-        .from("audit_log")
-        .insert({
+      runAfterResponse("leads-audit", async () => {
+        const { error } = await supabase.from("audit_log").insert({
           entity: "leads",
           entity_id: leadId,
           action: isSpam ? "create_spam" : "create",
           ip,
-        })
-        .then(({ error }) => {
-          if (error) console.warn("[leads] audit error:", error.message);
         });
+        if (error) console.warn("[leads] audit error:", error.message);
+      });
     }
 
     if (!isSpam && env.LEAD_NOTIFY_EMAIL) {
@@ -200,30 +200,25 @@ export async function POST(request: NextRequest) {
           Sent by ${FIRM.legalName} intake system. ${FIRM_FULL_ADDRESS}.
         </p>
       `;
-      // Fire-and-forget notifications — never block the user-facing response.
-      // But surface failures in logs with the lead ID so the admin can
-      // recover (manually email/SMS the firm) when Resend or Twilio errors.
-      void sendEmail({
-        to: env.LEAD_NOTIFY_EMAIL,
-        subject,
-        html,
-        replyTo: parsed.data.email ?? undefined,
-      }).then((r) => {
-        if (!r.ok) {
-          console.error(
-            `[leads] email notify failed for lead=${leadId ?? "?"}: ${r.error ?? "unknown"}`,
-          );
+      // Notifications run after the response so they never slow the visitor
+      // down, and runAfterResponse keeps them alive until they finish (a
+      // bare `void` was cancelled on Cloudflare Workers). Failures are logged
+      // with the lead ID so the admin can recover by calling the firm.
+      const notifyTo = env.LEAD_NOTIFY_EMAIL;
+      const replyTo = parsed.data.email ?? undefined;
+      const smsBody = `New lead: ${parsed.data.full_name} — ${parsed.data.phone}`;
+      runAfterResponse("leads-notify", async () => {
+        const [email, sms] = await Promise.allSettled([
+          sendEmail({ to: notifyTo, subject, html, replyTo }),
+          sendSms({ to: FIRM.phoneTel, body: smsBody }),
+        ]);
+        if (email.status === "rejected" || !email.value.ok) {
+          const why = email.status === "rejected" ? String(email.reason) : (email.value.error ?? "unknown");
+          console.error(`[leads] email notify failed for lead=${leadId ?? "?"}: ${why}`);
         }
-      });
-
-      void sendSms({
-        to: FIRM.phoneTel,
-        body: `New lead: ${parsed.data.full_name} — ${parsed.data.phone}`,
-      }).then((r) => {
-        if (!r.ok && r.reason !== "twilio-unconfigured") {
-          console.error(
-            `[leads] sms notify failed for lead=${leadId ?? "?"}: ${r.reason ?? "unknown"}`,
-          );
+        if (sms.status === "rejected" || (!sms.value.ok && sms.value.reason !== "twilio-unconfigured")) {
+          const why = sms.status === "rejected" ? String(sms.reason) : (sms.value.reason ?? "unknown");
+          console.error(`[leads] sms notify failed for lead=${leadId ?? "?"}: ${why}`);
         }
       });
     }

@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 
+import { runAfterResponse } from "@/lib/after-response";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
 import type { ApiPrincipal } from "./auth";
@@ -132,14 +133,12 @@ export async function withIdempotency(
 
   // Opportunistic sweep of expired rows (~5% of calls) so no cron is needed.
   if (Math.random() < 0.05) {
-    void supabase
-      .from("api_idempotency")
-      .delete()
-      .lt("expires_at", new Date().toISOString())
-      .then(
-        () => undefined,
-        () => undefined,
-      );
+    runAfterResponse("idempotency-sweep", async () => {
+      await supabase
+        .from("api_idempotency")
+        .delete()
+        .lt("expires_at", new Date().toISOString());
+    });
   }
 
   return response;
