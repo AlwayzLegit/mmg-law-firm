@@ -52,6 +52,9 @@
     { "pattern": "www.mmg-lawfirm.com", "custom_domain": true },
     { "pattern": "mmg-lawfirm.com", "custom_domain": true }
   ],
+  // Setting routes turns workers.dev off by default; the deploy smoke step
+  // and `pnpm parity` use it, so keep it on (the app noindexes that host).
+  "workers_dev": true,
   "observability": { "enabled": true },
 
   // Staging: a separate Worker (`mmg-law-firm-staging`) on
@@ -89,6 +92,7 @@
       "triggers": { "crons": [] },
       // Must be set: routes are inherited, and staging must never claim www.
       "routes": [{ "pattern": "staging.mmg-lawfirm.com", "custom_domain": true }],
+      "workers_dev": true,
       "vars": {
         "NEXT_PUBLIC_SITE_URL": "https://staging.mmg-lawfirm.com"
       },
