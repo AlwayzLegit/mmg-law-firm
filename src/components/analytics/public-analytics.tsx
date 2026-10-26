@@ -13,14 +13,8 @@ export function PublicAnalytics({ gaId }: { gaId: string }) {
       <PostHogLoader />
       {gaId ? (
         <>
-          {/* The 196 KB library loads after the page has; ga-init below
-              defines gtag() and queues commands into dataLayer until then,
-              so pageviews and lead events are kept. At afterInteractive it
-              competed with the hero and CSS on phones. */}
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            strategy="lazyOnload"
-          />
+          {/* ga-init defines gtag(), queues the config, and loads the gtag.js
+              library itself after the page (see google-init.ts). */}
           <Script id="ga-init" strategy="afterInteractive">
             {googleAnalyticsInit(gaId)}
           </Script>

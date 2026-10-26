@@ -180,6 +180,31 @@ describe("Google bootstrap (isolated; never sends network traffic)", () => {
       { send_page_view: true, allow_google_signals: false, page_referrer: "" },
     ]);
   });
+  it("loads the gtag library after the page, once idle or within 3 s", () => {
+    const appended: { src: string; async: boolean }[] = [];
+    let idle: (() => void) | undefined;
+    const win: Record<string, unknown> = {
+      location: new URL("/contact", origin),
+      requestIdleCallback: (cb: () => void, opts: { timeout: number }) => {
+        expect(opts.timeout).toBe(3000);
+        idle = cb;
+      },
+    };
+    runInNewContext(googleAnalyticsInit("G-TESTONLY"), {
+      window: win,
+      document: {
+        referrer: "",
+        readyState: "complete",
+        createElement: () => ({ src: "", async: false }),
+        head: { appendChild: (s: { src: string; async: boolean }) => appended.push(s) },
+      },
+      URL,
+      encodeURIComponent,
+    });
+    expect(appended).toHaveLength(0); // not before the browser is idle
+    idle!();
+    expect(appended).toEqual([{ src: "https://www.googletagmanager.com/gtag/js?id=G-TESTONLY", async: true }]);
+  });
   it("does not inject a script-closing sequence from configuration", () => {
     expect(googleAnalyticsInit("</script>")).not.toContain("</script>");
   });
