@@ -31,7 +31,8 @@ describe("motorcycle hero image delivery", () => {
       );
     }
     const page = readFileSync("src/components/v3/pages/moto.tsx", "utf8");
-    expect(page).toContain("imageSrcSet: MOTO_HERO.srcSet");
+    expect(page).toContain("<HeroPreload hero={MOTO_HERO} />");
+    expect(readFileSync("src/components/v3/hero-preload.tsx", "utf8")).toContain("imageSrcSet={hero.srcSet}");
     expect(page).toContain("<section style={MOTO_HERO.style}>");
     expect(page).not.toContain('preload("/v3/moto-photos/');
   });

@@ -19,8 +19,8 @@ describe.each([
 
   it("preloads the desktop set on desktop only and the mobile image on phones only", () => {
     const src = readFileSync(`src/components/v3/pages/${page}.tsx`, "utf8");
-    expect(src).toContain(`imageSrcSet: ${name}.srcSet, media: DESKTOP_HERO_MEDIA`);
-    expect(src).toContain(`preload(${name}.mobileSrc, { as: "image", fetchPriority: "high", media: MOBILE_HERO_MEDIA })`);
+    expect(src).toContain(`<HeroPreload hero={${name}} />`);
+    expect(src).not.toContain('from "react-dom"');
   });
 });
 

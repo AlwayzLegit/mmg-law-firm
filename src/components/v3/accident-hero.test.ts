@@ -34,7 +34,8 @@ describe.each([
       ).toBe(artwork);
     }
     const source = readFileSync(`src/components/v3/pages/${page}.tsx`, "utf8");
-    expect(source).toContain(`imageSrcSet: ${symbol}.srcSet`);
+    expect(source).toContain(`<HeroPreload hero={${symbol}} />`);
+    expect(readFileSync("src/components/v3/hero-preload.tsx", "utf8")).toContain("imageSrcSet={hero.srcSet}");
     expect(source).toContain(`<section style={${symbol}.style}>`);
     expect(source).not.toContain(`preload("${artwork}"`);
     expect(source).not.toContain(`url('${artwork}')`);
