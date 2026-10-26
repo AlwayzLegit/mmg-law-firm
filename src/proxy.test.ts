@@ -81,3 +81,15 @@ describe("analytics collection CSP", () => {
     expect(response.headers.has("referrer-policy")).toBe(false);
   });
 });
+
+describe("home hero preload", () => {
+  it("sends the hero as a Link preload on the home document only", async () => {
+    const home = await proxy(new NextRequest("https://www.mmg-lawfirm.com/"));
+    expect(home.headers.get("link")).toContain("homepage-law-library-background.webp>; rel=preload; as=image");
+    // A prefetch of "/" (RSC request) must not carry it, nor other pages.
+    const prefetch = await proxy(new NextRequest("https://www.mmg-lawfirm.com/", { headers: { rsc: "1" } }));
+    expect(prefetch.headers.get("link")).toBeNull();
+    const contact = await proxy(new NextRequest("https://www.mmg-lawfirm.com/contact"));
+    expect(contact.headers.get("link")).toBeNull();
+  });
+});

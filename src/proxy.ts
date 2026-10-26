@@ -67,6 +67,9 @@ function buildCsp(): string {
   ].join("; ");
 }
 
+const HOME_HERO_PRELOAD =
+  "</v3/backgrounds/homepage-law-library-background.webp>; rel=preload; as=image; fetchpriority=high";
+
 type RedirectRule = { destination: string; permanent: boolean };
 
 // Per-instance cache of admin-managed redirects so we hit the DB at most
@@ -124,6 +127,13 @@ export async function proxy(request: NextRequest) {
     res.headers.set(cspHeader, csp);
     // Modern reporting channel for the `report-to csp-endpoint` directive.
     res.headers.set("reporting-endpoints", 'csp-endpoint="/api/csp-report"');
+    // Home hero (its LCP) as a Link header, not a <link>/preload() in the
+    // page: those also fire when Next *prefetches* "/", and every page links
+    // home, so every page was fetching this image at high priority. Browsers
+    // only act on Link headers for document loads, never for prefetches.
+    if (request.nextUrl.pathname === "/" && !request.headers.has("rsc")) {
+      res.headers.set("link", HOME_HERO_PRELOAD);
+    }
     // Private URLs can include searches or auth state. Do not pass them to
     // public-page analytics (or external destinations) as document.referrer.
     if (isPrivateAnalyticsPath(request.nextUrl.pathname)) {

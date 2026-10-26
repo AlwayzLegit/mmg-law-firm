@@ -889,6 +889,9 @@ for (const page of pages) {
   if (pc.imports.has("Link")) imports.push('import Link from "next/link";');
   if (body.includes("as unknown as CSSProperties") || windows.includes("as unknown as CSSProperties")) imports.push('import type { CSSProperties } from "react";');
   // Rendered <link> preload, not ReactDOM.preload(): see hero-preload.tsx.
+  // Home is linked (and prefetched) from every page, so its hero preload is
+  // a Link header in src/proxy.ts instead.
+  if (page === "home") pc.preload = null;
   if (pc.preload) imports.push('import { ImagePreload } from "@/components/v3/hero-preload";');
   imports.push('import { FIRM } from "@/lib/constants";');
   if (pc.imports.has("V3Img")) imports.push('import { V3Img } from "@/components/v3/v3-img";');
