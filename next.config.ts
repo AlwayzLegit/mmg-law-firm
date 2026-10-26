@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     // Inline the (Tailwind, ~36 KB raw) CSS into <head>: five render-blocking
     // stylesheet requests cost ~0.5–0.9 s of mobile LCP for first-time
     // visitors, who are most of this site's traffic. Production builds only.
-    inlineCss: true,
+    inlineCss: false,
   },
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
