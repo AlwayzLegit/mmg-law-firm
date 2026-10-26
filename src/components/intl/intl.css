@@ -338,3 +338,37 @@ a.intl-card:hover {
   color: #e8c384;
   border-bottom: 1px solid #e8c384;
 }
+
+/* .v3-page a (gold, made for the English pages' dark sections) outranks
+   the single-class rules above, which turned the call button, the practice
+   cards and inline links gold on ivory (contrast 1.5:1). Restate them at
+   .intl-page.v3-page specificity; dark sections keep the gold. */
+.intl-page.v3-page a {
+  color: #83601d;
+}
+.intl-page.v3-page a:hover {
+  color: #6f4512;
+}
+.intl-page.v3-page .intl-section-dark a {
+  color: #e8c384;
+}
+.intl-page.v3-page .intl-btn-primary,
+.intl-page.v3-page .intl-btn-primary:hover {
+  color: #fff8e8;
+}
+.intl-page.v3-page .intl-btn-secondary,
+.intl-page.v3-page .intl-btn-secondary:hover {
+  color: #131a20;
+}
+.intl-page.v3-page .intl-card {
+  color: #131a20;
+}
+.intl-page.v3-page .intl-section-dark .intl-card {
+  color: #eeece8;
+}
+.intl-page.v3-page .intl-card .intl-card-more {
+  color: #83601d;
+}
+.intl-page.v3-page .intl-section-dark .intl-card .intl-card-more {
+  color: #e8c384;
+}
