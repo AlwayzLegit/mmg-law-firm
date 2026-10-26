@@ -382,7 +382,7 @@ export function LeadForm({
               <FormItem>
                 <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                   Email{" "}
-                  <span className="text-muted-foreground/70 font-normal normal-case">
+                  <span className="text-muted-foreground font-normal normal-case">
                     (optional)
                   </span>
                 </FormLabel>
@@ -489,7 +489,7 @@ export function LeadForm({
                   <FormItem>
                     <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                       Date of incident{" "}
-                      <span className="text-muted-foreground/70 font-normal normal-case">
+                      <span className="text-muted-foreground font-normal normal-case">
                         (if known)
                       </span>
                     </FormLabel>
@@ -540,7 +540,7 @@ export function LeadForm({
                       "mt-1 flex-none text-xs tabular-nums",
                       (field.value ?? "").length >= DESCRIPTION_MAX
                         ? "text-destructive"
-                        : "text-muted-foreground/70",
+                        : "text-muted-foreground",
                     )}
                   >
                     {(field.value ?? "").length}/{DESCRIPTION_MAX}

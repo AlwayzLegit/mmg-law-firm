@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Noto_Serif_Armenian } from "next/font/google";
 
 import { AttributionCapture } from "@/components/analytics/attribution-capture";
 import RootDocument from "@/components/layout/root-document";
@@ -15,16 +14,6 @@ import "@/components/v3/v3.css";
 import "@/components/v3/v3-chrome.css";
 import "./intl.css";
 
-// Georgia (the v3 serif) has no Armenian glyphs; Noto Serif Armenian fills
-// them per glyph so Latin digits and the firm name keep the house face.
-const notoArmenian = Noto_Serif_Armenian({
-  subsets: ["armenian"],
-  weight: ["400", "700"],
-  variable: "--font-noto-armenian",
-  display: "swap",
-  preload: false,
-});
-
 /**
  * Root layout for a localized section (`/hy`, `/ru`): sets <html lang>,
  * the locale font, and wraps pages in the compact localized header, footer
@@ -34,9 +23,12 @@ const notoArmenian = Noto_Serif_Armenian({
  */
 export function IntlRoot({
   locale,
+  fontClassName = "",
   children,
 }: {
   locale: RoutedLocale;
+  /** Locale-only font variables (Armenian: see armenian-font.ts). */
+  fontClassName?: string;
   children: ReactNode;
 }) {
   const t = getDictionary(locale);
@@ -44,7 +36,7 @@ export function IntlRoot({
     <RootDocument
       publicAnalytics
       lang={LOCALE_HREFLANG[locale]}
-      htmlClassName={`${notoArmenian.variable} lang-${locale}`}
+      htmlClassName={`${fontClassName} lang-${locale}`.trim()}
       skipLabel={t.common.skipToContent}
     >
       <div className="theme-v3 flex min-h-full flex-1 flex-col">
