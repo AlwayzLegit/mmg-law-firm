@@ -59,10 +59,19 @@ whether it is engineering work or something only the firm can do.
       2026-10-25 ~21:15 UTC:** www and apex are served by the Worker and
       it runs the scheduled jobs (Vercel Cron off). Rollback stays
       possible until 2026-11-24 (plan §E); keep the Vercel project and its
-      env vars until then. **Next (owner):** submit one real-browser test
-      lead on www and mark it spam; confirm the notification reached
-      Mihran (Resend dashboard); set up the Resend webhook; resubmit the
-      sitemap in Search Console.
+      env vars until then. Since PR #195 every code merge to `main` starts
+      a production deploy that waits for the owner's approval (first one
+      verified 2026-10-26: crons ran on it at 04:00 UTC). Staging rebuilt
+      the same day; `pnpm parity` 17/17. **Next (owner, needs your
+      sign-ins):** submit one real-browser test lead on www (Turnstile
+      blocks the automated browser) and tell me to check it and mark it
+      spam; confirm in Resend that the notification reached Mihran; add
+      the Resend webhook (`https://www.mmg-lawfirm.com/api/resend/webhook`,
+      events delivered / opened / bounced / complained) and put its
+      `whsec_…` signing secret in the GitHub environment
+      `cloudflare-production` as `RESEND_WEBHOOK_SECRET`, then approve a
+      deploy (until then the route accepts events but ignores them);
+      resubmit `https://www.mmg-lawfirm.com/sitemap.xml` in Search Console.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed.
