@@ -24,8 +24,23 @@ type Env = {
   NEXT_PUBLIC_SITE_URL?: string;
 };
 
+/**
+ * OpenNext marks /_next/image responses immutable only for images imported
+ * in code; every /public image (all of ours) comes back with no
+ * Cache-Control, so browsers re-download them on each visit. Give those a
+ * day fresh plus a week of stale-while-revalidate.
+ */
+const IMAGE_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
+
 export default {
-  fetch: handler.fetch,
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const res: Response = await handler.fetch(request, env, ctx);
+    if (res.status !== 200 || res.headers.has("cache-control")) return res;
+    if (!new URL(request.url).pathname.startsWith("/_next/image")) return res;
+    const out = new Response(res.body, res);
+    out.headers.set("cache-control", IMAGE_CACHE_CONTROL);
+    return out;
+  },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     const job = jobForSchedule(event.cron);

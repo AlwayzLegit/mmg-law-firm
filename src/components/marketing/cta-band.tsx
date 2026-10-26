@@ -19,7 +19,7 @@ export function CtaBand({
   return (
     <section
       className={cn(
-        "relative isolate overflow-hidden border-y border-border",
+        "relative isolate overflow-hidden border-y border-border bg-[var(--color-brand-700)]",
         className,
       )}
     >
