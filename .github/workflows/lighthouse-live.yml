@@ -1,0 +1,50 @@
+name: Lighthouse (live site)
+
+# Lighthouse against production (www.mmg-lawfirm.com), not a local build:
+# measures what visitors get from Cloudflare. Runs weekly, on demand, and
+# when this file changes. Reports go to temporary public storage (links in
+# the job log) and the scores land in the job summary.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 13 * * 1" # Mondays 6 am Pacific (PDT)
+  pull_request:
+    branches: [main]
+    paths: [".github/workflows/lighthouse-live.yml", ".lighthouserc.live.*.json"]
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        formfactor: [mobile, desktop]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lighthouse (${{ matrix.formfactor }})
+        id: lh
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./.lighthouserc.live.${{ matrix.formfactor }}.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Scores to the job summary
+        if: always()
+        env:
+          MANIFEST: ${{ steps.lh.outputs.manifest }}
+          LINKS: ${{ steps.lh.outputs.links }}
+        run: |
+          node -e '
+            const m = JSON.parse(process.env.MANIFEST || "[]").filter((r) => r.isRepresentativeRun);
+            const links = JSON.parse(process.env.LINKS || "{}");
+            const pct = (v) => Math.round(v * 100);
+            let out = "### ${{ matrix.formfactor }}\n\n| Page | Perf | A11y | BP | SEO | Report |\n|---|---|---|---|---|---|\n";
+            for (const r of m) {
+              const s = r.summary;
+              out += `| ${new URL(r.url).pathname} | ${pct(s.performance)} | ${pct(s.accessibility)} | ${pct(s["best-practices"])} | ${pct(s.seo)} | [report](${links[r.url] ?? ""}) |\n`;
+            }
+            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, out);
+          '

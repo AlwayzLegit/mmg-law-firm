@@ -1,0 +1,54 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "https://www.mmg-lawfirm.com/",
+        "https://www.mmg-lawfirm.com/contact",
+        "https://www.mmg-lawfirm.com/practice-areas/car-accidents",
+        "https://www.mmg-lawfirm.com/practice-areas/motorcycle-accidents",
+        "https://www.mmg-lawfirm.com/locations/los-angeles-county/glendale/car-accidents",
+        "https://www.mmg-lawfirm.com/locations",
+        "https://www.mmg-lawfirm.com/how-an-accident-claim-works",
+        "https://www.mmg-lawfirm.com/blog",
+        "https://www.mmg-lawfirm.com/blog/brain-injury-lawyer-california",
+        "https://www.mmg-lawfirm.com/attorneys/mihran-ghazaryan",
+        "https://www.mmg-lawfirm.com/hy"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": [
+          "warn",
+          {
+            "minScore": 0.9
+          }
+        ],
+        "categories:accessibility": [
+          "warn",
+          {
+            "minScore": 0.95
+          }
+        ],
+        "categories:best-practices": [
+          "warn",
+          {
+            "minScore": 0.95
+          }
+        ],
+        "categories:seo": [
+          "warn",
+          {
+            "minScore": 1
+          }
+        ]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}
