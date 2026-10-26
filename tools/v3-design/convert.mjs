@@ -888,7 +888,8 @@ for (const page of pages) {
   const imports = [];
   if (pc.imports.has("Link")) imports.push('import Link from "next/link";');
   if (body.includes("as unknown as CSSProperties") || windows.includes("as unknown as CSSProperties")) imports.push('import type { CSSProperties } from "react";');
-  if (pc.preload) imports.push('import { preload } from "react-dom";');
+  // Rendered <link> preload, not ReactDOM.preload(): see hero-preload.tsx.
+  if (pc.preload) imports.push('import { ImagePreload } from "@/components/v3/hero-preload";');
   imports.push('import { FIRM } from "@/lib/constants";');
   if (pc.imports.has("V3Img")) imports.push('import { V3Img } from "@/components/v3/v3-img";');
   if (pc.imports.has("V3LeadForm")) imports.push('import { V3LeadForm } from "@/components/v3/v3-lead-form";');
@@ -902,11 +903,11 @@ ${imports.join("\n")}
 ${T.length ? `const T: Record<string, string>[] = ${JSON.stringify(T)};` : ""}
 
 export function ${name}() {
-${pc.preload ? `  // Hero background is the LCP element — fetch it before CSS discovers it.
-  preload(${q(decodeURI(pc.preload))}, { as: "image", fetchPriority: "high" });
-` : ""}  return (
+  return (
     <div className="v3-page">
-      ${body}
+${pc.preload ? `      {/* Hero background is the LCP element: fetch it before CSS discovers it. */}
+      <ImagePreload href={${q(decodeURI(pc.preload))}} />
+` : ""}      ${body}
       ${windows}
     </div>
   );

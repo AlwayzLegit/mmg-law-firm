@@ -38,8 +38,7 @@ describe("offscreen accident-page decoration", () => {
   it.each(["car", "truck"])("keeps %s hero loading eager and prioritized", (page) => {
     const hero = page === "car" ? "CAR_HERO" : "TRUCK_HERO";
     const text = source(page);
-    expect(text).toContain(`preload(${hero}.src, { as: "image", fetchPriority: "high", imageSrcSet: ${hero}.srcSet, media: DESKTOP_HERO_MEDIA });`);
-    expect(text).toContain(`preload(${hero}.mobileSrc, { as: "image", fetchPriority: "high", media: MOBILE_HERO_MEDIA });`);
+    expect(text).toContain(`<HeroPreload hero={${hero}} />`);
     expect(text).toContain(`<section style={${hero}.style}>`);
   });
 });

@@ -372,3 +372,13 @@ a.intl-card:hover {
 .intl-page.v3-page .intl-section-dark .intl-card .intl-card-more {
   color: #e8c384;
 }
+
+/* Armenian headings carry long words ("խորհրդատվության" is 336px at 36px)
+   that overflowed the 332px heading box on a 375px phone and broke
+   mid-word. Scale with the viewport on small screens so the longest word
+   fits down to 320px. */
+@media (max-width: 600px) {
+  .lang-hy .intl-h1 {
+    font-size: clamp(28px, 9.2vw, 36px);
+  }
+}
