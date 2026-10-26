@@ -198,9 +198,11 @@ Without these, the lead form will fail every submission server-side.
 
 > **Since 2026-10-25 production is served by Cloudflare**, not Vercel:
 > `www.mmg-lawfirm.com` and the apex are custom domains of the
-> `mmg-law-firm` Worker (`routes` in `wrangler.jsonc`), deployed by the
-> "Cloudflare deploy" workflow (`target=production`, your approval
-> required), and the Worker runs the scheduled jobs (`vercel.json` crons
+> `mmg-law-firm` Worker (`routes` in `wrangler.jsonc`). Every merge to
+> `main` (docs-only changes excepted) starts the "Cloudflare deploy"
+> workflow for production, which waits for your approval in the Actions
+> tab. If several merges pile up, cancel the older waiting runs and
+> approve the newest: it ships everything merged so far. The Worker runs the scheduled jobs (`vercel.json` crons
 > are empty). Vercel still builds every push but serves no traffic; it is
 > kept, env vars untouched, as the rollback until 2026-11-24
 > (`docs/cloudflare-migration-plan.md` §E). Production env vars therefore

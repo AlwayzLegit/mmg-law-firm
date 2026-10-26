@@ -8,13 +8,12 @@ name: Cloudflare deploy
 #   target=staging     → Worker `mmg-law-firm-staging` (wrangler --env staging)
 #                        on staging.mmg-lawfirm.com. No cron triggers, no
 #                        analytics keys. Shares the production database.
-#   target=production  → Worker `mmg-law-firm`. Uploading it is safe before
-#                        cutover: nothing routes to it until www/apex DNS
-#                        is switched. Its cron triggers are registered but
-#                        the scheduled() handler no-ops unless
-#                        cron_enabled=true (set that only on cutover day,
-#                        after Vercel's crons are off — otherwise jobs run
-#                        twice against the same database).
+#   target=production  → Worker `mmg-law-firm` on www + apex (since the
+#                        2026-10-25 cutover). Pushes to main deploy this
+#                        target. It is the only scheduler: scheduled()
+#                        no-ops unless CRON_ENABLED=1, so keep cron_enabled
+#                        on (the default) unless you mean to pause the jobs,
+#                        e.g. step 1 of the rollback.
 #
 # Secrets resolve from the matching GitHub environment first
 # (`cloudflare-staging` / `cloudflare-production`), then the repository.
@@ -23,6 +22,14 @@ name: Cloudflare deploy
 # step as well as to the Worker.
 
 on:
+  # Every merge to main deploys production with crons on (the Worker is the
+  # only scheduler since the cutover). It still waits for the owner's
+  # approval on the cloudflare-production environment. Runs queue one at a
+  # time; if several merges pile up, cancel the older waiting runs and
+  # approve the newest, which ships everything merged so far.
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
   workflow_dispatch:
     inputs:
       target:
@@ -32,26 +39,26 @@ on:
         default: staging
         required: true
       cron_enabled:
-        description: "production only: let the Worker run scheduled jobs (cutover day, after Vercel crons are removed)"
+        description: "production only: run scheduled jobs (leave on; uncheck only to pause them, e.g. for a rollback)"
         type: boolean
-        default: false
+        default: true
 
 concurrency:
-  group: cloudflare-deploy-${{ inputs.target }}
+  group: cloudflare-deploy-${{ inputs.target || 'production' }}
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: cloudflare-${{ inputs.target }}
+    environment: cloudflare-${{ inputs.target || 'production' }}
     env:
-      IS_PROD: ${{ inputs.target == 'production' }}
-      SITE_URL: ${{ inputs.target == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
-      WORKER: ${{ inputs.target == 'production' && 'mmg-law-firm' || 'mmg-law-firm-staging' }}
+      IS_PROD: ${{ (inputs.target || 'production') == 'production' }}
+      SITE_URL: ${{ (inputs.target || 'production') == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
+      WORKER: ${{ (inputs.target || 'production') == 'production' && 'mmg-law-firm' || 'mmg-law-firm-staging' }}
       # Careful: in Actions expressions '' is falsy, so `cond && '' || x`
       # always yields x. Put the non-empty value on the && side.
-      ENV_FLAG: ${{ inputs.target == 'staging' && '--env staging' || '' }}
+      ENV_FLAG: ${{ (inputs.target || 'production') == 'staging' && '--env staging' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -66,11 +73,10 @@ jobs:
 
       - name: Guard
         run: |
-          if [ "${{ inputs.target }}" != "production" ] && [ "${{ inputs.cron_enabled }}" = "true" ]; then
-            echo "::error::cron_enabled is only valid for target=production (staging shares the production database)"; exit 1
-          fi
+          # cron_enabled is ignored for staging (it shares the production
+          # database): CRON_ENABLED is forced to 0 there and it has no triggers.
           # The target, Worker name, wrangler env flag and site URL must agree.
-          case "${{ inputs.target }}" in
+          case "${{ inputs.target || 'production' }}" in
             production) want_flag=""; want_worker="mmg-law-firm"; want_url="https://www.mmg-lawfirm.com" ;;
             staging) want_flag="--env staging"; want_worker="mmg-law-firm-staging"; want_url="https://staging.mmg-lawfirm.com" ;;
             *) echo "::error::unknown target"; exit 1 ;;
@@ -78,7 +84,7 @@ jobs:
           if [ "$ENV_FLAG" != "$want_flag" ] || [ "$WORKER" != "$want_worker" ] || [ "$SITE_URL" != "$want_url" ]; then
             echo "::error::target mismatch: ENV_FLAG='$ENV_FLAG' WORKER='$WORKER' SITE_URL='$SITE_URL'"; exit 1
           fi
-          echo "deploying ${{ inputs.target }} → $WORKER ($SITE_URL) flag='$ENV_FLAG'"
+          echo "deploying ${{ inputs.target || 'production' }} → $WORKER ($SITE_URL) flag='$ENV_FLAG'"
 
       # Cloudflare refuses to attach a Worker custom domain while an ordinary
       # DNS record exists for the host ("externally managed DNS records",
@@ -88,7 +94,7 @@ jobs:
       # gap of about a second. A no-op once the hosts are on the Worker.
       # Rollback (migration plan §E) recreates the Vercel records.
       - name: Move hosts off Vercel
-        if: inputs.target == 'production'
+        if: (inputs.target || 'production') == 'production'
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -126,16 +132,16 @@ jobs:
           NEXT_PUBLIC_LOCALE_PAGES_LIVE: ${{ vars.NEXT_PUBLIC_LOCALE_PAGES_LIVE }}
           # Analytics and search verification belong to production only, so
           # staging traffic never lands in the firm's GA / PostHog properties.
-          NEXT_PUBLIC_GA_ID: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_GA_ID || '' }}
-          NEXT_PUBLIC_POSTHOG_KEY: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_POSTHOG_KEY || '' }}
-          NEXT_PUBLIC_POSTHOG_HOST: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_POSTHOG_HOST || '' }}
-          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '' }}
+          NEXT_PUBLIC_GA_ID: ${{ (inputs.target || 'production') == 'production' && secrets.NEXT_PUBLIC_GA_ID || '' }}
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ (inputs.target || 'production') == 'production' && secrets.NEXT_PUBLIC_POSTHOG_KEY || '' }}
+          NEXT_PUBLIC_POSTHOG_HOST: ${{ (inputs.target || 'production') == 'production' && secrets.NEXT_PUBLIC_POSTHOG_HOST || '' }}
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ (inputs.target || 'production') == 'production' && secrets.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '' }}
 
       - name: Deploy
         run: |
           pnpm exec wrangler deploy $ENV_FLAG \
             --var "NEXT_PUBLIC_SITE_URL:$SITE_URL" \
-            --var "CRON_ENABLED:${{ inputs.target == 'production' && inputs.cron_enabled && '1' || '0' }}"
+            --var "CRON_ENABLED:${{ (inputs.target || 'production') == 'production' && (github.event_name == 'push' || inputs.cron_enabled) && '1' || '0' }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
