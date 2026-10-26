@@ -201,8 +201,8 @@ Without these, the lead form will fail every submission server-side.
 > `mmg-law-firm` Worker (`routes` in `wrangler.jsonc`). Every merge to
 > `main` (docs-only changes excepted) starts the "Cloudflare deploy"
 > workflow for production, which waits for your approval in the Actions
-> tab; only the newest waiting run is kept, so one approval ships
-> everything merged so far. The Worker runs the scheduled jobs (`vercel.json` crons
+> tab. If several merges pile up, cancel the older waiting runs and
+> approve the newest: it ships everything merged so far. The Worker runs the scheduled jobs (`vercel.json` crons
 > are empty). Vercel still builds every push but serves no traffic; it is
 > kept, env vars untouched, as the rollback until 2026-11-24
 > (`docs/cloudflare-migration-plan.md` §E). Production env vars therefore

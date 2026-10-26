@@ -24,8 +24,9 @@ name: Cloudflare deploy
 on:
   # Every merge to main deploys production with crons on (the Worker is the
   # only scheduler since the cutover). It still waits for the owner's
-  # approval on the cloudflare-production environment; GitHub keeps only the
-  # newest waiting run, so approving it ships everything merged so far.
+  # approval on the cloudflare-production environment. Runs queue one at a
+  # time; if several merges pile up, cancel the older waiting runs and
+  # approve the newest, which ships everything merged so far.
   push:
     branches: [main]
     paths-ignore: ["docs/**", "**/*.md"]
