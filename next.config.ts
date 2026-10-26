@@ -12,10 +12,10 @@ const nextConfig: NextConfig = {
     // Separate public/private roots need an explicit unmatched-URL document.
     globalNotFound: true,
     optimizePackageImports: ["recharts"],
-    // Inline the (Tailwind, ~36 KB raw) CSS into <head>: five render-blocking
-    // stylesheet requests cost ~0.5–0.9 s of mobile LCP for first-time
-    // visitors, who are most of this site's traffic. Production builds only.
-    inlineCss: false,
+    // Not inlineCss: it would cut ~0.5–0.9 s of render-blocking CSS on
+    // mobile, but the Cloudflare deploy fails with it (OpenNext's R2 cache
+    // population step errors on the inlined pages; reproduced twice on
+    // 2026-10-26). Revisit after an OpenNext upgrade.
   },
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
