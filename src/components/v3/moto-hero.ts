@@ -1,5 +1,7 @@
 import { getImageProps } from "next/image";
 
+import { mobileHeroUrl } from "./mobile-hero";
+
 // Keep the original artwork and intrinsic dimensions. The existing Next image
 // optimizer negotiates AVIF/WebP; no asset, crop, or page metadata is rewritten.
 const { props } = getImageProps({
@@ -10,10 +12,14 @@ const { props } = getImageProps({
   quality: 65,
 });
 
+const mobileSrc = mobileHeroUrl("/v3/moto-photos/motorcycle-coastal-highway-hero.webp", 1672, 941);
+
 export const MOTO_HERO = {
   src: props.src,
   srcSet: props.srcSet,
+  mobileSrc,
   style: {
+    "--hero-mobile": `url("${mobileSrc}")`,
     // Fallback for browsers without image-set(). The density candidates below
     // are also used by the preload, so supporting browsers fetch one image.
     background: `#12171b url("${props.src}") center/cover no-repeat`,

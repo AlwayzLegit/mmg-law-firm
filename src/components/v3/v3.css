@@ -447,3 +447,11 @@
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Phones: the lighter 1200px AVIF hero (mobile-hero.ts). The inline
+   image-set() targets desktop, so this has to win over the inline style. */
+@media (max-width: 767px) {
+  .theme-v3 section[style*="--hero-mobile"] {
+    background-image: var(--hero-mobile) !important;
+  }
+}

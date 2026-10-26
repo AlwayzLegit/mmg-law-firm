@@ -1,13 +1,18 @@
 import { getImageProps } from "next/image";
 
+import { mobileHeroUrl } from "./mobile-hero";
+
 // Preserve each original asset, intrinsic dimensions, crop and background.
 // Matching density candidates let the preload and CSS request the same image.
 function optimizedBackground(src: string, width: number, height: number) {
   const { props } = getImageProps({ src, alt: "", width, height, quality: 65 });
+  const mobileSrc = mobileHeroUrl(src, width, height);
   return {
     src: props.src,
     srcSet: props.srcSet,
+    mobileSrc,
     style: {
+      "--hero-mobile": `url("${mobileSrc}")`,
       background: `#12171b url("${props.src}") center/cover no-repeat`,
       backgroundImage: `image-set(${props
         .srcSet!.split(", ")
