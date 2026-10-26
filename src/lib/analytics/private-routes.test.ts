@@ -167,7 +167,7 @@ describe("Google bootstrap (isolated; never sends network traffic)", () => {
     expect(commands[1]).toEqual([
       "config",
       "G-TESTONLY",
-      { send_page_view: true },
+      { send_page_view: true, allow_google_signals: false },
     ]);
   });
   it.each([
@@ -177,7 +177,7 @@ describe("Google bootstrap (isolated; never sends network traffic)", () => {
     expect(init("/contact", referrer).commands[1]).toEqual([
       "config",
       "G-TESTONLY",
-      { send_page_view: true, page_referrer: "" },
+      { send_page_view: true, allow_google_signals: false, page_referrer: "" },
     ]);
   });
   it("does not inject a script-closing sequence from configuration", () => {

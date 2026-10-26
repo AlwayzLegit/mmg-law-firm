@@ -12,7 +12,9 @@ if (privatePath.test(decodedPath(window.location.pathname))) {
 }
 window.dataLayer = window.dataLayer || [];
 window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
-var config = { send_page_view: true };
+// Google Signals beacons to stats.g.doubleclick.net, which the CSP blocks on
+// purpose (no advertising hosts), so it only ever produced a console error.
+var config = { send_page_view: true, allow_google_signals: false };
 try {
   var ref = new URL(document.referrer);
   var host = ref.hostname.replace(/^www\\./, '');

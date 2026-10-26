@@ -27,7 +27,16 @@ type BuildOpts = {
 export function fitMetaDescription(text: string, max = 160): string {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
-  const sentences = clean.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) ?? [clean];
+  // Sentence ends: . ! ? plus the Armenian full stop ։. A capital initial
+  // ("Mihran M.", "Միհրան Մ.") is not a sentence end, so glue it to what
+  // follows — otherwise the description shrinks to the attorney's name.
+  const pieces = clean.match(/[^.!?։]+[.!?։]+(?=\s|$)|[^.!?։]+$/gu) ?? [clean];
+  const sentences: string[] = [];
+  for (const piece of pieces) {
+    const prev = sentences.at(-1);
+    if (prev && /(^|\s)\p{Lu}\.$/u.test(prev.trim())) sentences[sentences.length - 1] = `${prev}${piece}`;
+    else sentences.push(piece);
+  }
   let out = "";
   for (const raw of sentences) {
     const next = out ? `${out} ${raw.trim()}` : raw.trim();

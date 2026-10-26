@@ -30,6 +30,25 @@ export function apexRedirect(
   return `${prod.origin}${u.pathname}${u.search}`;
 }
 
+/**
+ * Plain-http requests must 308 to https (Vercel did this at the platform
+ * level; Cloudflare only does it with "Always Use HTTPS" on). The visitor's
+ * scheme comes from `x-forwarded-proto` when the edge sets it, else the
+ * request URL. Local hosts are left alone. Returns the target or null.
+ */
+export function httpsRedirect(
+  requestHost: string | null | undefined,
+  forwardedProto: string | null | undefined,
+  requestUrl: string,
+): string | null {
+  const host = (requestHost ?? "").trim().toLowerCase();
+  if (!host || LOCAL.test(host)) return null;
+  const u = new URL(requestUrl);
+  const proto = (forwardedProto ?? u.protocol).split(",")[0].trim().replace(/:$/, "").toLowerCase();
+  if (proto !== "http") return null;
+  return `https://${host}${u.pathname}${u.search}`;
+}
+
 export function isNonCanonicalHost(
   requestHost: string | null | undefined,
   siteUrl: string,

@@ -13,10 +13,11 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { FIRM } from "@/lib/constants";
 import { readingTime } from "@/lib/blog/reading-time";
+import { resolveInternalLinks } from "@/lib/blog/internal-links";
 import { BLOG_MARKDOWN_COMPONENTS } from "@/lib/blog/markdown-components";
 import { relatedPosts } from "@/lib/blog/related";
 import { extractToc } from "@/lib/blog/toc";
-import { getPostBySlug, getPublishedPosts } from "@/lib/data/blog";
+import { getPostBySlug, getPublishedPosts, getRedirectMap } from "@/lib/data/blog";
 import { canonicalUrl, defaultOgImageUrl } from "@/lib/seo/canonical";
 import { jsonLd } from "@/lib/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -54,8 +55,9 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const [post, redirects] = await Promise.all([getPostBySlug(slug), getRedirectMap()]);
   if (!post) notFound();
+  const body = resolveInternalLinks(post.body_md, redirects);
 
   const path = `/blog/${post.slug}`;
   const url = canonicalUrl(path);
@@ -168,7 +170,7 @@ export default async function BlogPostPage({ params }: Props) {
                   ],
                 ]}
               >
-                {post.body_md}
+                {body}
               </ReactMarkdown>
             </div>
 

@@ -7,9 +7,12 @@
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // html_handling "none": serve the .html files in public at their own URLs, as Vercel
+  // did. The default 307s /x.html → /x, and the v3 guides link the .html.
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "html_handling": "none"
   },
   "services": [
     {
@@ -68,7 +71,8 @@
       "name": "mmg-law-firm-staging",
       "assets": {
         "directory": ".open-next/assets",
-        "binding": "ASSETS"
+        "binding": "ASSETS",
+        "html_handling": "none"
       },
       "services": [
         {

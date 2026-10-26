@@ -59,3 +59,15 @@ export async function getPostBySlug(slug: string): Promise<BlogPostRow | null> {
   }
   return (data as BlogPostRow) ?? null;
 }
+
+/** source_path → destination from the admin `redirects` table (public read). */
+export async function getRedirectMap(): Promise<Map<string, string>> {
+  if (!isSupabaseConfigured()) return new Map();
+  const supabase = getStaticSupabase();
+  const { data, error } = await supabase.from("redirects").select("source_path, destination");
+  if (error) {
+    console.warn("[queries] redirects:", error.message);
+    return new Map();
+  }
+  return new Map((data ?? []).map((r) => [r.source_path as string, r.destination as string]));
+}
