@@ -65,13 +65,14 @@ whether it is engineering work or something only the firm can do.
       the same day; `pnpm parity` 17/17. **Next (owner, needs your
       sign-ins):** submit one real-browser test lead on www (Turnstile
       blocks the automated browser) and tell me to check it and mark it
-      spam; confirm in Resend that the notification reached Mihran; add
-      the Resend webhook (`https://www.mmg-lawfirm.com/api/resend/webhook`,
-      events delivered / opened / bounced / complained) and put its
-      `whsec_…` signing secret in the GitHub environment
-      `cloudflare-production` as `RESEND_WEBHOOK_SECRET`, then approve a
-      deploy (until then the route accepts events but ignores them);
+      spam; confirm in Resend that the notification reached Mihran;
       resubmit `https://www.mmg-lawfirm.com/sitemap.xml` in Search Console.
+      *Resend webhook done 2026-10-26:* owner created it (delivered /
+      opened / bounced / complained → `/api/resend/webhook`) and stored
+      `RESEND_WEBHOOK_SECRET` in `cloudflare-production`; deployed in run
+      40274247601, and an unsigned request now gets 403. First real check:
+      the webhook's delivery log in Resend shows 200s after the next lead
+      email.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed.
