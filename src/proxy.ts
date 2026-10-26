@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
-import { apexRedirect, isNonCanonicalHost } from "@/lib/seo/host-guard";
+import { apexRedirect, httpsRedirect, isNonCanonicalHost } from "@/lib/seo/host-guard";
 
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` and pinned it to the
@@ -146,6 +146,13 @@ export async function proxy(request: NextRequest) {
   // has to). Runs before anything else so cookies and redirects key off www.
   const toWww = apexRedirect(requestHost, request.url, SITE.productionUrl);
   if (toWww) return withCsp(NextResponse.redirect(toWww, 308));
+  const toHttps = httpsRedirect(
+    requestHost,
+    request.headers.get("x-forwarded-proto"),
+    request.url,
+    request.headers.get("cf-visitor"),
+  );
+  if (toHttps) return withCsp(NextResponse.redirect(toHttps, 308));
 
   // Admin-managed redirects run first (cheapest path, cached). Skip the
   // admin app and login so an errant rule can't lock anyone out.

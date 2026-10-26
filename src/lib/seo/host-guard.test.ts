@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { apexRedirect, isNonCanonicalHost } from "./host-guard";
+import { apexRedirect, httpsRedirect, isNonCanonicalHost } from "./host-guard";
 
 describe("apexRedirect", () => {
   it("sends the bare domain to www, keeping path and query", () => {
@@ -12,6 +12,31 @@ describe("apexRedirect", () => {
     for (const h of ["www.mmg-lawfirm.com", "staging.mmg-lawfirm.com", "localhost:3000", null]) {
       expect(apexRedirect(h, "https://x/", "https://www.mmg-lawfirm.com")).toBeNull();
     }
+  });
+});
+
+describe("httpsRedirect", () => {
+  it("sends plain http to https on the same host, keeping path and query", () => {
+    expect(httpsRedirect("www.mmg-lawfirm.com", "http", "http://www.mmg-lawfirm.com/contact?x=1")).toBe(
+      "https://www.mmg-lawfirm.com/contact?x=1",
+    );
+    // No x-forwarded-proto: Cloudflare's cf-visitor.
+    expect(httpsRedirect("www.mmg-lawfirm.com", null, "http://www.mmg-lawfirm.com/", '{"scheme":"http"}')).toBe(
+      "https://www.mmg-lawfirm.com/",
+    );
+  });
+  it("never redirects on the URL scheme alone (wrangler dev serves www over http)", () => {
+    expect(httpsRedirect("www.mmg-lawfirm.com", null, "http://www.mmg-lawfirm.com/")).toBeNull();
+    expect(httpsRedirect("www.mmg-lawfirm.com", null, "http://www.mmg-lawfirm.com/", "not json")).toBeNull();
+  });
+  it("trusts the edge header over the internal URL", () => {
+    expect(httpsRedirect("www.mmg-lawfirm.com", "https", "http://www.mmg-lawfirm.com/")).toBeNull();
+    expect(httpsRedirect("www.mmg-lawfirm.com", "http, https", "https://www.mmg-lawfirm.com/")).toBe("https://www.mmg-lawfirm.com/");
+  });
+  it("leaves https and local hosts alone", () => {
+    expect(httpsRedirect("www.mmg-lawfirm.com", "https", "https://www.mmg-lawfirm.com/", '{"scheme":"https"}')).toBeNull();
+    expect(httpsRedirect("localhost:3000", "http", "http://localhost:3000/")).toBeNull();
+    expect(httpsRedirect(null, "http", "http://x/")).toBeNull();
   });
 });
 
