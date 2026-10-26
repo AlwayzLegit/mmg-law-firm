@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ROUTED_LOCALES } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n";
 
-import { fitMetaDescription } from "./metadata";
+import { fitMetaDescription, fitTitle } from "./metadata";
 
 describe("fitMetaDescription", () => {
   it("leaves short descriptions alone", () => {
@@ -43,5 +43,19 @@ describe("fitMetaDescription", () => {
         expect(fitMetaDescription(d).length, `${locale}: ${d.slice(0, 30)}`).toBeGreaterThanOrEqual(70);
       }
     }
+  });
+});
+
+describe("fitTitle", () => {
+  it("keeps the full brand suffix when it fits", () => {
+    expect(fitTitle("California Car Accident Lawyer")).toBe("California Car Accident Lawyer");
+  });
+  it("shortens the suffix for long titles", () => {
+    const t = "Swimming Pool Accident Lawyer California: Who Is Liable";
+    expect(fitTitle(t)).toEqual({ absolute: `${t} | MMG` });
+  });
+  it("drops the suffix when even the short one is too long", () => {
+    const t = "A very long blog headline that already uses up the whole budget!";
+    expect(fitTitle(t)).toEqual({ absolute: t });
   });
 });

@@ -49,6 +49,17 @@ export function fitMetaDescription(text: string, max = 160): string {
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.-]+$/, "")}…`;
 }
 
+/**
+ * Search results cut titles at roughly 60–65 characters. The root template
+ * appends " | MMG Law Firm"; when that would push a title past 65, fall back
+ * to " | MMG", then to the bare title (absolute, so the template is skipped).
+ */
+export function fitTitle(title: string, max = 65): Metadata["title"] {
+  if (`${title} | ${FIRM.legalName}`.length <= max) return title;
+  const short = `${title} | MMG`;
+  return { absolute: short.length <= max ? short : title };
+}
+
 export function buildMetadata({
   title,
   description,
@@ -79,7 +90,7 @@ export function buildMetadata({
     : undefined;
 
   return {
-    title: approved ? { absolute: approved.title } : title,
+    title: approved ? { absolute: approved.title } : fitTitle(title),
     description: approved?.description ?? description,
     metadataBase: new URL(siteUrl()),
     alternates: {
