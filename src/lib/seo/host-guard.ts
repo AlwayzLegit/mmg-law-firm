@@ -33,19 +33,29 @@ export function apexRedirect(
 /**
  * Plain-http requests must 308 to https (Vercel did this at the platform
  * level; Cloudflare only does it with "Always Use HTTPS" on). The visitor's
- * scheme comes from `x-forwarded-proto` when the edge sets it, else the
- * request URL. Local hosts are left alone. Returns the target or null.
+ * scheme comes only from what the edge reports — `x-forwarded-proto`, else
+ * Cloudflare's `cf-visitor` — never the request URL: `wrangler dev` serves
+ * the production host over plain http with neither header, and redirecting
+ * there loops. Local hosts are left alone. Returns the target or null.
  */
 export function httpsRedirect(
   requestHost: string | null | undefined,
   forwardedProto: string | null | undefined,
   requestUrl: string,
+  cfVisitor?: string | null,
 ): string | null {
   const host = (requestHost ?? "").trim().toLowerCase();
   if (!host || LOCAL.test(host)) return null;
-  const u = new URL(requestUrl);
-  const proto = (forwardedProto ?? u.protocol).split(",")[0].trim().replace(/:$/, "").toLowerCase();
+  let proto = (forwardedProto ?? "").split(",")[0].trim().toLowerCase();
+  if (!proto && cfVisitor) {
+    try {
+      proto = String((JSON.parse(cfVisitor) as { scheme?: string }).scheme ?? "").toLowerCase();
+    } catch {
+      proto = "";
+    }
+  }
   if (proto !== "http") return null;
+  const u = new URL(requestUrl);
   return `https://${host}${u.pathname}${u.search}`;
 }
 
