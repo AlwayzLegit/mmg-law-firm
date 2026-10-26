@@ -1,0 +1,12 @@
+# Cloudflare Workers static-asset headers (read from the assets directory;
+# OpenNext copies public/ there). Without this every asset is served
+# "max-age=0, must-revalidate", so repeat visits re-check each file.
+
+# Content-hashed build output (JS, CSS, fonts): never changes at a URL.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Public images and worksheets keep their names when replaced: a day fresh,
+# then served from cache while the browser revalidates in the background.
+/v3/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
