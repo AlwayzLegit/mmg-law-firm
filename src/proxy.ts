@@ -70,6 +70,13 @@ function buildCsp(): string {
 const HOME_HERO_PRELOAD =
   "</v3/backgrounds/homepage-law-library-background.webp>; rel=preload; as=image; fetchpriority=high";
 
+/** A top-level page load, not a fetch() such as a Next router prefetch. */
+function isDocumentRequest(request: NextRequest): boolean {
+  const dest = request.headers.get("sec-fetch-dest");
+  if (dest) return dest === "document";
+  return request.headers.get("accept")?.includes("text/html") ?? false;
+}
+
 type RedirectRule = { destination: string; permanent: boolean };
 
 // Per-instance cache of admin-managed redirects so we hit the DB at most
@@ -129,9 +136,11 @@ export async function proxy(request: NextRequest) {
     res.headers.set("reporting-endpoints", 'csp-endpoint="/api/csp-report"');
     // Home hero (its LCP) as a Link header, not a <link>/preload() in the
     // page: those also fire when Next *prefetches* "/", and every page links
-    // home, so every page was fetching this image at high priority. Browsers
-    // only act on Link headers for document loads, never for prefetches.
-    if (request.nextUrl.pathname === "/" && !request.headers.has("rsc")) {
+    // home, so every page was fetching this image at high priority. Chrome
+    // also honors a Link header on the prefetch response itself, so send it
+    // only for document loads. Not `rsc`: Next strips the RSC headers before
+    // the proxy runs, so fetch metadata is the only reliable signal.
+    if (request.nextUrl.pathname === "/" && isDocumentRequest(request)) {
       res.headers.set("link", HOME_HERO_PRELOAD);
     }
     // Private URLs can include searches or auth state. Do not pass them to

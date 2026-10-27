@@ -84,12 +84,22 @@ describe("analytics collection CSP", () => {
 
 describe("home hero preload", () => {
   it("sends the hero as a Link preload on the home document only", async () => {
-    const home = await proxy(new NextRequest("https://www.mmg-lawfirm.com/"));
+    const doc = { "sec-fetch-dest": "document", accept: "text/html,*/*;q=0.8" };
+    const home = await proxy(new NextRequest("https://www.mmg-lawfirm.com/", { headers: doc }));
     expect(home.headers.get("link")).toContain("homepage-law-library-background.webp>; rel=preload; as=image");
-    // A prefetch of "/" (RSC request) must not carry it, nor other pages.
-    const prefetch = await proxy(new NextRequest("https://www.mmg-lawfirm.com/", { headers: { rsc: "1" } }));
+    // Clients without Sec-Fetch-* fall back to Accept.
+    const legacy = await proxy(new NextRequest("https://www.mmg-lawfirm.com/", { headers: { accept: "text/html" } }));
+    expect(legacy.headers.get("link")).not.toBeNull();
+    // A prefetch of "/" is a fetch() — Next strips its RSC headers before the
+    // proxy runs, so only the fetch metadata tells them apart. No hint there,
+    // nor on other pages.
+    const prefetch = await proxy(
+      new NextRequest("https://www.mmg-lawfirm.com/", { headers: { "sec-fetch-dest": "empty", accept: "*/*" } }),
+    );
     expect(prefetch.headers.get("link")).toBeNull();
-    const contact = await proxy(new NextRequest("https://www.mmg-lawfirm.com/contact"));
+    const bare = await proxy(new NextRequest("https://www.mmg-lawfirm.com/"));
+    expect(bare.headers.get("link")).toBeNull();
+    const contact = await proxy(new NextRequest("https://www.mmg-lawfirm.com/contact", { headers: doc }));
     expect(contact.headers.get("link")).toBeNull();
   });
 });
