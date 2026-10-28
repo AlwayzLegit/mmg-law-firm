@@ -134,4 +134,7 @@ export default withSentryConfig(withMDX(nextConfig), {
   // Strip source maps from the public build output after upload. Sentry
   // still resolves stack frames via its uploaded copy.
   sourcemaps: { deleteSourcemapsAfterUpload: true },
+  // Drop the SDK's internal logger from the browser bundle (webpack builds,
+  // i.e. the Worker). Doesn't affect what Sentry collects.
+  webpack: { treeshake: { removeDebugLogging: true } },
 });

@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
   // Deliberately a new object on each render, as a router may provide.
   useSearchParams: () => new URLSearchParams(route.query),
 }));
-vi.mock("posthog-js", () => ({ default: sdk }));
+vi.mock("posthog-js/dist/module.slim", () => ({ default: sdk }));
 
 let root: Root;
 let Runtime: typeof import("@/components/analytics/posthog-runtime").PostHogRuntime;

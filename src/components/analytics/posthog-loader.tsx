@@ -4,6 +4,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { startPhoneClickTracking } from "@/lib/analytics/phone-clicks";
 import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
+import { afterPageIdle } from "@/lib/after-page-idle";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
@@ -32,28 +33,9 @@ export function PostHogLoader() {
   React.useEffect(() => {
     if (!POSTHOG_KEY || isPrivateAnalyticsPath(window.location.pathname))
       return;
-    let cancelled = false;
-    const start = () => {
-      if (!cancelled && !isPrivateAnalyticsPath(window.location.pathname))
-        setReady(true);
-    };
-    const schedule = () => {
-      const w = window as Window & {
-        requestIdleCallback?: (
-          cb: () => void,
-          opts?: { timeout: number },
-        ) => number;
-      };
-      if (typeof w.requestIdleCallback === "function")
-        w.requestIdleCallback(start, { timeout: 4000 });
-      else window.setTimeout(start, 2500);
-    };
-    if (document.readyState === "complete") schedule();
-    else window.addEventListener("load", schedule, { once: true });
-    return () => {
-      cancelled = true;
-      window.removeEventListener("load", schedule);
-    };
+    return afterPageIdle(() => {
+      if (!isPrivateAnalyticsPath(window.location.pathname)) setReady(true);
+    });
   }, []);
 
   if (!POSTHOG_KEY || !ready) return null;

@@ -14,7 +14,7 @@ it("the installed browser SDK does not replay a capture made before init (isolat
     .spyOn(XMLHttpRequest.prototype, "send")
     .mockImplementation(() => {});
   vi.stubGlobal("fetch", fetchStub);
-  const { default: posthog } = await import("posthog-js");
+  const { default: posthog } = await import("posthog-js/dist/module.slim");
   const seen: string[] = [];
   posthog.capture("isolated_before_init");
   posthog.init("phc_ISOLATED_TEST_ONLY", {

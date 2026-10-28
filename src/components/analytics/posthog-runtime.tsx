@@ -2,7 +2,10 @@
 
 import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import posthog from "posthog-js";
+// The slim build has no optional extensions (surveys, replay, autocapture,
+// heatmaps, toolbar...), none of which this site uses; the default build
+// also fetched surveys.js from PostHog's CDN on every page.
+import posthog from "posthog-js/dist/module.slim";
 
 import { TRACK_EVENT, drainTrackQueue, track } from "@/lib/analytics/track";
 import {
