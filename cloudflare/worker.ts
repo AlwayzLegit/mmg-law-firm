@@ -8,6 +8,7 @@
 import handler from "../.open-next/worker.js";
 
 import { cachedImage, isImageRequest } from "../src/lib/cloudflare/image-cache";
+import { cachedPage, isCacheableDocumentRequest } from "../src/lib/cloudflare/page-cache";
 import { jobForSchedule } from "../src/lib/cron/schedules";
 
 // Durable Object classes used by the cache overrides (open-next.config.ts).
@@ -27,13 +28,11 @@ type Env = {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    if (!isImageRequest(request)) return handler.fetch(request, env, ctx);
-    return cachedImage(
-      request,
-      caches.default,
-      (req) => handler.fetch(req, env, ctx),
-      (p) => ctx.waitUntil(p),
-    );
+    const render = (req: Request) => handler.fetch(req, env, ctx);
+    const waitUntil = (p: Promise<unknown>) => ctx.waitUntil(p);
+    if (isImageRequest(request)) return cachedImage(request, caches.default, render, waitUntil);
+    if (isCacheableDocumentRequest(request)) return cachedPage(request, caches.default, render, waitUntil);
+    return render(request);
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
