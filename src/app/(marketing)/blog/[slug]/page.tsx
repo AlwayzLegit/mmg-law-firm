@@ -202,7 +202,7 @@ export default async function BlogPostPage({ params }: Props) {
                 </a>{" "}
                 or{" "}
                 <Link
-                  href={`/contact?utm_source=blog&utm_medium=footer&utm_campaign=${post.slug}`}
+                  href="/contact"
                   className="text-primary font-medium underline-offset-4 hover:underline"
                 >
                   request a consultation online
@@ -216,7 +216,7 @@ export default async function BlogPostPage({ params }: Props) {
           <aside className="space-y-8 lg:sticky lg:top-24 lg:self-start">
             {toc.length > 0 ? <BlogToc items={toc} /> : null}
 
-            <AuthorCard postSlug={post.slug} />
+            <AuthorCard />
 
             <div>
               <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-[0.18em] uppercase">
@@ -263,7 +263,10 @@ export default async function BlogPostPage({ params }: Props) {
   );
 }
 
-function AuthorCard({ postSlug }: { postSlug: string }) {
+// Internal links carry no UTM parameters: they would overwrite the visitor's
+// real first touch (lib/analytics/attribution.ts) and create crawlable
+// /contact?… duplicates. landing_url still records a post the visit began on.
+function AuthorCard() {
   return (
     <div className="border-border bg-secondary/40 rounded-2xl border p-5">
       <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-[0.18em] uppercase">
@@ -277,7 +280,7 @@ function AuthorCard({ postSlug }: { postSlug: string }) {
         attorney based in Glendale.
       </p>
       <Link
-        href={`/contact?utm_source=blog&utm_medium=sidebar&utm_campaign=${postSlug}`}
+        href="/contact"
         className="text-primary mt-4 inline-flex items-center gap-1 text-sm font-medium hover:underline"
       >
         Free consultation
