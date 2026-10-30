@@ -16,4 +16,11 @@ describe("printable worksheet guide links", () => {
     expect(html).toContain(`href="${V3_BY_KEY[key].path}"`);
     expect(html).not.toContain('href="index.html"');
   });
+
+  // Printable companions: the guide is the indexable page.
+  it.each(worksheets)("%s has a title and stays out of the index", (file) => {
+    const html = readFileSync(resolve("public/v3", file), "utf8");
+    expect(html).toMatch(/<title>[^<]+\| MMG Law Firm<\/title>/);
+    expect(html).toContain('<meta name="robots" content="noindex,nofollow">');
+  });
 });
