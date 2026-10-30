@@ -73,6 +73,11 @@ whether it is engineering work or something only the firm can do.
       40274247601, and an unsigned request now gets 403. First real check:
       the webhook's delivery log in Resend shows 200s after the next lead
       email.
+- [ ] Google sign-ins (owner, 2026-10-30): resubmit
+      `https://www.mmg-lawfirm.com/sitemap.xml` in Search Console (the site
+      moved hosts), and turn off Google signals in the GA4 property's data
+      collection settings. Sign in to Google in the Claude browser pane and
+      ask, or do both directly.
 - [ ] Spec §18 open questions: real headshot, bar admission date and law
       school, Avvo / Justia / LinkedIn URLs for `sameAs`, firm founding year,
       existing case results to seed.
