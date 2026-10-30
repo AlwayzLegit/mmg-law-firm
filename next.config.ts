@@ -13,9 +13,10 @@ const nextConfig: NextConfig = {
     globalNotFound: true,
     optimizePackageImports: ["recharts"],
     // Not inlineCss: it would cut ~0.5–0.9 s of render-blocking CSS on
-    // mobile, but the Cloudflare deploy fails with it (OpenNext's R2 cache
-    // population step errors on the inlined pages; reproduced twice on
-    // 2026-10-26). Revisit after an OpenNext upgrade.
+    // mobile, but it copies the full stylesheet into every prerendered
+    // page, growing OpenNext's cache entries to 2–5 MB each (~1.6 GB in
+    // total), and the Cloudflare deploy's R2 cache population fails on
+    // that volume (reproduced twice on 2026-10-26).
   },
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
