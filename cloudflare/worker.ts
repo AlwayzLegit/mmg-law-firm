@@ -24,6 +24,8 @@ type Env = {
    */
   CRON_ENABLED?: string;
   NEXT_PUBLIC_SITE_URL?: string;
+  /** Per-deploy Worker version (wrangler `version_metadata`); keys the page cache. */
+  CF_VERSION_METADATA?: { id: string };
 };
 
 export default {
@@ -31,7 +33,10 @@ export default {
     const render = (req: Request) => handler.fetch(req, env, ctx);
     const waitUntil = (p: Promise<unknown>) => ctx.waitUntil(p);
     if (isImageRequest(request)) return cachedImage(request, caches.default, render, waitUntil);
-    if (isCacheableDocumentRequest(request)) return cachedPage(request, caches.default, render, waitUntil);
+    if (isCacheableDocumentRequest(request)) {
+      const version = env.CF_VERSION_METADATA?.id ?? "";
+      return cachedPage(request, caches.default, render, waitUntil, Date.now, version);
+    }
     return render(request);
   },
 
