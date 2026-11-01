@@ -47,12 +47,19 @@ export function isCacheableDocumentRequest(request: Request): boolean {
   return true;
 }
 
-/** Cache key: the URL without tracking parameters, so ad clicks share a copy. */
-export function pageCacheKey(request: Request): string {
+/**
+ * Cache key: the URL without tracking parameters, so ad clicks share a copy,
+ * plus the deployed Worker version. A page from an earlier deploy references
+ * that build's /_next/static chunks, which the next deploy removes; serving
+ * it (even stale, while it refreshes) would load a page whose scripts 404 and
+ * whose lead form never hydrates.
+ */
+export function pageCacheKey(request: Request, version = ""): string {
   const url = new URL(request.url);
   for (const name of [...url.searchParams.keys()]) {
     if (TRACKING_PARAMS.test(name)) url.searchParams.delete(name);
   }
+  if (version) url.searchParams.set("__deploy", version);
   url.searchParams.sort();
   url.hash = "";
   return url.toString();
@@ -94,8 +101,9 @@ export async function cachedPage(
   render: (request: Request) => Promise<Response>,
   waitUntil: (p: Promise<unknown>) => void,
   now: () => number = Date.now,
+  version = "",
 ): Promise<Response> {
-  const key = pageCacheKey(request);
+  const key = pageCacheKey(request, version);
   const store = async (res: Response) => {
     if (isShareable(res)) await cache.put(key, toStored(res, now()));
   };

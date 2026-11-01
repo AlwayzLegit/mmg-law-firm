@@ -24,6 +24,10 @@
   // requests (AVIF/WebP at the requested width). Without it the original file
   // is passed through unoptimized, which workstream B measured.
   "images": { "binding": "IMAGES" },
+  // The deployed version's id keys the edge page cache (src/lib/cloudflare/
+  // page-cache.ts), so a deploy never serves pages that reference the
+  // previous build's deleted /_next/static files.
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
   "r2_buckets": [
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
@@ -81,6 +85,7 @@
         }
       ],
       "images": { "binding": "IMAGES" },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "r2_buckets": [
         {
           "binding": "NEXT_INC_CACHE_R2_BUCKET",

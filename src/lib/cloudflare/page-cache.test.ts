@@ -94,6 +94,24 @@ describe("cachedPage", () => {
     expect(await fresh.text()).toBe("v2");
   });
 
+  it("never serves a page cached by an earlier deploy", async () => {
+    // Its HTML points at the old build's /_next/static chunks, which the new
+    // deploy removed: the page would load without working scripts.
+    const cache = memoryCache();
+    const pending: Promise<unknown>[] = [];
+    let build = "a";
+    const render = vi.fn(async () => html(`build-${build}`));
+    const t = 1_000_000;
+    await cachedPage(doc(), cache, render, (p) => pending.push(p), () => t, "deploy-a");
+    await Promise.all(pending.splice(0));
+
+    build = "b";
+    const after = await cachedPage(doc(), cache, render, (p) => pending.push(p), () => t + 1000, "deploy-b");
+    expect(after.headers.get("x-edge-cache")).toBe("MISS");
+    expect(await after.text()).toBe("build-b");
+    expect(pageCacheKey(doc(), "deploy-b")).not.toBe(pageCacheKey(doc(), "deploy-a"));
+  });
+
   it("passes dynamic pages and errors through without storing them", async () => {
     const cache = memoryCache();
     const dynamic = await cachedPage(doc(), cache, async () => html("d", "private, no-store"), () => {});
