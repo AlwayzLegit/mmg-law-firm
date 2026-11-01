@@ -5,6 +5,7 @@ import { Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { FIRM } from "@/lib/constants";
 
 import { togglePublishBlogPost } from "../actions";
 
@@ -42,15 +43,23 @@ export default function PublishControl({
   return (
     <div className="grid gap-3">
       {scheduled && publishedAt ? (
-        <div className="flex items-start gap-2 rounded-md bg-warning/10 p-3 text-xs">
+        <div className="bg-warning/10 flex items-start gap-2 rounded-md p-3 text-xs">
           <Clock
-            className="mt-0.5 h-4 w-4 flex-none text-warning"
+            className="text-warning mt-0.5 h-4 w-4 flex-none"
             aria-hidden
           />
           <span>
-            Marked published, but <code className="rounded bg-secondary px-1 py-0.5 text-[11px]">published_at</code> is{" "}
-            <strong>{new Date(publishedAt).toLocaleString("en-US")}</strong>.
-            The post stays hidden until that time.
+            Marked published, but{" "}
+            <code className="bg-secondary rounded px-1 py-0.5 text-[11px]">
+              published_at
+            </code>{" "}
+            is{" "}
+            <strong>
+              {new Date(publishedAt).toLocaleString("en-US", {
+                timeZone: FIRM.timeZone,
+              })}
+            </strong>
+            . The post stays hidden until that time.
           </span>
         </div>
       ) : null}
@@ -65,7 +74,7 @@ export default function PublishControl({
         {pending ? "..." : isPublished ? "Unpublish" : "Publish"}
       </Button>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-muted-foreground text-xs">
         {isPublished
           ? "Toggle off to hide the post immediately."
           : "Publishing now sets published_at to right now (unless you set a future date in the form)."}

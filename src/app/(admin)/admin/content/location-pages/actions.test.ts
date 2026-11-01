@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 
 const mocks = vi.hoisted(() => ({
-  requireAdmin: vi.fn(),
+  requireEditor: vi.fn(),
   getServerSupabase: vi.fn(),
   revalidatePath: vi.fn(),
   revalidateSitemaps: vi.fn(),
   logAudit: vi.fn(),
 }));
 vi.mock("@/lib/auth/require-admin", () => ({
-  requireAdmin: mocks.requireAdmin,
+  requireEditor: mocks.requireEditor,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getServerSupabase: mocks.getServerSupabase,
@@ -37,7 +37,7 @@ describe("location body saves preserve unrelated fields and review dates", () =>
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireAdmin.mockResolvedValue({ user: { id: "admin" } });
+    mocks.requireEditor.mockResolvedValue({ user: { id: "admin" } });
     mocks.getServerSupabase.mockResolvedValue({ from });
     from.mockReturnValue(chain);
     chain.update.mockReturnValue(chain);
@@ -68,7 +68,7 @@ describe("location body saves preserve unrelated fields and review dates", () =>
     expect(chain.update).toHaveBeenCalledExactlyOnceWith({
       local_angle_md: "Corrected factual text",
     });
-    expect(mocks.requireAdmin).toHaveBeenCalledTimes(1);
+    expect(mocks.requireEditor).toHaveBeenCalledTimes(1);
     expect(mocks.revalidatePath).toHaveBeenCalledWith(
       "/locations/monterey-county/salinas/motorcycle-accidents",
     );
@@ -107,7 +107,7 @@ describe("location body saves preserve unrelated fields and review dates", () =>
         .ok,
     ).toBe(false);
     expect(chain.update).not.toHaveBeenCalled();
-    mocks.requireAdmin.mockRejectedValueOnce(new Error("Unauthorized"));
+    mocks.requireEditor.mockRejectedValueOnce(new Error("Unauthorized"));
     await expect(
       updateLocationPage(form({ intro_md: "Do not write" })),
     ).rejects.toThrow("Unauthorized");

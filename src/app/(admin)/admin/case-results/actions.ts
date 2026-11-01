@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 
@@ -56,7 +56,7 @@ function emptyToNull<T extends string | number | null | undefined>(v: T): T | nu
 export async function createCaseResult(
   formData: FormData,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = CreateInput.safeParse({ headline: formData.get("headline") });
   if (!parsed.success) {
@@ -99,7 +99,7 @@ export async function createCaseResultAndRedirect(
 export async function updateCaseResult(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
@@ -153,7 +153,7 @@ export async function updateCaseResult(
 export async function togglePublishCaseResult(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = PublishInput.safeParse({
     id: formData.get("id"),
@@ -185,7 +185,7 @@ export async function togglePublishCaseResult(
 export async function deleteCaseResult(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = IdInput.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { ok: false, error: "Invalid id" };

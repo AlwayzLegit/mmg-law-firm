@@ -36,6 +36,10 @@ export const FIRM = {
   languages: ["English", "Armenian", "Russian"],
   /** Founding year — seed fallback. Canonical source: firm_settings.founded_year. */
   founded: 2018,
+  /** The office's time zone. Admin client components format dates with it so
+   *  the server render (UTC on Cloudflare) and the browser agree; otherwise
+   *  React drops the server HTML (hydration error #418). */
+  timeZone: "America/Los_Angeles",
   socials: {
     yelp: "https://www.yelp.com/biz/mmg-law-firm-glendale",
     /** Lead attorney's Super Lawyers profile — seed fallback.

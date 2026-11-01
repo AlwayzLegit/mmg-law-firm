@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit, logAuditMany } from "@/lib/audit";
 import { revalidateSitemaps } from "@/lib/seo/revalidate-sitemaps";
@@ -41,7 +41,7 @@ function emptyToNull(v: string | null | undefined): string | null {
 export async function createLocationPage(
   formData: FormData,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = CreateInput.safeParse({
     city_id: formData.get("city_id"),
@@ -114,7 +114,7 @@ export async function createLocationPageAndRedirect(
 export async function updateLocationPage(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
@@ -192,7 +192,7 @@ export async function updateLocationPage(
  *  surface the error instead of letting the admin "publish" something that
  *  won't render. */
 export async function togglePublish(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = PublishInput.safeParse({
     id: formData.get("id"),
@@ -266,7 +266,7 @@ export type BulkResult =
 export async function bulkSetLocationPagePublished(
   formData: FormData,
 ): Promise<BulkResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = BulkPublishInput.safeParse({
     ids: formData.getAll("ids").map(String).filter(Boolean),
@@ -343,7 +343,7 @@ export async function bulkSetLocationPagePublished(
  *  when an admin reviews a page and confirms it's still accurate, satisfying
  *  the spec §10.4 12-month review requirement. */
 export async function touchReviewed(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = IdInput.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { ok: false, error: "Invalid input" };
@@ -378,7 +378,7 @@ const BulkReviewInput = z.object({
 export async function bulkTouchReviewed(
   formData: FormData,
 ): Promise<BulkResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = BulkReviewInput.safeParse({
     ids: formData.getAll("ids").map(String).filter(Boolean),

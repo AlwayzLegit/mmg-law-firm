@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 
@@ -80,7 +80,7 @@ function parseJsonArray<T>(
 export async function updatePracticeArea(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
@@ -156,7 +156,7 @@ export async function updatePracticeArea(
 export async function togglePublishPracticeArea(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = PublishInput.safeParse({
     id: formData.get("id"),

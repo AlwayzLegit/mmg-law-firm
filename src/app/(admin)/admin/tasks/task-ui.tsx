@@ -8,6 +8,7 @@ import { Check, Plus, Trash2, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { FIRM } from "@/lib/constants";
 
 import { createTask, toggleTask, deleteTask } from "./actions";
 
@@ -27,6 +28,7 @@ function dueMeta(iso: string | null, done: boolean) {
   const now = new Date();
   const overdue = !done && d.getTime() < now.getTime();
   const label = d.toLocaleString("en-US", {
+    timeZone: FIRM.timeZone,
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -66,11 +68,11 @@ export function TaskList({
   }
 
   if (tasks.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+    return <p className="text-muted-foreground text-sm">{emptyText}</p>;
   }
 
   return (
-    <ul className="divide-y divide-border">
+    <ul className="divide-border divide-y">
       {tasks.map((t) => {
         const { label, overdue } = dueMeta(t.dueAt, t.done);
         return (
@@ -99,9 +101,11 @@ export function TaskList({
               >
                 {t.title}
               </p>
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+              <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
                 {label ? (
-                  <span className={cn(overdue && "font-medium text-destructive")}>
+                  <span
+                    className={cn(overdue && "text-destructive font-medium")}
+                  >
                     {overdue ? "Overdue · " : "Due "}
                     {label}
                   </span>
@@ -128,7 +132,7 @@ export function TaskList({
               onClick={() => remove(t.id)}
               disabled={pending}
               aria-label="Delete task"
-              className="mt-0.5 flex-none text-muted-foreground hover:text-destructive"
+              className="text-muted-foreground hover:text-destructive mt-0.5 flex-none"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
             </button>
@@ -177,7 +181,7 @@ export function AddTaskForm({ leadId }: { leadId?: string }) {
         value={due}
         onChange={(e) => setDue(e.currentTarget.value)}
         aria-label="Due date"
-        className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="border-input text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/40 h-9 rounded-lg border bg-transparent px-3 text-sm transition-colors outline-none focus-visible:ring-3"
       />
       <Button
         type="submit"

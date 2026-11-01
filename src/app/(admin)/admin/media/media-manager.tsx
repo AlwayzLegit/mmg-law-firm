@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Copy, CopyMinus, Link2, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FIRM } from "@/lib/constants";
 
 import {
   deleteMedia,
@@ -217,7 +218,9 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
           No images yet. Upload one above.
         </p>
       ) : visible.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No image matches “{query}”.</p>
+        <p className="text-muted-foreground text-sm">
+          No image matches “{query}”.
+        </p>
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {visible.map((m) => (
@@ -244,6 +247,7 @@ export default function MediaManager({ items }: { items: MediaItem[] }) {
                 {[
                   m.createdAt
                     ? new Date(m.createdAt).toLocaleDateString("en-US", {
+                        timeZone: FIRM.timeZone,
                         month: "short",
                         day: "numeric",
                         year: "numeric",

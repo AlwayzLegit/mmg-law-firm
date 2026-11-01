@@ -17,7 +17,7 @@ export default function LeadsChart({ data }: { data: DailyPoint[] }) {
 
   if (total === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         No leads in this window yet.
       </p>
     );
@@ -40,6 +40,7 @@ export default function LeadsChart({ data }: { data: DailyPoint[] }) {
             tickFormatter={(d: string) => {
               const dt = new Date(d);
               return dt.toLocaleDateString("en-US", {
+                timeZone: "UTC",
                 month: "short",
                 day: "numeric",
               });
@@ -64,6 +65,7 @@ export default function LeadsChart({ data }: { data: DailyPoint[] }) {
             labelFormatter={(label) => {
               if (typeof label !== "string") return "";
               return new Date(label).toLocaleDateString("en-US", {
+                timeZone: "UTC",
                 weekday: "short",
                 month: "short",
                 day: "numeric",

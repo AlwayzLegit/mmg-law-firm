@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { type MessageTemplate, fillTemplate } from "@/lib/data/message-templates";
+import {
+  type MessageTemplate,
+  fillTemplate,
+} from "@/lib/data/message-templates";
+import { FIRM } from "@/lib/constants";
 
 import { sendLeadMessage } from "./message-actions";
 
@@ -79,7 +83,7 @@ export default function LeadMessages({
   return (
     <div className="space-y-4">
       {/* Channel toggle */}
-      <div className="flex gap-1 rounded-lg bg-secondary p-1">
+      <div className="bg-secondary flex gap-1 rounded-lg p-1">
         {(["sms", "email"] as const).map((c) => {
           const Icon = c === "sms" ? MessageSquare : Mail;
           const able = c === "sms" ? hasPhone : hasEmail;
@@ -117,7 +121,7 @@ export default function LeadMessages({
               if (e.currentTarget.value) applyTemplate(e.currentTarget.value);
               e.currentTarget.value = "";
             }}
-            className="h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="border-input text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/40 h-9 w-full rounded-lg border bg-transparent px-3 text-sm transition-colors outline-none focus-visible:ring-3"
           >
             <option value="">Insert a template…</option>
             {templates.map((t) => (
@@ -153,7 +157,7 @@ export default function LeadMessages({
         />
 
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {channelDisabled
               ? `No ${channel === "sms" ? "phone number" : "email"} on file.`
               : channel === "sms"
@@ -166,20 +170,24 @@ export default function LeadMessages({
             disabled={pending || channelDisabled || body.trim().length === 0}
           >
             <Send className="h-4 w-4" aria-hidden />
-            {pending ? "Sending…" : channel === "sms" ? "Send text" : "Send email"}
+            {pending
+              ? "Sending…"
+              : channel === "sms"
+                ? "Send text"
+                : "Send email"}
           </Button>
         </div>
       </form>
 
       {/* Thread */}
       {messages.length > 0 ? (
-        <ul className="space-y-3 border-t border-border pt-4">
+        <ul className="border-border space-y-3 border-t pt-4">
           {messages.map((m) => (
             <MessageBubble key={m.id} message={m} />
           ))}
         </ul>
       ) : (
-        <p className="border-t border-border pt-4 text-sm text-muted-foreground">
+        <p className="border-border text-muted-foreground border-t pt-4 text-sm">
           No messages yet. Texts and emails you send appear here, along with any
           replies.
         </p>
@@ -238,6 +246,7 @@ function MessageBubble({ message: m }: { message: LeadMessage }) {
           {outbound ? (m.authorLabel ?? "Sent") : "Reply"}
           {" · "}
           {new Date(m.createdAt).toLocaleString("en-US", {
+            timeZone: FIRM.timeZone,
             month: "short",
             day: "numeric",
             hour: "numeric",

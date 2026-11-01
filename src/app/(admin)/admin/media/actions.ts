@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { logAudit } from "@/lib/audit";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
@@ -22,7 +22,7 @@ export type UploadResult =
   | { ok: false; error: string };
 
 export async function uploadMedia(formData: FormData): Promise<UploadResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -73,7 +73,7 @@ export async function uploadMedia(formData: FormData): Promise<UploadResult> {
 export async function removeDuplicateMedia(): Promise<
   { ok: true; removed: number } | { ok: false; error: string }
 > {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const supabase = getServiceSupabase();
 
   const { data: items, error } = await supabase.storage
@@ -110,7 +110,7 @@ export async function removeDuplicateMedia(): Promise<
 /**
  * Block obviously-internal hosts to keep this admin-only fetch from being a
  * trivial SSRF pivot. Not airtight against DNS rebinding, but this action is
- * gated behind `requireAdmin` and only writes images into the public bucket.
+ * gated behind `requireEditor` and only writes images into the public bucket.
  */
 const PRIVATE_HOST =
   /^(localhost|0\.0\.0\.0|127\.|10\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?|metadata\.google\.internal)$/i;
@@ -128,7 +128,7 @@ export type ImportResult =
 export async function importMediaFromUrl(
   formData: FormData,
 ): Promise<ImportResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const src = String(formData.get("url") ?? "").trim();
   const rename = String(formData.get("name") ?? "").trim();
@@ -214,7 +214,7 @@ export async function importMediaFromUrl(
 export async function deleteMedia(
   formData: FormData,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const name = String(formData.get("name") ?? "");
   if (!name) return { ok: false, error: "Invalid file." };

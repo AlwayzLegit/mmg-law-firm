@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { LEGAL_PAGE_SLUGS } from "@/lib/data/legal-pages";
 import { logAudit } from "@/lib/audit";
@@ -41,7 +41,7 @@ function emptyToNull(v: string | null | undefined): string | null {
 export async function updateLegalPage(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
@@ -100,7 +100,7 @@ export async function updateLegalPage(
 export async function togglePublishLegalPage(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = PublishInput.safeParse({
     id: formData.get("id"),
@@ -162,7 +162,7 @@ export async function togglePublishLegalPage(
 export async function markLegalPageReviewed(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = ReviewInput.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { ok: false, error: "Invalid input" };

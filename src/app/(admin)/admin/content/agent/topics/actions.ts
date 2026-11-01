@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { logAudit } from "@/lib/audit";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { TopicInput, TOPIC_STATUSES } from "@/lib/content-agent/schemas";
 import { SEED_TOPICS } from "@/lib/content-agent/seed-topics";
 import { parseTopicsText } from "@/lib/content-agent/topic-import";
@@ -21,7 +21,7 @@ function revalidate() {
 }
 
 export async function createTopic(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const raw = {
     keyword: formData.get("keyword"),
     intent: formData.get("intent") || "informational",
@@ -53,7 +53,7 @@ const UpdateInput = z.object({
 });
 
 export async function updateTopic(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
     priority: formData.get("priority") || undefined,
@@ -84,7 +84,7 @@ export async function updateTopic(formData: FormData): Promise<ActionResult> {
 }
 
 export async function deleteTopic(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const id = String(formData.get("id") ?? "");
   if (!z.string().uuid().safeParse(id).success) return { ok: false, error: "Invalid id" };
   const supabase = await getServerSupabase();
@@ -100,7 +100,7 @@ export async function deleteTopic(formData: FormData): Promise<ActionResult> {
 
 /** Paste-import: markdown table (seo-keyword-targets layout) or CSV. */
 export async function importTopics(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const text = String(formData.get("text") ?? "");
   const upsert = formData.get("upsert") === "on";
   if (!text.trim()) return { ok: false, error: "Paste a markdown table or CSV first." };
@@ -130,7 +130,7 @@ export async function importTopics(formData: FormData): Promise<ActionResult> {
 
 /** Load the default Tier 1/2 queue from docs/seo-keyword-targets.md. Re-runnable. */
 export async function seedDefaultTopics(): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const supabase = await getServerSupabase();
   const { rows, failed } = await resolveTopics(supabase, SEED_TOPICS, { source: "seed", priority: 50, createdBy: user.id });
   const out = await insertTopics(supabase, rows, { upsert: false, select: "id" });
