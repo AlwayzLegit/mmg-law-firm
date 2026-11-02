@@ -3,7 +3,10 @@
 export default function AnalyticsLoading() {
   return (
     <div className="animate-pulse">
-      <div className="bg-secondary h-7 w-40 rounded" />
+      {/* The real heading, so the page has an h1 while the queries run. */}
+      <h1 className="font-display text-2xl font-medium tracking-tight">
+        Analytics
+      </h1>
       <div className="bg-secondary/70 mt-2 h-4 w-96 max-w-full rounded" />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

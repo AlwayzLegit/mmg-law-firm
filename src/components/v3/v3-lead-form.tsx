@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 
 import { Turnstile } from "@/components/marketing/turnstile";
 import { FIRM } from "@/lib/constants";
+import { useHydrated } from "@/lib/use-hydrated";
 import { fmt } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n/config";
 import { en, type Dictionary } from "@/lib/i18n/dictionaries/en";
@@ -93,6 +94,7 @@ export function V3LeadForm({
   copy = en.leadForm,
 }: Props) {
   const uid = React.useId();
+  const hydrated = useHydrated();
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
     resolver: lazyLeadResolver,
     mode: "onBlur",
@@ -268,6 +270,7 @@ export function V3LeadForm({
     <form
       id={id}
       onSubmit={form.handleSubmit(onSubmit)}
+      method="post"
       noValidate
       style={{ display: "grid", gap: 14, ...formStyle }}
       onFocus={() => {
@@ -293,7 +296,7 @@ export function V3LeadForm({
 
       <button
         type="submit"
-        disabled={form.formState.isSubmitting}
+        disabled={!hydrated || form.formState.isSubmitting}
         className={buttonClassName}
         style={{
           height: 54,
