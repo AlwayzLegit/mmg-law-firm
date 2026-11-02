@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
@@ -121,7 +121,7 @@ type CreateOk = { ok: true; id: string; slug: string };
 export async function createAttorneyProfile(
   formData: FormData,
 ): Promise<CreateOk | { ok: false; error: string }> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = CreateInput.safeParse({
     full_name: formData.get("full_name"),
@@ -187,7 +187,7 @@ export async function createAttorneyProfileAndRedirect(
 export async function updateAttorneyProfile(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
@@ -299,7 +299,7 @@ export async function updateAttorneyProfile(
 export async function togglePublishAttorneyProfile(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = PublishInput.safeParse({
     id: formData.get("id"),
@@ -351,7 +351,7 @@ export async function togglePublishAttorneyProfile(
 export async function deleteAttorneyProfile(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const id = String(formData.get("id") ?? "");
   if (!z.string().uuid().safeParse(id).success) {
@@ -406,7 +406,7 @@ const MAX_BYTES = 4 * 1024 * 1024;
 export async function uploadAttorneyHeadshot(
   formData: FormData,
 ): Promise<ActionResult & { url?: string }> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const id = String(formData.get("id") ?? "");
   if (!z.string().uuid().safeParse(id).success) {

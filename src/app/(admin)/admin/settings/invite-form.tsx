@@ -31,7 +31,7 @@ export default function InviteForm() {
       <div className="grid gap-1.5">
         <label
           htmlFor="invite-name"
-          className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+          className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase"
         >
           Full name
         </label>
@@ -40,7 +40,7 @@ export default function InviteForm() {
       <div className="grid gap-1.5">
         <label
           htmlFor="invite-email"
-          className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+          className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase"
         >
           Email
         </label>
@@ -49,7 +49,7 @@ export default function InviteForm() {
       <div className="grid gap-1.5">
         <label
           htmlFor="invite-role"
-          className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+          className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase"
         >
           Role
         </label>
@@ -57,9 +57,11 @@ export default function InviteForm() {
           id="invite-role"
           name="role"
           defaultValue="staff"
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="border-border bg-background focus:ring-ring h-9 rounded-md border px-3 text-sm focus:ring-2 focus:outline-none"
         >
-          <option value="intake">intake — read leads only</option>
+          <option value="intake">
+            intake — works leads; view-only elsewhere
+          </option>
           <option value="staff">staff — full lead + content management</option>
           <option value="owner">owner — full access incl. invites</option>
         </select>
@@ -67,7 +69,7 @@ export default function InviteForm() {
       <Button type="submit" disabled={pending}>
         {pending ? "Sending invite..." : "Send invite"}
       </Button>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-muted-foreground text-xs">
         The invitee gets an email with a one-time link (expires in one hour)
         that opens their account set-up page to choose a password. After that
         they sign in with email and password. Until they do, their row above

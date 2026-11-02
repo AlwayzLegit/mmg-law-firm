@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FIRM } from "@/lib/constants";
 
 import { bulkAssignToMe, bulkTag, bulkUpdateStatus } from "./actions";
 
@@ -297,6 +298,7 @@ export default function LeadsTable({
                 <td className="text-muted-foreground px-2 py-3 align-top text-xs">
                   <time dateTime={l.created_at}>
                     {new Date(l.created_at).toLocaleString("en-US", {
+                      timeZone: FIRM.timeZone,
                       month: "short",
                       day: "numeric",
                       hour: "numeric",
@@ -369,6 +371,7 @@ export default function LeadsTable({
                       }
                     >
                       {new Date(l.follow_up_at).toLocaleDateString("en-US", {
+                        timeZone: FIRM.timeZone,
                         month: "short",
                         day: "numeric",
                       })}

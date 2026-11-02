@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { normalizeTags } from "@/lib/leads/tags";
+import { FIRM } from "@/lib/constants";
 
 import { bulkTag, moveLeadStatus } from "../actions";
 
@@ -293,6 +294,7 @@ export default function KanbanBoard({
                       <div className="text-muted-foreground mt-2 flex items-center justify-between text-[11px]">
                         <time dateTime={c.created_at}>
                           {new Date(c.created_at).toLocaleDateString("en-US", {
+                            timeZone: FIRM.timeZone,
                             month: "short",
                             day: "numeric",
                           })}
@@ -310,7 +312,11 @@ export default function KanbanBoard({
                             ⏰{" "}
                             {new Date(c.follow_up_at).toLocaleDateString(
                               "en-US",
-                              { month: "short", day: "numeric" },
+                              {
+                                timeZone: FIRM.timeZone,
+                                month: "short",
+                                day: "numeric",
+                              },
                             )}
                           </time>
                         ) : null}

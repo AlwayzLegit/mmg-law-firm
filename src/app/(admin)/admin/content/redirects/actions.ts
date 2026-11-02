@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { logAudit } from "@/lib/audit";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 
@@ -25,7 +25,7 @@ const CreateInput = z.object({
 export async function createRedirect(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = CreateInput.safeParse({
     source_path: formData.get("source_path"),
@@ -80,7 +80,7 @@ export async function createRedirect(
 export async function deleteRedirect(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const id = String(formData.get("id") ?? "");
   if (!z.string().uuid().safeParse(id).success) {

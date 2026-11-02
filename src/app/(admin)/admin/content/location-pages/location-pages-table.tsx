@@ -14,11 +14,9 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FIRM } from "@/lib/constants";
 
-import {
-  bulkSetLocationPagePublished,
-  bulkTouchReviewed,
-} from "./actions";
+import { bulkSetLocationPagePublished, bulkTouchReviewed } from "./actions";
 
 export type LpRow = {
   id: string;
@@ -92,7 +90,7 @@ export default function LocationPagesTable({ rows }: { rows: LpRow[] }) {
   return (
     <div className="grid gap-3">
       {selected.size > 0 ? (
-        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 backdrop-blur">
+        <div className="border-primary/30 bg-primary/5 sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-lg border p-3 backdrop-blur">
           <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <Button
@@ -141,7 +139,7 @@ export default function LocationPagesTable({ rows }: { rows: LpRow[] }) {
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="border-border text-muted-foreground border-b text-xs tracking-wide uppercase">
             <tr>
               <th className="px-2 py-3 text-left">
                 <Checkbox
@@ -160,7 +158,7 @@ export default function LocationPagesTable({ rows }: { rows: LpRow[] }) {
             {rows.map((r) => (
               <tr
                 key={r.id}
-                className={`border-b border-border/60 ${selected.has(r.id) ? "bg-primary/5" : ""}`}
+                className={`border-border/60 border-b ${selected.has(r.id) ? "bg-primary/5" : ""}`}
               >
                 <td className="px-2 py-3 align-top">
                   <Checkbox
@@ -172,20 +170,20 @@ export default function LocationPagesTable({ rows }: { rows: LpRow[] }) {
                 <td className="px-2 py-3 align-top">
                   <Link
                     href={r.href}
-                    className="font-medium hover:text-primary"
+                    className="hover:text-primary font-medium"
                   >
                     {r.title}
                   </Link>
-                  <p className="text-xs text-muted-foreground">{r.path}</p>
+                  <p className="text-muted-foreground text-xs">{r.path}</p>
                 </td>
                 <td className="px-2 py-3 align-top">
                   {r.hasAngle ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-success">
+                    <span className="text-success inline-flex items-center gap-1 text-xs">
                       <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                       Set
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-warning">
+                    <span className="text-warning inline-flex items-center gap-1 text-xs">
                       <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
                       Empty
                     </span>
@@ -215,7 +213,9 @@ export default function LocationPagesTable({ rows }: { rows: LpRow[] }) {
                           aria-hidden
                         />
                       ) : null}
-                      {new Date(r.lastReviewed).toLocaleDateString("en-US")}
+                      {new Date(r.lastReviewed).toLocaleDateString("en-US", {
+                        timeZone: FIRM.timeZone,
+                      })}
                     </span>
                   ) : (
                     <span className="text-muted-foreground">Never</span>

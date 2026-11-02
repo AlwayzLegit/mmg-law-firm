@@ -5,6 +5,7 @@ import { Pencil, Pin, PinOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteLeadNote, editLeadNote, togglePinNote } from "./actions";
+import { FIRM } from "@/lib/constants";
 
 export type Note = {
   id: string;
@@ -160,7 +161,9 @@ export default function NoteItem({
             </div>
           </div>
           <p className="text-muted-foreground mt-2 text-xs">
-            {new Date(note.createdAt).toLocaleString("en-US")}
+            {new Date(note.createdAt).toLocaleString("en-US", {
+              timeZone: FIRM.timeZone,
+            })}
             {note.updatedAt ? " · edited" : ""}
             {note.isPinned ? " · pinned" : ""}
           </p>

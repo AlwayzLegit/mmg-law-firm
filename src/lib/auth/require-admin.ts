@@ -66,3 +66,25 @@ export const requireAdmin = cache(async function requireAdmin(opts?: {
     profile: profile as AdminProfile,
   };
 });
+
+/** Owners and staff edit content and firm settings; intake reads them only. */
+export function canEdit(role: AdminProfile["role"]): boolean {
+  return role !== "intake";
+}
+
+/**
+ * requireAdmin() for server actions that change content, media or firm
+ * settings. Intake accounts are read-only outside leads ("intake — read leads
+ * only" on the invite form), and these actions mostly write with the service
+ * role, so RLS alone can't enforce that. The UI disables the controls for
+ * intake; this throws only on a crafted request.
+ */
+export async function requireEditor(): Promise<
+  Awaited<ReturnType<typeof requireAdmin>>
+> {
+  const admin = await requireAdmin();
+  if (!canEdit(admin.profile.role)) {
+    throw new Error("Intake accounts can't change content or settings.");
+  }
+  return admin;
+}

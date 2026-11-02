@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 
@@ -60,7 +60,7 @@ function emptyToNull<T extends string | number | null | undefined>(v: T): T | nu
 export async function createTestimonial(
   formData: FormData,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = CreateInput.safeParse({
     client_initials: formData.get("client_initials"),
@@ -109,7 +109,7 @@ export async function createTestimonialAndRedirect(
 export async function updateTestimonial(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
@@ -160,7 +160,7 @@ export async function updateTestimonial(
 export async function toggleApprove(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = ApproveInput.safeParse({
     id: formData.get("id"),
@@ -195,7 +195,7 @@ export async function toggleApprove(
 export async function deleteTestimonial(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = IdInput.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { ok: false, error: "Invalid id" };

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { revalidateSitemaps } from "@/lib/seo/revalidate-sitemaps";
@@ -85,7 +85,7 @@ function parseTags(raw: string | null | undefined): string[] {
 export async function createBlogPost(
   formData: FormData,
 ): Promise<CreateOk | { ok: false; error: string }> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = CreateInput.safeParse({ title: formData.get("title") });
   if (!parsed.success) {
@@ -145,7 +145,7 @@ export async function createBlogPostAndRedirect(
 export async function updateBlogPost(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpdateInput.safeParse({
     id: formData.get("id"),
@@ -232,7 +232,7 @@ export async function updateBlogPost(
 export async function togglePublishBlogPost(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = PublishInput.safeParse({
     id: formData.get("id"),
@@ -283,7 +283,7 @@ export async function togglePublishBlogPost(
 export async function deleteBlogPost(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const id = String(formData.get("id") ?? "");
   if (!z.string().uuid().safeParse(id).success) {
@@ -332,7 +332,7 @@ const ReviewInput = z.object({
  * queue with the reviewer's note. Publishing itself stays a separate step.
  */
 export async function reviewBlogPost(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const parsed = ReviewInput.safeParse({
     id: formData.get("id"),
     decision: formData.get("decision"),

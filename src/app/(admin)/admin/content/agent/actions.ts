@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { logAudit } from "@/lib/audit";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -16,7 +16,7 @@ const AnswerInput = z.object({
 
 /** Owner answers an agent question; the next run picks it up in `answers`. */
 export async function answerAgentQuestion(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const parsed = AnswerInput.safeParse({ id: formData.get("id"), answer: formData.get("answer") });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   const supabase = await getServerSupabase();
@@ -38,7 +38,7 @@ export async function answerAgentQuestion(formData: FormData): Promise<ActionRes
 }
 
 export async function dismissAgentQuestion(formData: FormData): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const id = String(formData.get("id") ?? "");
   if (!z.string().uuid().safeParse(id).success) return { ok: false, error: "Invalid id" };
   const supabase = await getServerSupabase();
@@ -52,7 +52,7 @@ export async function dismissAgentQuestion(formData: FormData): Promise<ActionRe
 
 /** Mark a stuck run failed and release its topics (owner-only safety valve). */
 export async function failStuckRun(formData: FormData): Promise<ActionResult> {
-  const { user, profile } = await requireAdmin();
+  const { user, profile } = await requireEditor();
   if (profile.role !== "owner") return { ok: false, error: "Owner only." };
   const id = String(formData.get("id") ?? "");
   if (!z.string().uuid().safeParse(id).success) return { ok: false, error: "Invalid id" };

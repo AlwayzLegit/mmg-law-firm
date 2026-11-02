@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireEditor } from "@/lib/auth/require-admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 
@@ -21,7 +21,7 @@ const UpsertInput = z.object({
 export async function upsertTemplate(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
 
   const parsed = UpsertInput.safeParse({
     id: formData.get("id") || undefined,
@@ -82,7 +82,7 @@ const ToggleInput = z.object({
 export async function toggleTemplate(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const parsed = ToggleInput.safeParse({
     id: formData.get("id"),
     active: formData.get("active"),
@@ -111,7 +111,7 @@ const DeleteInput = z.object({ id: z.string().uuid() });
 export async function deleteTemplate(
   formData: FormData,
 ): Promise<ActionResult> {
-  const { user } = await requireAdmin();
+  const { user } = await requireEditor();
   const parsed = DeleteInput.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { ok: false, error: "Invalid input" };
 

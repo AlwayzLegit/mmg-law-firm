@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { FIRM } from "@/lib/constants";
 
 import { setLeadFollowUp } from "./actions";
 
@@ -49,18 +50,18 @@ export default function FollowUpControl({
     <div className="grid gap-3">
       {current ? (
         <p
-          className={`text-xs ${overdue ? "font-medium text-destructive" : "text-muted-foreground"}`}
+          className={`text-xs ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}
         >
           {overdue ? "Overdue since " : "Scheduled for "}
           {new Date(current).toLocaleString("en-US", {
+            timeZone: FIRM.timeZone,
             dateStyle: "medium",
             timeStyle: "short",
           })}
         </p>
       ) : (
-        <p className="text-xs text-muted-foreground">
-          No reminder set. Pick a date to add this lead to the follow-ups
-          queue.
+        <p className="text-muted-foreground text-xs">
+          No reminder set. Pick a date to add this lead to the follow-ups queue.
         </p>
       )}
 
@@ -69,7 +70,7 @@ export default function FollowUpControl({
         aria-label="Follow-up date and time"
         value={value}
         onChange={(e) => setValue(e.currentTarget.value)}
-        className="h-9 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        className="border-border bg-background focus:ring-ring h-9 rounded-md border px-3 text-sm focus:ring-2 focus:outline-none"
       />
 
       <div className="flex gap-2">
