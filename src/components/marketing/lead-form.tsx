@@ -47,6 +47,7 @@ import { PRACTICE_AREA_OPTIONS } from "@/lib/data/practice-area-options";
 import { TIER_1_LOCATIONS } from "@/lib/data/locations";
 import { track } from "@/lib/analytics/track";
 import { recordStoredLead } from "@/lib/analytics/stored-lead";
+import { useHydrated } from "@/lib/use-hydrated";
 import { cn } from "@/lib/utils";
 
 import { Turnstile } from "./turnstile";
@@ -81,6 +82,7 @@ export function LeadForm({
 
   // Validation (Zod + schema + phone parsing) loads on first focus; see
   // lazy-lead-resolver.ts.
+  const hydrated = useHydrated();
   const form = useForm<LeadFormValues, unknown, LeadFormValues>({
     resolver: lazyLeadResolver,
     mode: "onBlur",
@@ -298,6 +300,7 @@ export function LeadForm({
           onSubmit={form.handleSubmit(onSubmit)}
           // Load the validation chunk as soon as the visitor engages.
           onFocus={() => void preloadLeadValidation().catch(() => {})}
+          method="post"
           noValidate
           className="relative grid gap-6"
         >
@@ -603,7 +606,7 @@ export function LeadForm({
           <Button
             type="submit"
             size="marketing"
-            disabled={form.formState.isSubmitting}
+            disabled={!hydrated || form.formState.isSubmitting}
             className="group/cta from-primary via-primary to-primary relative h-auto min-h-12 w-full justify-center gap-2 overflow-hidden bg-gradient-to-r py-3.5 text-base whitespace-normal shadow-[0_10px_30px_-10px_rgba(18,23,27,0.5)] transition-all hover:translate-y-[-1px] hover:shadow-[0_18px_40px_-12px_rgba(18,23,27,0.6)]"
           >
             <span className="relative z-10 flex items-center gap-2 text-base font-medium">

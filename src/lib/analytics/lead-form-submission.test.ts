@@ -19,6 +19,7 @@ vi.mock("react", async (original) => ({
   useRef: (value: unknown) => ({ current: value }),
   useCallback: (fn: unknown) => fn,
   useId: () => "fixture-id",
+  useSyncExternalStore: (_s: unknown, client: () => unknown) => client(),
 }));
 vi.mock("react-hook-form", async (original) => ({
   ...(await original<typeof import("react-hook-form")>()),
