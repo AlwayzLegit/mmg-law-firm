@@ -32,6 +32,12 @@ const TRACKING_PARAMS = /^(utm_[a-z]+|gclid|gbraid|wbraid|fbclid|msclkid|ttclid|
  * A top-level public page load: not an RSC/prefetch fetch (those vary on
  * router headers the Cache API ignores), not a private route, and not a
  * signed-in admin (whose session cookie the proxy refreshes).
+ *
+ * Crawlers count: Semrush, and likely Googlebot, send an any-type Accept
+ * header and no fetch metadata, and Next serves them the same HTML. Requiring
+ * `text/html` sent every crawl request through the full render instead
+ * (Semrush's Nov 2 audit timed 85 pages over 3 s); only a browser's own
+ * sub-resource fetches, which do carry `Sec-Fetch-Dest`, are excluded.
  */
 export function isCacheableDocumentRequest(request: Request): boolean {
   if (request.method !== "GET") return false;
@@ -42,7 +48,7 @@ export function isCacheableDocumentRequest(request: Request): boolean {
   const h = request.headers;
   if (h.has("rsc") || h.has("next-router-prefetch") || h.has("next-router-state-tree")) return false;
   const dest = h.get("sec-fetch-dest");
-  if (dest ? dest !== "document" : !h.get("accept")?.includes("text/html")) return false;
+  if (dest && dest !== "document") return false;
   if (/(?:^|;\s*)sb-[^=]*=/.test(h.get("cookie") ?? "")) return false;
   return true;
 }

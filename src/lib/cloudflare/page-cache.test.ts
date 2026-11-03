@@ -23,6 +23,9 @@ describe("which requests use the page cache", () => {
   it("takes public document loads only", () => {
     expect(isCacheableDocumentRequest(doc())).toBe(true);
     expect(isCacheableDocumentRequest(new Request(PAGE, { headers: { accept: "text/html" } }))).toBe(true);
+    // Crawlers (SemrushBot, Googlebot) send no fetch metadata and accept */*.
+    expect(isCacheableDocumentRequest(new Request(PAGE, { headers: { accept: "*/*" } }))).toBe(true);
+    expect(isCacheableDocumentRequest(new Request(PAGE))).toBe(true);
     expect(isCacheableDocumentRequest(doc(PAGE, { rsc: "1" }))).toBe(false);
     expect(isCacheableDocumentRequest(doc(`${PAGE}?_rsc=abc`))).toBe(false);
     expect(isCacheableDocumentRequest(doc(PAGE, { "sec-fetch-dest": "empty" }))).toBe(false);
