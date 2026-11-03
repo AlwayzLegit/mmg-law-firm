@@ -22,7 +22,8 @@ describe("legacy practice template isolation", () => {
   it("moves the existing legacy queries, JSX, copy and schema without rewriting them", () => {
     const start = legacy.indexOf("  const [content, inlineResults, locationPages] = await Promise.all([");
     expect(start).toBeGreaterThan(0);
-    expect(hash(legacy.slice(start))).toBe("46ce49be0741c2b9ef6f2ab5f8e23f74bf08a643daf2771f124d99c5562ef5c1");
+    // Re-baselined Nov 2026: city links lead with the office city (officeCityFirst).
+    expect(hash(legacy.slice(start))).toBe("045828f22112827e6971dce08c239449611014825ee72a3c74194833a83cf54c");
   });
 
   it("does not eagerly import the legacy client controls in the route", () => {

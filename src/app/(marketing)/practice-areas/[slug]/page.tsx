@@ -8,6 +8,7 @@ import {
   lawyerPhraseTitle,
 } from "@/lib/data/practice-areas";
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
+import { officeCityFirst } from "@/lib/data/office-city-first";
 import { getPublishedLocationPages } from "@/lib/data/queries";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { V3_PRACTICE_PAGES } from "@/components/v3/practice-pages";
@@ -73,9 +74,7 @@ export default async function PracticeAreaPage({ params }: Props) {
   const v3 = v3KeyFor(slug);
   if (v3) {
     const pages = await getPublishedLocationPages();
-    const links = pages
-      .filter((p) => p.practice_area_slug === slug)
-      .sort((a, b) => a.city_name.localeCompare(b.city_name))
+    const links = officeCityFirst(pages.filter((p) => p.practice_area_slug === slug))
       .map((p) => ({
         href: `/locations/${p.county_slug}/${p.city_slug}/${p.practice_area_slug}`,
         label: `${p.city_name} ${area.shortName}`,
@@ -84,7 +83,8 @@ export default async function PracticeAreaPage({ params }: Props) {
       <V3PageShell pageKey={v3} page={V3_PRACTICE_PAGES[v3]}>
         <V3CityLinks
           heading={`${area.name} representation by city`}
-          intro={`${FIRM.legalName} handles ${area.nounPlural} across California. Explore the cities where we have detailed our local experience:`}
+          // TODO(human): attorney review required (office-city clause added Nov 2026).
+          intro={`${FIRM.legalName} handles ${area.nounPlural} across California from our ${FIRM.address.city} office. Explore the cities where we have detailed our local experience:`}
           links={links}
         />
       </V3PageShell>

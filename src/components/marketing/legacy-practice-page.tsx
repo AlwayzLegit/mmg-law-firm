@@ -21,6 +21,7 @@ import { lawyerPhraseTitle, type PracticeArea } from "@/lib/data/practice-areas"
 import { getPracticeAreaContent } from "@/lib/data/practice-area-queries";
 import { getAttorneyHelp } from "@/lib/data/practice-area-content";
 import { AttorneyHelpSection } from "@/components/marketing/attorney-help-section";
+import { officeCityFirst } from "@/lib/data/office-city-first";
 import { getPublishedLocationPages } from "@/lib/data/queries";
 import { getCaseResultsForPracticeArea } from "@/lib/data/public-content";
 import { jsonLd } from "@/lib/seo/json-ld";
@@ -42,9 +43,7 @@ export async function LegacyPracticePage({ area }: { area: PracticeArea }) {
   // them as links gives each city × practice money page more than one inbound
   // internal link (Semrush "only one internal link" notice) and lets the
   // authoritative practice hub pass topical signal down to them.
-  const cityLinks = locationPages
-    .filter((p) => p.practice_area_slug === slug)
-    .sort((a, b) => a.city_name.localeCompare(b.city_name));
+  const cityLinks = officeCityFirst(locationPages.filter((p) => p.practice_area_slug === slug));
 
   const path = `/practice-areas/${area.slug}`;
 
@@ -269,9 +268,11 @@ export async function LegacyPracticePage({ area }: { area: PracticeArea }) {
             <h2 className="font-display text-2xl font-medium tracking-tight md:text-3xl">
               {area.name} representation by city
             </h2>
+            {/* TODO(human): attorney review required (office-city clause added Nov 2026). */}
             <p className="text-muted-foreground mt-3 max-w-2xl">
-              We handle {area.nounPlural} across California. Explore the
-              cities where we&apos;ve detailed our local experience:
+              We handle {area.nounPlural} across California from our{" "}
+              {FIRM.address.city} office. Explore the cities where we&apos;ve
+              detailed our local experience:
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {cityLinks.map((p) => (
