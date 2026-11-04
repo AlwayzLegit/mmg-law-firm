@@ -373,16 +373,33 @@ The original manual steps, kept for reference:
 
 1. Run **Cloudflare deploy** `target=production` with `cron_enabled`
    unchecked (stops the Worker's jobs first).
-2. Workers & Pages → `mmg-law-firm` → Domains: remove `www` and the apex
-   (or drop them from `routes` in `wrangler.jsonc` and deploy — wrangler
-   replaces the domain set). Recreate the Vercel records from this doc's
-   appendix, DNS only.
+2. Workers & Pages → `mmg-law-firm-front` (the hostnames' owner since the
+   front Worker, below) → Domains: remove `www` and the apex. Recreate the
+   Vercel records from this doc's appendix, DNS only.
 3. Restore `vercel.json` crons from git history (before PR #192) and
    merge, which redeploys Vercel with its crons back.
 
 Propagation is a few minutes (TTL 300 s). Keep the Vercel
 project and its env vars untouched for 30 days; do not delete it until the
 Cloudflare crons, ISR and image cache have run through a full month.
+
+### Front Worker (Nov 2026)
+
+`www`, the apex and `staging.` are routes of a second, ~6 KB Worker,
+`mmg-law-firm-front` (`wrangler.front.jsonc`, `cloudflare/front.ts`). The
+app Worker's ~27 MB bundle takes 1–3 s to start in a fresh isolate, and on a
+low-traffic site most requests meet a fresh one, so even cache hits were
+slow (Semrush flagged 6–85 "slow pages" per audit). The front Worker serves
+public pages from the data center's Cache API, then from R2
+(`edge-pages/<build id>/…`, shared by every data center), and calls the app
+through a service binding for everything else. Each deploy pre-loads every
+sitemap URL. Pages are stored only when the app's `x-build-id` matches the
+front Worker's `BUILD_ID`, so a stored page never references deleted chunks.
+
+To take the front Worker out: add the `routes` from `wrangler.front.jsonc`
+back to `wrangler.jsonc` (production and staging), remove them from
+`wrangler.front.jsonc`, drop the "Deploy front Worker" step, and deploy.
+wrangler re-points the hosts to the app Worker.
 
 ### F. After the dust settles
 

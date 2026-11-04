@@ -96,6 +96,9 @@ function fromStored(res: Response, status: "HIT" | "STALE"): Response {
   return out;
 }
 
+/** The part of the Cache API the page cache uses (caches.default, or the front Worker's tiered store). */
+export type PageStore = Pick<Cache, "match" | "put">;
+
 /**
  * Serve a public document from `cache` when present (refreshing it in the
  * background once older than FRESH_SECONDS); otherwise render it with
@@ -103,7 +106,7 @@ function fromStored(res: Response, status: "HIT" | "STALE"): Response {
  */
 export async function cachedPage(
   request: Request,
-  cache: Cache,
+  cache: PageStore,
   render: (request: Request) => Promise<Response>,
   waitUntil: (p: Promise<unknown>) => void,
   now: () => number = Date.now,

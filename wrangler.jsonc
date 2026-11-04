@@ -52,15 +52,9 @@
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://www.mmg-lawfirm.com"
   },
-  // The production hostnames (cutover, docs/cloudflare-migration-plan.md §D).
-  // A CI deploy replaces any conflicting DNS record, which is how the Vercel
-  // records were swapped out. The app 308s apex → www itself.
-  "routes": [
-    { "pattern": "www.mmg-lawfirm.com", "custom_domain": true },
-    { "pattern": "mmg-lawfirm.com", "custom_domain": true }
-  ],
-  // Setting routes turns workers.dev off by default; the deploy smoke step
-  // and `pnpm parity` use it, so keep it on (the app noindexes that host).
+  // No routes: the public hostnames belong to the front Worker
+  // (wrangler.front.jsonc), which calls this one through a service binding.
+  // The deploy smoke step and `pnpm parity` use workers.dev (noindexed).
   "workers_dev": true,
   "observability": { "enabled": true },
 
@@ -99,8 +93,9 @@
         ]
       },
       "triggers": { "crons": [] },
-      // Must be set: routes are inherited, and staging must never claim www.
-      "routes": [{ "pattern": "staging.mmg-lawfirm.com", "custom_domain": true }],
+      // Must be set: routes are inherited. staging.mmg-lawfirm.com is on the
+      // staging front Worker (wrangler.front.jsonc).
+      "routes": [],
       "workers_dev": true,
       "vars": {
         "NEXT_PUBLIC_SITE_URL": "https://staging.mmg-lawfirm.com"

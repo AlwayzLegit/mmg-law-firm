@@ -1,0 +1,35 @@
+{
+  // Front Worker (cloudflare/front.ts): owns the public hostnames and serves
+  // stored pages without starting the app Worker, whose bundle is too large
+  // to start quickly. Deployed by .github/workflows/cloudflare-deploy.yml with
+  // `--config wrangler.front.jsonc`, which also keeps wrangler from handing
+  // the deploy to OpenNext. BUILD_ID is passed with --var at deploy time.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mmg-law-firm-front",
+  "main": "cloudflare/front.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "services": [{ "binding": "APP", "service": "mmg-law-firm" }],
+  "r2_buckets": [{ "binding": "PAGES", "bucket_name": "mmg-law-firm-cache" }],
+  // Moved here from wrangler.jsonc: a CI deploy re-points each host from the
+  // app Worker to this one. Rollback: put these routes back in wrangler.jsonc
+  // and deploy the app (see docs/cloudflare-migration-plan.md §E).
+  "routes": [
+    { "pattern": "www.mmg-lawfirm.com", "custom_domain": true },
+    { "pattern": "mmg-lawfirm.com", "custom_domain": true }
+  ],
+  "workers_dev": false,
+  "observability": { "enabled": true },
+
+  "env": {
+    "staging": {
+      "name": "mmg-law-firm-front-staging",
+      "services": [{ "binding": "APP", "service": "mmg-law-firm-staging" }],
+      "r2_buckets": [{ "binding": "PAGES", "bucket_name": "mmg-law-firm-cache-staging" }],
+      // Must be set: routes are inherited, and staging must never claim www.
+      "routes": [{ "pattern": "staging.mmg-lawfirm.com", "custom_domain": true }],
+      "workers_dev": false,
+      "observability": { "enabled": true }
+    }
+  }
+}
