@@ -155,8 +155,15 @@ jobs:
       # Front first: until the app below is live it still renders the
       # previous build, whose pages the front Worker passes through without
       # storing. `--config` also keeps wrangler from handing this to OpenNext.
+      # Retried once: on the deploy that first creates the Worker, the API
+      # answered "This Worker does not exist" (10007) right after the upload.
       - name: Deploy front Worker
-        run: pnpm exec wrangler deploy --config wrangler.front.jsonc $ENV_FLAG --var "BUILD_ID:$BUILD_ID"
+        run: |
+          for attempt in 1 2; do
+            pnpm exec wrangler deploy --config wrangler.front.jsonc $ENV_FLAG --var "BUILD_ID:$BUILD_ID" && exit 0
+            [ "$attempt" = 2 ] || { echo "retrying in 20s"; sleep 20; }
+          done
+          exit 1
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
