@@ -9,6 +9,7 @@ import handler from "../.open-next/worker.js";
 
 import { cachedImage, isImageRequest } from "../src/lib/cloudflare/image-cache";
 import { cachedPage, isCacheableDocumentRequest } from "../src/lib/cloudflare/page-cache";
+import { BUILD_HEADER } from "../src/lib/cloudflare/page-store";
 import { jobForSchedule } from "../src/lib/cron/schedules";
 
 // Durable Object classes used by the cache overrides (open-next.config.ts).
@@ -26,7 +27,17 @@ type Env = {
   NEXT_PUBLIC_SITE_URL?: string;
   /** Per-deploy Worker version (wrangler `version_metadata`); keys the page cache. */
   CF_VERSION_METADATA?: { id: string };
+  /** Next build id (deploy workflow); marks pages so the front Worker stores only this build's. */
+  BUILD_ID?: string;
 };
+
+/** Tag a page with the build that rendered it (see src/lib/cloudflare/page-store.ts). */
+function withBuildId(res: Response, buildId: string | undefined): Response {
+  if (!buildId) return res;
+  const out = new Response(res.body, res);
+  out.headers.set(BUILD_HEADER, buildId);
+  return out;
+}
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -35,7 +46,8 @@ export default {
     if (isImageRequest(request)) return cachedImage(request, caches.default, render, waitUntil);
     if (isCacheableDocumentRequest(request)) {
       const version = env.CF_VERSION_METADATA?.id ?? "";
-      return cachedPage(request, caches.default, render, waitUntil, Date.now, version);
+      const renderPage = (req: Request) => render(req).then((res: Response) => withBuildId(res, env.BUILD_ID));
+      return cachedPage(request, caches.default, renderPage, waitUntil, Date.now, version);
     }
     return render(request);
   },

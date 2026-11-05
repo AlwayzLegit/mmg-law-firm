@@ -26,17 +26,30 @@ describe("cron schedule registry", () => {
     expect(wrangler.env?.staging?.triggers?.crons).toEqual([]);
   });
 
-  it("keeps the production hostnames on the production Worker only", () => {
-    const raw = readFileSync("wrangler.jsonc", "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/^\s*\/\/.*$/gm, "");
-    const wrangler = JSON.parse(raw) as {
+  it("keeps the production hostnames on the production front Worker only", () => {
+    type Config = {
+      services?: Array<{ binding: string; service: string }>;
       routes?: Array<{ pattern: string }>;
-      env?: Record<string, { routes?: Array<{ pattern: string }> }>;
+      env?: Record<string, Omit<Config, "env">>;
     };
-    expect(wrangler.routes?.map((r) => r.pattern)).toEqual(["www.mmg-lawfirm.com", "mmg-lawfirm.com"]);
+    const read = (file: string) =>
+      JSON.parse(
+        readFileSync(file, "utf8")
+          .replace(/\/\*[\s\S]*?\*\//g, "")
+          .replace(/^\s*\/\/.*$/gm, ""),
+      ) as Config;
+    const app = read("wrangler.jsonc");
+    const front = read("wrangler.front.jsonc");
+    // The front Worker owns the hostnames; the app Worker answers only on
+    // workers.dev and through the front Worker's service binding.
+    expect(app.routes ?? []).toEqual([]);
+    expect(app.env?.staging?.routes).toEqual([]);
+    expect(front.routes?.map((r) => r.pattern)).toEqual(["www.mmg-lawfirm.com", "mmg-lawfirm.com"]);
     // Routes are inherited into envs, so staging has to declare its own.
-    expect(wrangler.env?.staging?.routes?.map((r) => r.pattern)).toEqual(["staging.mmg-lawfirm.com"]);
+    expect(front.env?.staging?.routes?.map((r) => r.pattern)).toEqual(["staging.mmg-lawfirm.com"]);
+    // And each front Worker must call its own app: staging shares the database, not the hosts.
+    expect(front.services).toEqual([{ binding: "APP", service: "mmg-law-firm" }]);
+    expect(front.env?.staging?.services).toEqual([{ binding: "APP", service: "mmg-law-firm-staging" }]);
   });
 
   it("uses distinct five-field UTC expressions", () => {

@@ -1,15 +1,18 @@
 name: Cloudflare deploy
 
 # Builds the site with OpenNext and uploads it to a Cloudflare Worker.
-# Each Worker's custom domains come from `routes` in wrangler.jsonc
-# (production: www + apex; staging: staging.). In CI wrangler replaces any
-# conflicting DNS record, so removing a route here detaches that host.
+# The public hostnames are routes of the front Worker (wrangler.front.jsonc;
+# production: www + apex, staging: staging.). It serves stored pages and
+# calls the app Worker (wrangler.jsonc, workers.dev only) for everything
+# else. In CI wrangler re-points a host that another Worker holds.
 #
 #   target=staging     → Worker `mmg-law-firm-staging` (wrangler --env staging)
-#                        on staging.mmg-lawfirm.com. No cron triggers, no
+#                        behind `mmg-law-firm-front-staging` on
+#                        staging.mmg-lawfirm.com. No cron triggers, no
 #                        analytics keys. Shares the production database.
-#   target=production  → Worker `mmg-law-firm` on www + apex (since the
-#                        2026-10-25 cutover). Pushes to main deploy this
+#   target=production  → Worker `mmg-law-firm` behind `mmg-law-firm-front`
+#                        on www + apex (Cloudflare since the 2026-10-25
+#                        cutover, front Worker since Nov 2026). Pushes to main deploy this
 #                        target. It is the only scheduler: scheduled()
 #                        no-ops unless CRON_ENABLED=1, so keep cron_enabled
 #                        on (the default) unless you mean to pause the jobs,
@@ -56,6 +59,8 @@ jobs:
       IS_PROD: ${{ (inputs.target || 'production') == 'production' }}
       SITE_URL: ${{ (inputs.target || 'production') == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
       WORKER: ${{ (inputs.target || 'production') == 'production' && 'mmg-law-firm' || 'mmg-law-firm-staging' }}
+      FRONT: ${{ (inputs.target || 'production') == 'production' && 'mmg-law-firm-front' || 'mmg-law-firm-front-staging' }}
+      BUCKET: ${{ (inputs.target || 'production') == 'production' && 'mmg-law-firm-cache' || 'mmg-law-firm-cache-staging' }}
       # Careful: in Actions expressions '' is falsy, so `cond && '' || x`
       # always yields x. Put the non-empty value on the && side.
       ENV_FLAG: ${{ (inputs.target || 'production') == 'staging' && '--env staging' || '' }}
@@ -77,14 +82,14 @@ jobs:
           # database): CRON_ENABLED is forced to 0 there and it has no triggers.
           # The target, Worker name, wrangler env flag and site URL must agree.
           case "${{ inputs.target || 'production' }}" in
-            production) want_flag=""; want_worker="mmg-law-firm"; want_url="https://www.mmg-lawfirm.com" ;;
-            staging) want_flag="--env staging"; want_worker="mmg-law-firm-staging"; want_url="https://staging.mmg-lawfirm.com" ;;
+            production) want_flag=""; want_worker="mmg-law-firm"; want_front="mmg-law-firm-front"; want_bucket="mmg-law-firm-cache"; want_url="https://www.mmg-lawfirm.com" ;;
+            staging) want_flag="--env staging"; want_worker="mmg-law-firm-staging"; want_front="mmg-law-firm-front-staging"; want_bucket="mmg-law-firm-cache-staging"; want_url="https://staging.mmg-lawfirm.com" ;;
             *) echo "::error::unknown target"; exit 1 ;;
           esac
-          if [ "$ENV_FLAG" != "$want_flag" ] || [ "$WORKER" != "$want_worker" ] || [ "$SITE_URL" != "$want_url" ]; then
-            echo "::error::target mismatch: ENV_FLAG='$ENV_FLAG' WORKER='$WORKER' SITE_URL='$SITE_URL'"; exit 1
+          if [ "$ENV_FLAG" != "$want_flag" ] || [ "$WORKER" != "$want_worker" ] || [ "$FRONT" != "$want_front" ] || [ "$BUCKET" != "$want_bucket" ] || [ "$SITE_URL" != "$want_url" ]; then
+            echo "::error::target mismatch: ENV_FLAG='$ENV_FLAG' WORKER='$WORKER' FRONT='$FRONT' BUCKET='$BUCKET' SITE_URL='$SITE_URL'"; exit 1
           fi
-          echo "deploying ${{ inputs.target || 'production' }} → $WORKER ($SITE_URL) flag='$ENV_FLAG'"
+          echo "deploying ${{ inputs.target || 'production' }} → $FRONT → $WORKER ($SITE_URL) flag='$ENV_FLAG'"
 
       # Cloudflare refuses to attach a Worker custom domain while an ordinary
       # DNS record exists for the host ("externally managed DNS records",
@@ -106,7 +111,7 @@ jobs:
             recs=$(api "$zone?name=$host&per_page=50"               | jq -c '[.result[] | select((.type=="CNAME" and (.content|test("vercel-dns"))) or (.type=="A" and (.content|startswith("216.150."))))]')
             if [ "$recs" = "[]" ]; then echo "$host: no Vercel records"; continue; fi
             for id in $(echo "$recs" | jq -r '.[].id'); do api -X DELETE "$zone/$id" >/dev/null; done
-            res=$(api -X PUT "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/domains"               -d "{\"hostname\":\"$host\",\"service\":\"$WORKER\",\"zone_id\":\"$ZONE_ID\",\"environment\":\"production\"}")
+            res=$(api -X PUT "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/domains"               -d "{\"hostname\":\"$host\",\"service\":\"$FRONT\",\"zone_id\":\"$ZONE_ID\",\"environment\":\"production\"}")
             if ! echo "$res" | jq -e '.success' >/dev/null; then
               echo "$res" | jq -c '.errors'
               # Put the Vercel records back so the site keeps answering.
@@ -115,7 +120,7 @@ jobs:
               done
               echo "::error::attaching $host failed; its Vercel records were restored"; exit 1
             fi
-            echo "$host: Vercel records removed, attached to $WORKER"
+            echo "$host: Vercel records removed, attached to $FRONT"
           done
 
       - name: Install
@@ -137,10 +142,37 @@ jobs:
           NEXT_PUBLIC_POSTHOG_HOST: ${{ (inputs.target || 'production') == 'production' && secrets.NEXT_PUBLIC_POSTHOG_HOST || '' }}
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ (inputs.target || 'production') == 'production' && secrets.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '' }}
 
+      # Next's build id tags every page the app renders (x-build-id). The
+      # front Worker stores only pages of the build it was deployed with, so
+      # it never serves HTML whose /_next/static chunks are gone.
+      - name: Build id
+        run: |
+          id=$(cat .next/BUILD_ID)
+          [ -n "$id" ] || { echo "::error::no .next/BUILD_ID"; exit 1; }
+          echo "BUILD_ID=$id" >> "$GITHUB_ENV"
+          echo "build id: $id"
+
+      # Front first: until the app below is live it still renders the
+      # previous build, whose pages the front Worker passes through without
+      # storing. `--config` also keeps wrangler from handing this to OpenNext.
+      # Retried once: on the deploy that first creates the Worker, the API
+      # answered "This Worker does not exist" (10007) right after the upload.
+      - name: Deploy front Worker
+        run: |
+          for attempt in 1 2; do
+            pnpm exec wrangler deploy --config wrangler.front.jsonc $ENV_FLAG --var "BUILD_ID:$BUILD_ID" && exit 0
+            [ "$attempt" = 2 ] || { echo "retrying in 20s"; sleep 20; }
+          done
+          exit 1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy
         run: |
           pnpm exec wrangler deploy $ENV_FLAG \
             --var "NEXT_PUBLIC_SITE_URL:$SITE_URL" \
+            --var "BUILD_ID:$BUILD_ID" \
             --var "CRON_ENABLED:${{ (inputs.target || 'production') == 'production' && (github.event_name == 'push' || inputs.cron_enabled) && '1' || '0' }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -215,6 +247,39 @@ jobs:
           echo "canonical: ${canon:-(none)}"
           [ "$canon" = "$SITE_URL/contact" ] || { echo "::error::canonical '$canon' is not $SITE_URL/contact — wrong Worker or wrong build"; fail=1; }
           exit $fail
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Load every sitemap URL once through the front Worker so the new
+      # build's pages are in R2, which every data center reads, before
+      # crawlers arrive. A crawl that meets an empty store waits 1–3 s per
+      # page for the app Worker to start (Semrush's slow-page audits).
+      - name: Pre-load pages
+        run: |
+          urls=$(curl -s --max-time 60 "$SITE_URL/sitemap.xml" | grep -o '<loc>[^<]*' | sed 's/<loc>//' \
+            | xargs -n1 curl -s --max-time 60 | grep -o '<loc>[^<]*' | sed 's/<loc>//' | sort -u)
+          total=$(echo "$urls" | grep -c . || true)
+          echo "pre-loading $total pages"
+          [ "$total" -gt 0 ] || { echo "::warning::the sitemap listed no pages"; exit 0; }
+          start=$(date +%s)
+          echo "$urls" | xargs -P 8 -I{} curl -s -o /dev/null --max-time 60 -A "mmg-preload" -w "%{http_code}\n" {} > codes.txt
+          echo "done in $(( $(date +%s) - start ))s; status codes:"; sort codes.txt | uniq -c
+          # A second load must come from the store.
+          for u in $(echo "$urls" | head -3); do
+            echo "$u $(curl -s -o /dev/null -D - --max-time 60 "$u" | tr -d '\r' | grep -i '^x-edge-cache:')"
+          done
+
+      # Pages of earlier builds are never read again; R2 drops them after 8
+      # days (page-store.ts already treats anything over 7 days as missing).
+      - name: Expire old stored pages
+        run: |
+          if pnpm exec wrangler r2 bucket lifecycle list "$BUCKET" 2>/dev/null | grep -q expire-edge-pages; then
+            echo "lifecycle rule present"
+          else
+            pnpm exec wrangler r2 bucket lifecycle add "$BUCKET" expire-edge-pages edge-pages/ --expire-days 8 -y \
+              || echo "::warning::could not add the R2 lifecycle rule; add it in the dashboard (prefix edge-pages/, 8 days)"
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
