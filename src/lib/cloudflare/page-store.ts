@@ -12,8 +12,13 @@
  * Only pages rendered by the build the front Worker was deployed for are
  * stored (the app marks each response with `x-build-id`): a page from another
  * build points at /_next/static chunks this deploy does not have.
+ *
+ * R2 is the source of truth: the data center's copy is trusted only while it
+ * is younger than FRESH_SECONDS. After that R2 decides, so a page dropped by
+ * page-purge.ts (a publish or an admin edit) re-renders instead of serving the
+ * copy this data center happens to hold.
  */
-import type { PageStore } from "./page-cache";
+import { FRESH_SECONDS, type PageStore } from "./page-cache";
 
 export const BUILD_HEADER = "x-build-id";
 
@@ -21,7 +26,7 @@ export const BUILD_HEADER = "x-build-id";
 export const R2_MAX_SECONDS = 7 * 86_400;
 
 const STORED_AT = "x-edge-stored-at";
-const PREFIX = "edge-pages/";
+export const PREFIX = "edge-pages/";
 
 /** The slice of an R2 bucket binding this store uses. */
 export type PageBucket = {
@@ -44,6 +49,8 @@ async function gunzip(body: ReadableStream): Promise<string> {
   return new Response(body.pipeThrough(new DecompressionStream("gzip"))).text();
 }
 
+const storedAt = (res: Response) => Number(res.headers.get(STORED_AT) ?? 0);
+
 export function tieredPageStore({
   edge,
   bucket,
@@ -60,15 +67,15 @@ export function tieredPageStore({
   return {
     async match(key) {
       const near = await edge.match(key);
-      if (near) return near;
+      if (near && (now() - storedAt(near)) / 1000 <= FRESH_SECONDS) return near;
       const obj = await bucket.get(objectKey(String(key), buildId));
       if (!obj) return undefined;
       // One object: the headers as a JSON line, then the HTML.
       const text = await gunzip(obj.body);
       const nl = text.indexOf("\n");
       const res = new Response(text.slice(nl + 1), { headers: JSON.parse(text.slice(0, nl)) });
-      const age = (now() - Number(res.headers.get(STORED_AT) ?? 0)) / 1000;
-      if (age > R2_MAX_SECONDS) return undefined;
+      if ((now() - storedAt(res)) / 1000 > R2_MAX_SECONDS) return undefined;
+      if (near && storedAt(near) >= storedAt(res)) return near;
       waitUntil(edge.put(key, res.clone()).catch(() => {}));
       return res;
     },

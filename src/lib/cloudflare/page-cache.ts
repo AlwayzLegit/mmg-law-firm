@@ -9,8 +9,8 @@
  *
  * Freshness: a stored page is served as-is for FRESH_SECONDS, then served
  * stale (for up to STORE_SECONDS) while one background request re-renders it.
- * Admin edits purge Next's cache but not this one, so they reach visitors
- * within about a minute (one request per data center after the edit).
+ * Publishes and admin edits drop the stored copy (page-purge.ts), so they reach
+ * visitors within FRESH_SECONDS.
  *
  * Only what Next itself marks shareable is stored: a 200 with `s-maxage`, no
  * `private`/`no-store`, no Set-Cookie. Dynamic routes (/login, /admin, search)
