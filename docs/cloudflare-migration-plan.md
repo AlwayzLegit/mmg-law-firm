@@ -396,10 +396,18 @@ through a service binding for everything else. Each deploy pre-loads every
 sitemap URL. Pages are stored only when the app's `x-build-id` matches the
 front Worker's `BUILD_ID`, so a stored page never references deleted chunks.
 
+The app Worker keeps no page cache of its own. `revalidatePath` also deletes
+the stored R2 copy (`open-next.config.ts` wraps the tag cache's `writeTags`,
+see `src/lib/cloudflare/page-purge.ts`), and a data center trusts its own copy
+for only 60 s before asking R2, so a publish shows within a minute. The first
+visit to a purged page renders it. `revalidatePath("/", "layout")` (firm
+settings) purges every page, so the whole site renders on demand after it.
+
 To take the front Worker out: add the `routes` from `wrangler.front.jsonc`
 back to `wrangler.jsonc` (production and staging), remove them from
 `wrangler.front.jsonc`, drop the "Deploy front Worker" step, and deploy.
-wrangler re-points the hosts to the app Worker.
+wrangler re-points the hosts to the app Worker. Pages are then uncached at the
+edge until `cachedPage` is restored in `cloudflare/worker.ts`.
 
 ### F. After the dust settles
 

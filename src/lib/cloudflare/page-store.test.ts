@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { cachedPage } from "./page-cache";
+import { cachedPage, FRESH_SECONDS } from "./page-cache";
 import { BUILD_HEADER, objectKey, R2_MAX_SECONDS, tieredPageStore, type PageBucket } from "./page-store";
 
 const PAGE = "https://www.mmg-lawfirm.com/locations/los-angeles-county/burbank";
@@ -103,5 +103,44 @@ describe("tieredPageStore", () => {
     t += (R2_MAX_SECONDS + 1) * 1000;
     const reader = tieredPageStore({ edge: edgeCache(), bucket: r2, buildId: "b1", waitUntil: () => {}, now });
     expect(await reader.match(PAGE)).toBeUndefined();
+  });
+
+  it("trusts the data center's copy only while it is fresh, then R2", async () => {
+    const r2 = bucket();
+    let t = 1_000_000;
+    const now = () => t;
+    const stamped = (body: string) => {
+      const res = page(body);
+      res.headers.set("x-edge-stored-at", String(t));
+      return res;
+    };
+    const lax = tieredPageStore({ edge: edgeCache(), bucket: r2, buildId: "b1", waitUntil: () => {}, now });
+    await lax.put(PAGE, stamped("old"));
+
+    // Fresh: answered without reading R2.
+    t += (FRESH_SECONDS - 1) * 1000;
+    expect(await (await lax.match(PAGE))!.text()).toBe("old");
+    expect(r2.get).not.toHaveBeenCalled();
+
+    // Another data center stored a newer copy: this one must not keep serving its own.
+    t += 2_000;
+    const dfw = tieredPageStore({ edge: edgeCache(), bucket: r2, buildId: "b1", waitUntil: () => {}, now });
+    await dfw.put(PAGE, stamped("new"));
+    t += 1_000;
+    expect(await (await lax.match(PAGE))!.text()).toBe("new");
+  });
+
+  it("re-renders a page purged from R2 even if this data center still holds it", async () => {
+    const r2 = bucket();
+    let t = 1_000_000;
+    const now = () => t;
+    const store = tieredPageStore({ edge: edgeCache(), bucket: r2, buildId: "b1", waitUntil: () => {}, now });
+    const res = page("old");
+    res.headers.set("x-edge-stored-at", String(t));
+    await store.put(PAGE, res);
+
+    r2.objects.clear();
+    t += (FRESH_SECONDS + 1) * 1000;
+    expect(await store.match(PAGE)).toBeUndefined();
   });
 });
