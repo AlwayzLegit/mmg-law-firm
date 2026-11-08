@@ -10,6 +10,7 @@ import handler from "../.open-next/worker.js";
 import { cachedImage, isImageRequest } from "../src/lib/cloudflare/image-cache";
 import { isCacheableDocumentRequest } from "../src/lib/cloudflare/page-cache";
 import { BUILD_HEADER } from "../src/lib/cloudflare/page-store";
+import { setPageRenderer } from "../src/lib/cloudflare/page-warm";
 import { jobForSchedule } from "../src/lib/cron/schedules";
 
 // Durable Object classes used by the cache overrides (open-next.config.ts).
@@ -41,6 +42,8 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const render = (req: Request) => handler.fetch(req, env, ctx);
     const waitUntil = (p: Promise<unknown>) => ctx.waitUntil(p);
+    // Lets a publish re-store the pages it dropped (src/lib/cloudflare/page-warm.ts).
+    setPageRenderer((req) => render(req).then((res: Response) => withBuildId(res, env.BUILD_ID)));
     if (isImageRequest(request)) return cachedImage(request, caches.default, render, waitUntil);
     // Pages are cached by the front Worker alone: a second copy here would hand
     // it old pages to re-store as new, and purging could not reach that copy.
@@ -65,6 +68,8 @@ export default {
       return;
     }
     const origin = (env.NEXT_PUBLIC_SITE_URL ?? "https://www.mmg-lawfirm.com").replace(/\/$/, "");
+    // The scheduled publish revalidates /blog and the new post; let it re-store them too.
+    setPageRenderer((req) => handler.fetch(req, env, ctx).then((res: Response) => withBuildId(res, env.BUILD_ID)));
     const request = new Request(`${origin}${job.path}`, {
       method: "POST",
       headers: { authorization: `Bearer ${env.CRON_SECRET}` },

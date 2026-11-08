@@ -45,6 +45,11 @@ async function gzip(text: string): Promise<ArrayBuffer> {
   return new Response(stream).arrayBuffer();
 }
 
+/** The R2 object for a stored page: the headers as a JSON line, then the HTML, gzipped. Consumes `res`. */
+export async function encodeStored(res: Response): Promise<ArrayBuffer> {
+  return gzip(`${JSON.stringify([...res.headers])}\n${await res.text()}`);
+}
+
 async function gunzip(body: ReadableStream): Promise<string> {
   return new Response(body.pipeThrough(new DecompressionStream("gzip"))).text();
 }
@@ -82,9 +87,8 @@ export function tieredPageStore({
 
     async put(key, res) {
       if (!buildId || res.headers.get(BUILD_HEADER) !== buildId) return;
-      const copy = res.clone();
-      const body = `${JSON.stringify([...res.headers])}\n${await copy.text()}`;
-      await Promise.all([edge.put(key, res), bucket.put(objectKey(String(key), buildId), await gzip(body))]);
+      const encoded = await encodeStored(res.clone());
+      await Promise.all([edge.put(key, res), bucket.put(objectKey(String(key), buildId), encoded)]);
     },
   };
 }
