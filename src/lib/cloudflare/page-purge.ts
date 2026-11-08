@@ -9,6 +9,11 @@
  *
  * Every revalidatePath call ends up in the tag cache's writeTags, which
  * open-next.config.ts wraps, so none of them has to know about the store.
+ *
+ * The keys this deletes are returned so page-warm.ts can store fresh copies
+ * before anyone asks for them: the first visitor to a dropped page otherwise
+ * waits for a full render (Semrush's nightly crawl timed /blog and each new
+ * post at just over 3 s the night they were published).
  */
 import { PREFIX } from "./page-store";
 
@@ -53,7 +58,7 @@ export function purgeRules(tag: string): PurgeRule[] {
   return [{ prefix: `${path}?` }];
 }
 
-/** Delete the stored pages the tags cover. */
+/** Delete the stored pages the tags cover; returns the keys deleted. */
 export async function purgeStoredPages({
   tags,
   bucket,
@@ -64,9 +69,10 @@ export async function purgeStoredPages({
   bucket: PurgeBucket;
   buildId: string;
   host: string;
-}): Promise<void> {
+}): Promise<string[]> {
   const root = `${PREFIX}${buildId}/${host}`;
   const rules = new Map(tags.flatMap(purgeRules).map((r) => [`${r.prefix}|${r.depth ?? ""}`, r]));
+  const deleted = new Set<string>();
   for (const { prefix, depth } of rules.values()) {
     // List everything first: deleting between list pages can shift the cursor.
     const keys: string[] = [];
@@ -80,5 +86,7 @@ export async function purgeStoredPages({
     for (let i = 0; i < matched.length; i += R2_DELETE_LIMIT) {
       await bucket.delete(matched.slice(i, i + R2_DELETE_LIMIT));
     }
+    matched.forEach((key) => deleted.add(key));
   }
+  return [...deleted];
 }

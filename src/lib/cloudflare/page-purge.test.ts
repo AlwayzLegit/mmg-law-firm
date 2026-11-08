@@ -46,8 +46,16 @@ describe("purgeRules", () => {
 describe("purgeStoredPages", () => {
   it("drops the revalidated page and leaves its children and neighbours", async () => {
     const b = bucket([key("/blog"), key("/blog/a"), key("/blog-archive"), key("/")]);
-    await purge(["_N_T_/blog"], b);
+    const deleted = await purge(["_N_T_/blog"], b);
     expect([...b.objects].sort()).toEqual([key("/"), key("/blog-archive"), key("/blog/a")].sort());
+    expect(deleted).toEqual([key("/blog")]);
+  });
+
+  it("reports each dropped key once, even when several tags cover it", async () => {
+    const b = bucket([key("/blog"), key("/blog/a")]);
+    const deleted = await purge(["_N_T_/blog", "_N_T_/blog/layout", "_N_T_/blog/[slug]/page"], b);
+    expect(deleted.sort()).toEqual([key("/blog"), key("/blog/a")].sort());
+    expect(b.objects.size).toBe(0);
   });
 
   it("drops the home page without touching the rest of the site", async () => {

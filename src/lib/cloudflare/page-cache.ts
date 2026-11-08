@@ -79,7 +79,8 @@ export function isShareable(res: Response): boolean {
   return /\bs-maxage=\d+/.test(cc);
 }
 
-function toStored(res: Response, now: number): Response {
+/** Mark a shareable response for the store: when it was stored, and Next's own cache-control kept aside. */
+export function toStored(res: Response, now: number): Response {
   const stored = new Response(res.body, res);
   stored.headers.set(ORIGINAL_CC, res.headers.get("cache-control") ?? "");
   stored.headers.set(STORED_AT, String(now));
