@@ -262,9 +262,29 @@ jobs:
           total=$(echo "$urls" | grep -c . || true)
           echo "pre-loading $total pages"
           [ "$total" -gt 0 ] || { echo "::warning::the sitemap listed no pages"; exit 0; }
+          # The build is already live here, so one dropped connection among
+          # ~900 requests must not fail the run (xargs exits 123 when any
+          # curl errors). Failed pages get a second try; a few leftovers only
+          # warn, since the next visitor stores them. Many leftovers mean
+          # the site itself is in trouble, and that does fail the run.
+          load() { xargs -P 8 -I{} curl -s -o /dev/null --max-time 60 -A "mmg-preload" -w "%{http_code} %{url_effective}\n" {} || true; }
+          failed() { awk '$1 !~ /^[23]/ { print $2 }' "$1"; }
           start=$(date +%s)
-          echo "$urls" | xargs -P 8 -I{} curl -s -o /dev/null --max-time 60 -A "mmg-preload" -w "%{http_code}\n" {} > codes.txt
-          echo "done in $(( $(date +%s) - start ))s; status codes:"; sort codes.txt | uniq -c
+          echo "$urls" | load > codes.txt
+          echo "done in $(( $(date +%s) - start ))s; status codes:"; cut -d' ' -f1 codes.txt | sort | uniq -c
+          retry=$(failed codes.txt)
+          if [ -n "$retry" ]; then
+            echo "retrying $(echo "$retry" | grep -c .) pages"
+            sleep 10
+            echo "$retry" | load > retry.txt
+            left=$(failed retry.txt)
+            if [ -n "$left" ]; then
+              n=$(echo "$left" | grep -c .)
+              echo "still failing after a retry:"; grep -v '^[23]' retry.txt
+              if [ "$n" -gt 10 ]; then echo "::error::$n of $total pages failed to pre-load"; exit 1; fi
+              echo "::warning::$n of $total pages failed to pre-load; they are stored on their next visit"
+            fi
+          fi
           # A second load must come from the store.
           for u in $(echo "$urls" | head -3); do
             echo "$u $(curl -s -o /dev/null -D - --max-time 60 "$u" | tr -d '\r' | grep -i '^x-edge-cache:')"
