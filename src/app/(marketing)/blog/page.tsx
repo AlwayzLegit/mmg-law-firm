@@ -92,7 +92,10 @@ function FeaturedCard({ post: p }: { post: BlogPostSummary }) {
             fill
             sizes="(min-width: 768px) 50vw, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            priority
+            // Not preloaded: it sits below the page hero (below the fold on
+            // phones), and its preload competed with the hero image for the
+            // largest paint. Default lazy loading still fetches it as soon as
+            // it is near the viewport.
           />
         ) : (
           <FallbackArt />
