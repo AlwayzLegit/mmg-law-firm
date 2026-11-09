@@ -30,7 +30,10 @@ export function PracticeAreasHeroAside() {
           className="object-cover"
           sizes="(min-width: 1024px) 480px, 100vw"
           quality={65}
-          priority
+          // See attorney-hero-aside.tsx: `priority` alone no longer sets a
+          // high fetch priority in Next 16.
+          loading="eager"
+          fetchPriority="high"
         />
       </div>
     </div>

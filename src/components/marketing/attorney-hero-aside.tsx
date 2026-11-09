@@ -30,7 +30,12 @@ export function AttorneyHeroAside({
           className="object-cover object-top"
           sizes="(min-width: 1024px) 420px, 100vw"
           quality={65}
-          priority={priority}
+          // Next 16's `priority` only adds a preload link; it no longer marks
+          // the image high priority, so on phones this hero (the largest
+          // paint) queued behind other images. Per the Next docs, eager +
+          // fetchPriority replaces the preload.
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
         />
       </div>
     </div>
