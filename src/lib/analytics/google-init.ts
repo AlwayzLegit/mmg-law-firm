@@ -25,22 +25,34 @@ try {
 } catch (_) {}
 window.gtag('js', new Date());
 window.gtag('config', id, config);
-// Load the 196 KB library after the page, so it doesn't compete with the
-// hero and CSS on phones. Commands above wait in dataLayer until it runs.
-// Not next/script lazyOnload: on production it never loaded the library
-// (requestIdleCallback with no timeout). Idle with a 3 s cap, then load.
+// Load the 196 KB library when the visitor first touches, scrolls, types or
+// moves the mouse, or after 20 s for one who only reads. Loaded on a timer
+// it cost phones about 0.5 s of main-thread work right after the page
+// appeared. Commands above wait in dataLayer until it runs. A visitor who
+// leaves within 20 s without interacting is not counted (owner-approved
+// trade-off, 2026-11-09). Same rule as afterFirstInteraction in
+// after-page-idle.ts, which this inline script cannot import.
 function loadGtag() {
   var s = document.createElement('script');
   s.async = true;
   s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
   document.head.appendChild(s);
 }
-function schedule() {
-  if (window.requestIdleCallback) window.requestIdleCallback(loadGtag, { timeout: 3000 });
-  else setTimeout(loadGtag, 1500);
+if (typeof document.createElement !== 'function' || typeof window.addEventListener !== 'function') return;
+var events = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart', 'wheel'];
+var opts = { capture: true, passive: true };
+var started = false;
+var timer;
+function start() {
+  if (started) return;
+  started = true;
+  for (var i = 0; i < events.length; i++) window.removeEventListener(events[i], start, opts);
+  clearTimeout(timer);
+  // Not inside the event handler: the tap or scroll must stay responsive.
+  if (window.requestIdleCallback) window.requestIdleCallback(loadGtag, { timeout: 2000 });
+  else setTimeout(loadGtag, 200);
 }
-if (typeof document.createElement !== 'function') return;
-if (document.readyState === 'complete') schedule();
-else window.addEventListener('load', schedule, { once: true });
+for (var i = 0; i < events.length; i++) window.addEventListener(events[i], start, opts);
+timer = setTimeout(start, 20000);
 })();`;
 }

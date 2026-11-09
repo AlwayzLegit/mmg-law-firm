@@ -2,7 +2,7 @@ import { captureRouterTransitionStart, init } from "@sentry/nextjs";
 
 export { captureException, captureRouterTransitionStart } from "@sentry/nextjs";
 
-// Only the named initialization, tracing and boundary-capture exports are used.
+// Only the named initialization, transition and boundary-capture exports are used.
 // A separate adapter lets the bundler omit unused optional integrations.
 export function initializeClientMonitoring(
   dsn: string,
@@ -11,9 +11,14 @@ export function initializeClientMonitoring(
   init({
     dsn,
     environment,
-    // Retain the existing browser performance sampling and default error
-    // integrations. This is a bundle change, not a monitoring-policy change.
-    tracesSampleRate: 0.1,
+    // Errors only. Browser performance tracing is off (owner decision,
+    // 2026-11-09): its instrumentation ran on every phone to sample 10% of
+    // page loads, and the Lighthouse workflow already measures page speed.
+    // Server tracing (sentry.server.config.ts) is unchanged, which is why
+    // this is a runtime filter and not the build's `removeTracing` flag:
+    // that flag strips tracing from the server bundles too.
+    integrations: (defaults) =>
+      defaults.filter((integration) => integration.name !== "BrowserTracing"),
     // Replay stays OFF on this privacy-sensitive site.
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,

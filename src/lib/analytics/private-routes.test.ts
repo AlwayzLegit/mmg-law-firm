@@ -180,13 +180,18 @@ describe("Google bootstrap (isolated; never sends network traffic)", () => {
       { send_page_view: true, allow_google_signals: false, page_referrer: "" },
     ]);
   });
-  it("loads the gtag library after the page, once idle or within 3 s", () => {
+  function loadHarness() {
     const appended: { src: string; async: boolean }[] = [];
+    const listeners = new Map<string, () => void>();
+    const timers: { fn: () => void; ms: number }[] = [];
+    let cleared = 0;
     let idle: (() => void) | undefined;
     const win: Record<string, unknown> = {
       location: new URL("/contact", origin),
+      addEventListener: (name: string, fn: () => void) => listeners.set(name, fn),
+      removeEventListener: (name: string) => listeners.delete(name),
       requestIdleCallback: (cb: () => void, opts: { timeout: number }) => {
-        expect(opts.timeout).toBe(3000);
+        expect(opts.timeout).toBe(2000);
         idle = cb;
       },
     };
@@ -200,10 +205,36 @@ describe("Google bootstrap (isolated; never sends network traffic)", () => {
       },
       URL,
       encodeURIComponent,
+      setTimeout: (fn: () => void, ms: number) => timers.push({ fn, ms }),
+      clearTimeout: () => cleared++,
     });
-    expect(appended).toHaveLength(0); // not before the browser is idle
-    idle!();
-    expect(appended).toEqual([{ src: "https://www.googletagmanager.com/gtag/js?id=G-TESTONLY", async: true }]);
+    return { appended, listeners, timers, runIdle: () => idle?.(), cleared: () => cleared };
+  }
+  const gtagScript = { src: "https://www.googletagmanager.com/gtag/js?id=G-TESTONLY", async: true };
+
+  it("loads the gtag library on the first interaction, once idle", () => {
+    const h = loadHarness();
+    expect([...h.listeners.keys()].sort()).toEqual(
+      ["keydown", "pointerdown", "pointermove", "scroll", "touchstart", "wheel"],
+    );
+    h.runIdle();
+    expect(h.appended).toHaveLength(0); // nothing before the visitor acts
+    const scroll = h.listeners.get("scroll")!;
+    const touch = h.listeners.get("touchstart")!;
+    scroll();
+    expect(h.listeners.size).toBe(0); // listeners removed
+    expect(h.cleared()).toBe(1); // fallback timer cancelled
+    expect(h.appended).toHaveLength(0); // not inside the event handler
+    h.runIdle();
+    touch(); // a second interaction must not load it twice
+    expect(h.appended).toEqual([gtagScript]);
+  });
+  it("loads the gtag library after 20 s for a visitor who only reads", () => {
+    const h = loadHarness();
+    expect(h.timers.map((t) => t.ms)).toEqual([20000]);
+    h.timers[0].fn();
+    h.runIdle();
+    expect(h.appended).toEqual([gtagScript]);
   });
   it("does not inject a script-closing sequence from configuration", () => {
     expect(googleAnalyticsInit("</script>")).not.toContain("</script>");
