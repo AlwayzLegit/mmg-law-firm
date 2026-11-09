@@ -15,7 +15,7 @@ import {
 
 /**
  * PostHog client init + pageview capture. Loaded lazily by `PostHogLoader`
- * once the page is idle, and only when the public env vars are set.
+ * on the visitor's first interaction, and only when the public env vars are set.
  *
  * Privacy posture for a law-firm site:
  * - Autocapture is disabled. We capture explicit events (pageviews,

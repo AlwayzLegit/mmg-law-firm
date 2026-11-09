@@ -39,7 +39,7 @@ describe("shared client monitoring loader", () => {
     expect(sdk.init).toHaveBeenCalledExactlyOnceWith({
       dsn: "https://public@example.invalid/1",
       environment: "preview",
-      tracesSampleRate: 0.1,
+      integrations: expect.any(Function),
       replaysSessionSampleRate: 0,
       replaysOnErrorSampleRate: 0,
       sendDefaultPii: false,

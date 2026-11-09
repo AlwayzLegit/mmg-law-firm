@@ -4,7 +4,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { startPhoneClickTracking } from "@/lib/analytics/phone-clicks";
 import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
-import { afterPageIdle } from "@/lib/after-page-idle";
+import { afterFirstInteraction } from "@/lib/after-page-idle";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
@@ -14,9 +14,11 @@ const PostHogRuntime = dynamic(
 );
 
 /**
- * Mounts the PostHog runtime only after the page has gone idle (or after a
- * short timeout), so the ~65 KB analytics chunk never competes with
- * hydration or the LCP. Renders nothing when the public key isn't set.
+ * Mounts the PostHog runtime only after the visitor first interacts with the
+ * page (or after 20 s of reading), so the ~65 KB analytics chunk never
+ * competes with hydration or the LCP. A visitor who leaves sooner without
+ * interacting is not counted (owner-approved trade-off, 2026-11-09).
+ * Renders nothing when the public key isn't set.
  * Events fired before the runtime loads are queued by `lib/analytics/track`.
  */
 export function PostHogLoader() {
@@ -33,7 +35,7 @@ export function PostHogLoader() {
   React.useEffect(() => {
     if (!POSTHOG_KEY || isPrivateAnalyticsPath(window.location.pathname))
       return;
-    return afterPageIdle(() => {
+    return afterFirstInteraction(() => {
       if (!isPrivateAnalyticsPath(window.location.pathname)) setReady(true);
     });
   }, []);

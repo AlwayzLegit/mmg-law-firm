@@ -23,7 +23,7 @@ describe("lazy browser monitoring", () => {
     expect(sdk.captureRouterTransitionStart).not.toHaveBeenCalled();
   });
 
-  it("keeps error collection, tracing and privacy options unchanged", async () => {
+  it("collects errors only: no browser tracing, no replay, no PII", async () => {
     const { initializeClientMonitoring } = await import("./sentry-client");
     const capture = initializeClientMonitoring(
       "https://public@example.invalid/1",
@@ -32,11 +32,23 @@ describe("lazy browser monitoring", () => {
     expect(sdk.init).toHaveBeenCalledExactlyOnceWith({
       dsn: "https://public@example.invalid/1",
       environment: "preview",
-      tracesSampleRate: 0.1,
+      integrations: expect.any(Function),
       replaysSessionSampleRate: 0,
       replaysOnErrorSampleRate: 0,
       sendDefaultPii: false,
     });
+    const options = sdk.init.mock.calls[0][0] as {
+      tracesSampleRate?: number;
+      integrations: (defaults: { name: string }[]) => { name: string }[];
+    };
+    expect(options.tracesSampleRate).toBeUndefined();
+    expect(
+      options.integrations([
+        { name: "GlobalHandlers" },
+        { name: "BrowserTracing" },
+        { name: "Breadcrumbs" },
+      ]),
+    ).toEqual([{ name: "GlobalHandlers" }, { name: "Breadcrumbs" }]);
     expect(capture).toBe(sdk.captureRouterTransitionStart);
   });
 

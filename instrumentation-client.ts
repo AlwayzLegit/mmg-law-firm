@@ -20,8 +20,9 @@ if (dsn) {
   });
 }
 
-// Next.js 16 hands router transition spans to this hook for tracing. It is a
-// no-op until the SDK has loaded.
+// Next.js 16 hands router transitions to this hook. It is a no-op until the
+// SDK has loaded, and records no spans now that browser tracing is off
+// (see sentry-client.ts); it is kept so tracing can be turned back on there.
 export function onRouterTransitionStart(
   ...args: Parameters<CaptureTransition>
 ): void {
