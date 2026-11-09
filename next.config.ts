@@ -12,11 +12,14 @@ const nextConfig: NextConfig = {
     // Separate public/private roots need an explicit unmatched-URL document.
     globalNotFound: true,
     optimizePackageImports: ["recharts"],
-    // Not inlineCss: it would cut ~0.5–0.9 s of render-blocking CSS on
-    // mobile, but it copies the full stylesheet into every prerendered
-    // page, growing OpenNext's cache entries to 2–5 MB each (~1.6 GB in
-    // total), and the Cloudflare deploy's R2 cache population fails on
-    // that volume (reproduced twice on 2026-10-26).
+    // Inline the stylesheets into every page so a first visit renders
+    // without the render-blocking CSS round trip (Lighthouse attributed
+    // 0.5–0.9 s of mobile render delay to it). Cost: about 24 KB more
+    // compressed HTML per page, which returning visitors pay every time,
+    // and stored pages in R2 roughly double. Turned off on 2026-10-26
+    // because the deploy's R2 cache population failed on the volume; that
+    // step is gone (the front Worker loads pages after deploy, PR #218).
+    inlineCss: true,
   },
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
