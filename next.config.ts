@@ -2,6 +2,16 @@ import type { NextConfig } from "next";
 import createMDX from "@next/mdx";
 import { withSentryConfig } from "@sentry/nextjs";
 
+/** Next sets TURBOPACK before loading this file when Turbopack builds. */
+function isWebpackBuild(): boolean {
+  const turbopack = process.env.TURBOPACK;
+  const usingTurbopack =
+    (turbopack && turbopack !== "false" && turbopack !== "0") ||
+    process.argv.includes("--turbo") ||
+    process.argv.includes("--turbopack");
+  return !usingTurbopack;
+}
+
 const nextConfig: NextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   reactStrictMode: true,
@@ -16,8 +26,26 @@ const nextConfig: NextConfig = {
     // mobile, but it copies the full stylesheet into every prerendered
     // page, growing OpenNext's cache entries to 2–5 MB each (~1.6 GB in
     // total), and the Cloudflare deploy's R2 cache population fails on
-    // that volume (reproduced twice on 2026-10-26).
+    // that volume (reproduced twice on 2026-10-26, and again on 2026-11-09
+    // in #225: that step still runs inside `wrangler deploy`).
   },
+  // Browser Sentry reports errors only (sentry-client.ts), so its tracing
+  // code is dead weight in every page's lazy Sentry chunk: ~21 KB of ~51 KB
+  // compressed. Defining the SDK's flag as false lets the bundler drop it.
+  // Browser bundles only: server and edge keep their tracing. Webpack only,
+  // because Next 16 fails a Turbopack build that has a webpack hook; the
+  // production Worker build is webpack (open-next.config.ts). Same bundler
+  // test as @sentry/nextjs uses for its own hook.
+  ...(isWebpackBuild() && {
+    webpack: (config, { isServer, webpack }) => {
+      if (!isServer) {
+        config.plugins.push(
+          new webpack.DefinePlugin({ __SENTRY_TRACING__: false }),
+        );
+      }
+      return config;
+    },
+  }),
   images: {
     // Serve modern formats; AVIF first with WebP fallback. Cuts hero/headshot
     // and Supabase-hosted media weight substantially for supporting browsers.
