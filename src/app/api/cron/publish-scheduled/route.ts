@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
+import { revalidateBlogIndex } from "@/lib/revalidate-blog";
 
 import { requireCronAuth } from "@/lib/cron/auth";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -33,7 +34,7 @@ async function handle(request: NextRequest) {
 
   const due = data ?? [];
   if (due.length > 0) {
-    revalidatePath("/blog");
+    revalidateBlogIndex();
     revalidatePath("/sitemap.xml");
     revalidatePath("/sitemaps/other.xml");
     for (const p of due) {
