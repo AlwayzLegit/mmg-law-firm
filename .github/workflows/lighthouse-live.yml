@@ -7,6 +7,11 @@ name: Lighthouse (live site)
 
 on:
   workflow_dispatch:
+    inputs:
+      host:
+        description: "Host to measure (e.g. staging.mmg-lawfirm.com to score a staging deploy)"
+        type: string
+        default: www.mmg-lawfirm.com
   schedule:
     - cron: "0 13 * * 1" # Mondays 6 am Pacific (PDT)
   pull_request:
@@ -22,6 +27,12 @@ jobs:
         formfactor: [mobile, desktop]
     steps:
       - uses: actions/checkout@v4
+
+      # Same pages, another host: lets a staging deploy be scored over the
+      # real network before it goes to production.
+      - name: Point the config at ${{ inputs.host }}
+        if: inputs.host != '' && inputs.host != 'www.mmg-lawfirm.com'
+        run: sed -i "s#https://www.mmg-lawfirm.com/#https://${{ inputs.host }}/#g" .lighthouserc.live.${{ matrix.formfactor }}.json
 
       - name: Lighthouse (${{ matrix.formfactor }})
         id: lh
