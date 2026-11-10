@@ -15,8 +15,10 @@ export function initializeClientMonitoring(
     // 2026-11-09): its instrumentation ran on every phone to sample 10% of
     // page loads, and the Lighthouse workflow already measures page speed.
     // Server tracing (sentry.server.config.ts) is unchanged, which is why
-    // this is a runtime filter and not the build's `removeTracing` flag:
-    // that flag strips tracing from the server bundles too.
+    // this is not the build's `removeTracing` flag: that flag strips tracing
+    // from the server bundles too. The webpack (Worker) build drops the
+    // browser tracing code itself (next.config.ts); this filter covers
+    // builds where that code is still present (Turbopack, tests).
     integrations: (defaults) =>
       defaults.filter((integration) => integration.name !== "BrowserTracing"),
     // Replay stays OFF on this privacy-sensitive site.
