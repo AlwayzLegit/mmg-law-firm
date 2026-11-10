@@ -51,6 +51,14 @@ describe("purgeStoredPages", () => {
     expect(deleted).toEqual([key("/blog")]);
   });
 
+  it("drops every page of the blog index but no post (revalidateBlogIndex's tags)", async () => {
+    const b = bucket([key("/blog"), key("/blog/page/2"), key("/blog/page/3"), key("/blog/a-post"), key("/blog/page")]);
+    const deleted = await purge(["_N_T_/blog", "_N_T_/blog/page/[page]/page"], b);
+    expect(deleted.sort()).toEqual([key("/blog"), key("/blog/page/2"), key("/blog/page/3")].sort());
+    // A post is untouched, including one whose slug happens to be "page".
+    expect([...b.objects].sort()).toEqual([key("/blog/a-post"), key("/blog/page")].sort());
+  });
+
   it("reports each dropped key once, even when several tags cover it", async () => {
     const b = bucket([key("/blog"), key("/blog/a")]);
     const deleted = await purge(["_N_T_/blog", "_N_T_/blog/layout", "_N_T_/blog/[slug]/page"], b);

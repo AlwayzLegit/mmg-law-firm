@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { revalidateBlogIndex } from "@/lib/revalidate-blog";
 import { z } from "zod";
 
 import { requireEditor } from "@/lib/auth/require-admin";
@@ -221,7 +222,7 @@ export async function updateBlogPost(
 
   revalidatePath(`/admin/content/blog/${parsed.data.id}`);
   revalidatePath("/admin/content/blog");
-  revalidatePath("/blog");
+  revalidateBlogIndex();
   revalidatePath(`/blog/${parsed.data.slug}`);
   revalidateSitemaps();
   // Old slug, if it changed, will rebuild on its next request and 404.
@@ -273,7 +274,7 @@ export async function togglePublishBlogPost(
 
   revalidatePath(`/admin/content/blog/${parsed.data.id}`);
   revalidatePath("/admin/content/blog");
-  revalidatePath("/blog");
+  revalidateBlogIndex();
   revalidatePath("/blog/[slug]", "page");
   revalidateSitemaps();
 
@@ -316,7 +317,7 @@ export async function deleteBlogPost(
   });
 
   revalidatePath("/admin/content/blog");
-  revalidatePath("/blog");
+  revalidateBlogIndex();
   return { ok: true };
 }
 

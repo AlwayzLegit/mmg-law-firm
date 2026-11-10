@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getAttorneyProfile } from "@/lib/data/attorney";
+import { blogPageCount, blogPagePath } from "@/lib/blog-pagination";
 import { getPublishedPosts } from "@/lib/data/blog";
 import { PRACTICE_AREAS } from "@/lib/data/practice-areas";
 import {
@@ -164,8 +165,17 @@ export async function getSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     throw err;
   }
 
-  // Published blog posts.
+  // Older pages of the blog index (/blog itself is in STATIC_ROUTES), then
+  // the published posts. Listing the index pages also gets them pre-loaded
+  // into the page store on deploy.
   try {
+    for (let page = 2; page <= blogPageCount(posts.length); page++) {
+      entries.push({
+        url: canonicalUrl(blogPagePath(page)),
+        changeFrequency: "weekly",
+        priority: 0.3,
+      });
+    }
     for (const post of posts) {
       const hero = absImage(post.hero_image_url);
       entries.push({

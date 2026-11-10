@@ -1,6 +1,7 @@
 import "server-only";
 
 import { revalidatePath } from "next/cache";
+import { revalidateBlogIndex } from "@/lib/revalidate-blog";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -167,7 +168,7 @@ export async function logApiAudit(
 
 /** Revalidate the public + admin surfaces touched by a blog change. */
 export function revalidateBlog(slug?: string | null): void {
-  revalidatePath("/blog");
+  revalidateBlogIndex();
   revalidatePath("/admin/content/blog");
   revalidatePath("/sitemap.xml");
   revalidatePath("/sitemaps/other.xml");
