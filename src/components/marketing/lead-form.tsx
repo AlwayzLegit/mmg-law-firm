@@ -34,13 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { FIRM, TCPA_CONSENT_TEXT } from "@/lib/constants";
 import { PRACTICE_AREA_OPTIONS } from "@/lib/data/practice-area-options";
@@ -422,25 +416,26 @@ export function LeadForm({
                       <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                         Type of matter
                       </FormLabel>
-                      <Select
+                      <FormControl
+                        as={NativeSelect}
+                        name={field.name}
+                        selectRef={field.ref}
+                        onBlur={field.onBlur}
                         value={field.value ?? ""}
-                        onValueChange={(v) => field.onChange(v || undefined)}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                          field.onChange(e.target.value || undefined)
+                        }
+                        placeholder="Select an option"
+                        aria-label="Type of matter"
+                        wrapperClassName="mt-1.5"
+                        className="h-12 shadow-sm"
                       >
-                        <FormControl
-                          as={SelectTrigger}
-                          aria-label="Type of matter"
-                          className="mt-1.5 h-12 text-base shadow-sm"
-                        >
-                          <SelectValue placeholder="Select an option" />
-                        </FormControl>
-                        <SelectContent>
-                          {PRACTICE_AREA_OPTIONS.map((p) => (
-                            <SelectItem key={p.slug} value={p.slug}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {PRACTICE_AREA_OPTIONS.map((p) => (
+                          <option key={p.slug} value={p.slug}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -453,9 +448,14 @@ export function LeadForm({
                       <FormLabel className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
                         Where did it happen?
                       </FormLabel>
-                      <Select
+                      <FormControl
+                        as={NativeSelect}
+                        name={field.name}
+                        selectRef={field.ref}
+                        onBlur={field.onBlur}
                         value={field.value ?? ""}
-                        onValueChange={(v) => {
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          const v = e.target.value;
                           field.onChange(v || undefined);
                           const match = TIER_1_LOCATIONS.find(
                             (l) => l.citySlug === v,
@@ -464,22 +464,17 @@ export function LeadForm({
                             form.setValue("county_slug", match.countySlug);
                           }
                         }}
+                        placeholder="Pick a city"
+                        aria-label="Where did it happen"
+                        wrapperClassName="mt-1.5"
+                        className="h-12 shadow-sm"
                       >
-                        <FormControl
-                          as={SelectTrigger}
-                          aria-label="Where did it happen"
-                          className="mt-1.5 h-12 text-base shadow-sm"
-                        >
-                          <SelectValue placeholder="Pick a city" />
-                        </FormControl>
-                        <SelectContent>
-                          {TIER_1_LOCATIONS.map((l) => (
-                            <SelectItem key={l.citySlug} value={l.citySlug}>
-                              {l.cityName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {TIER_1_LOCATIONS.map((l) => (
+                          <option key={l.citySlug} value={l.citySlug}>
+                            {l.cityName}
+                          </option>
+                        ))}
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
