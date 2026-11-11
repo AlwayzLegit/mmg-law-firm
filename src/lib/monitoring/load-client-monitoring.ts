@@ -17,7 +17,10 @@ export function loadClientMonitoring(): Promise<ClientMonitoring | null> {
       .then((monitoring) => {
         monitoring.initializeClientMonitoring(
           dsn,
-          process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
+          // Set by the Cloudflare deploy ("production" or "staging").
+          process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ||
+            process.env.NEXT_PUBLIC_VERCEL_ENV ||
+            process.env.NODE_ENV,
         );
         loaded = monitoring;
         return monitoring;
