@@ -134,6 +134,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          # Files staging errors under "staging" in Sentry, not "production".
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.target || 'production' }}
           NEXT_PUBLIC_LOCALE_PAGES_LIVE: ${{ vars.NEXT_PUBLIC_LOCALE_PAGES_LIVE }}
           # Analytics and search verification belong to production only, so
           # staging traffic never lands in the firm's GA / PostHog properties.

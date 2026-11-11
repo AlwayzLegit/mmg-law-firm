@@ -67,6 +67,18 @@ describe("lazy browser monitoring", () => {
     );
   });
 
+  it("files errors under the deploy target when the Cloudflare build sets it", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "https://public@example.invalid/1");
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_ENVIRONMENT", "staging");
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_ENV", "production");
+    await import("../../../instrumentation-client");
+    await vi.waitFor(() =>
+      expect(sdk.init).toHaveBeenCalledWith(
+        expect.objectContaining({ environment: "staging" }),
+      ),
+    );
+  });
+
   it("retains NODE_ENV as the environment fallback", async () => {
     vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "https://public@example.invalid/1");
     vi.stubEnv("NODE_ENV", "test");
