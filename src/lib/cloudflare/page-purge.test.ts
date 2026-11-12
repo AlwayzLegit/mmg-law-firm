@@ -37,6 +37,13 @@ describe("purgeRules", () => {
     expect(purgeRules("_N_T_/blog/[slug]/page")).toEqual([{ prefix: "/blog/", depth: 2 }]);
   });
 
+  it("drops route groups, which typed calls must include but URLs never do", () => {
+    expect(purgeRules("_N_T_/(marketing)/blog/[slug]/page")).toEqual([{ prefix: "/blog/", depth: 2 }]);
+    expect(purgeRules("_N_T_/(marketing)/blog/page/[page]/page")).toEqual([{ prefix: "/blog/page/", depth: 3 }]);
+    expect(purgeRules("_N_T_/(marketing)/blog/layout")).toEqual([{ prefix: "/blog?" }, { prefix: "/blog/" }]);
+    expect(purgeRules("_N_T_/(admin)/admin/leads/[id]/page")).toEqual([]);
+  });
+
   it("ignores private routes and custom tags, which are never stored", () => {
     expect(purgeRules("_N_T_/admin/content/blog")).toEqual([]);
     expect(purgeRules("firm-settings")).toEqual([]);
@@ -53,7 +60,7 @@ describe("purgeStoredPages", () => {
 
   it("drops every page of the blog index but no post (revalidateBlogIndex's tags)", async () => {
     const b = bucket([key("/blog"), key("/blog/page/2"), key("/blog/page/3"), key("/blog/a-post"), key("/blog/page")]);
-    const deleted = await purge(["_N_T_/blog", "_N_T_/blog/page/[page]/page"], b);
+    const deleted = await purge(["_N_T_/blog", "_N_T_/(marketing)/blog/page/[page]/page"], b);
     expect(deleted.sort()).toEqual([key("/blog"), key("/blog/page/2"), key("/blog/page/3")].sort());
     // A post is untouched, including one whose slug happens to be "page".
     expect([...b.objects].sort()).toEqual([key("/blog/a-post"), key("/blog/page")].sort());

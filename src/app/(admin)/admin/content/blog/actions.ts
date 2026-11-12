@@ -275,7 +275,7 @@ export async function togglePublishBlogPost(
   revalidatePath(`/admin/content/blog/${parsed.data.id}`);
   revalidatePath("/admin/content/blog");
   revalidateBlogIndex();
-  revalidatePath("/blog/[slug]", "page");
+  revalidatePath("/(marketing)/blog/[slug]", "page");
   revalidateSitemaps();
 
   return { ok: true };

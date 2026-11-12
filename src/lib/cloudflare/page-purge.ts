@@ -38,10 +38,12 @@ const segments = (path: string) => path.split("/").filter(Boolean).length;
  * Rules for one revalidate tag. Next writes revalidatePath("/x") as `_N_T_/x`,
  * and revalidatePath("/x", type) as `_N_T_/x/<type>`. Every stored key has a
  * query string (the deploy id), so `/x?` matches that page and no child of it.
+ * A typed call names the route by its folders, so route groups such as
+ * `/(marketing)` are dropped here: they are not part of any URL.
  */
 export function purgeRules(tag: string): PurgeRule[] {
   if (!tag.startsWith(IMPLICIT)) return [];
-  const path = tag.slice(IMPLICIT.length);
+  const path = tag.slice(IMPLICIT.length).replace(/\/\([^/]+\)(?=\/|$)/g, "") || "/";
   if (path === "/admin" || path.startsWith("/admin/")) return [];
   if (path === "/layout") return [{ prefix: "/" }];
   if (path === "/index" || path === "/page") return [{ prefix: "/?" }];
