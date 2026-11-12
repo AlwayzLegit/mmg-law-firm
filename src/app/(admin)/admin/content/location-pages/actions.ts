@@ -243,7 +243,10 @@ export async function togglePublish(formData: FormData): Promise<ActionResult> {
   revalidatePath("/admin/content/pages");
   revalidateSitemaps();
   // Individual publish toggles must also clear cached public 404s/pages.
-  revalidatePath("/locations/[county]/[city]/[practiceArea]", "page");
+  revalidatePath(
+    "/(marketing)/locations/[county]/[city]/[practiceArea]",
+    "page",
+  );
 
   return { ok: true };
 }
