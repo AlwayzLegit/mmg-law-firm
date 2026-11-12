@@ -32,11 +32,24 @@ export function parseBlogPageParam(value: string): number | null {
   return page >= 2 ? page : null;
 }
 
-/** Page numbers to show in the pager: first, last, and those around `current`. */
+/**
+ * Up to this many pages, the pager links every page. Each index page is then
+ * one click from `/blog`, so every post is within three clicks of the home
+ * page. With gaps, posts on a middle page sat four clicks deep (Semrush
+ * "page crawl depth", 8 posts on 2026-11-12).
+ */
+export const PAGER_LINK_ALL_UP_TO = 12;
+
+/**
+ * Page numbers to show in the pager: all of them while there are few, then
+ * first, last, and those around `current`.
+ */
 export function blogPagerItems(
   current: number,
   total: number,
 ): (number | "gap")[] {
+  if (total <= PAGER_LINK_ALL_UP_TO)
+    return Array.from({ length: Math.max(total, 1) }, (_, i) => i + 1);
   const wanted = new Set([1, total, current - 1, current, current + 1]);
   const pages = [...wanted]
     .filter((p) => p >= 1 && p <= total)

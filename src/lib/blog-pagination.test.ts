@@ -55,10 +55,15 @@ describe("blog pagination", () => {
       expect(parseBlogPageParam(bad)).toBeNull();
   });
 
-  it("lists first, last and neighbouring pages with gaps", () => {
+  it("links every page while there are few, so no post is more than three clicks deep", () => {
     expect(blogPagerItems(1, 1)).toEqual([1]);
-    expect(blogPagerItems(1, 4)).toEqual([1, 2, "gap", 4]);
+    expect(blogPagerItems(1, 4)).toEqual([1, 2, 3, 4]);
     expect(blogPagerItems(3, 4)).toEqual([1, 2, 3, 4]);
-    expect(blogPagerItems(5, 9)).toEqual([1, "gap", 4, 5, 6, "gap", 9]);
+    expect(blogPagerItems(1, 12)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it("lists first, last and neighbouring pages with gaps once there are many", () => {
+    expect(blogPagerItems(1, 13)).toEqual([1, 2, "gap", 13]);
+    expect(blogPagerItems(5, 20)).toEqual([1, "gap", 4, 5, 6, "gap", 20]);
   });
 });
