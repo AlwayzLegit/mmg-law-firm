@@ -1,0 +1,82 @@
+name: Draft queued blog post
+
+# The Blog desk is a cloud task that cannot hold the content agent key. It
+# writes one JSON file under scripts/blog-drafter/queue/ and pushes it to a
+# crew/post-<date> branch cut from current main. This workflow files it as a
+# DRAFT (needs review) with the key from repository secrets, then deletes the
+# branch. It never publishes. Queue branches are never merged.
+on:
+  push:
+    branches: ["crew/post-*"]
+    paths: ["scripts/blog-drafter/queue/*.json"]
+  pull_request:
+    paths:
+      - "scripts/blog-drafter/**"
+      - ".github/workflows/blog-draft.yml"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Read-only check of the sample file against the live brief
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests
+        run: node --test scripts/blog-drafter/*.test.mjs
+      - name: Offline dry run on the sample post
+        run: node scripts/blog-drafter/draft.mjs scripts/blog-drafter/sample-post.json --dry-run --offline
+
+  live-dry-run:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dry run against the live brief (creates nothing)
+        env:
+          MMG_API_KEY: ${{ secrets.MMG_API_KEY }}
+        run: node scripts/blog-drafter/draft.mjs scripts/blog-drafter/sample-post.json --dry-run
+
+  draft:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: blog-draft
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: File the queued post as a draft
+        env:
+          MMG_API_KEY: ${{ secrets.MMG_API_KEY }}
+        run: |
+          shopt -s nullglob
+          files=(scripts/blog-drafter/queue/*.json)
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "expected exactly one queued post, found ${#files[@]}" >&2
+            exit 1
+          fi
+          node scripts/blog-drafter/draft.mjs "${files[0]}"
+      - name: Delete the queue branch
+        if: success()
+        run: git push origin --delete "${GITHUB_REF_NAME}"

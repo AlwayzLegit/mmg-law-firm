@@ -1,0 +1,93 @@
+{
+  "brief": {
+    "generated_at": "2026-01-01T00:00:00.000Z",
+    "site": {
+      "base_url": "https://example.invalid",
+      "firm": {
+        "name": "Fixture Firm",
+        "contact_url": "/contact"
+      },
+      "disclaimers": {
+        "attorney_advertising": "This website is an advertisement for legal services.",
+        "general": "The information on this website is for general information purposes only. Nothing on this site should be taken as legal advice for any individual case or situation. This information is not intended to create, and receipt or viewing does not constitute, an attorney-client relationship.",
+        "results": "Past results do not guarantee a similar outcome. Each case is different and must be evaluated on its own merits.",
+        "testimonial": "Testimonials reflect the experiences of individual clients. Results vary and depend on the specific facts of each case."
+      }
+    },
+    "instructions": {
+      "version": 0,
+      "body_md": "FIXTURE: not the real instructions."
+    },
+    "policy": {
+      "may_publish": false,
+      "default_review_status": "needs_review",
+      "posts_per_run": 1,
+      "min_words": 1000,
+      "max_words": 2000,
+      "internal_links": {
+        "min": 3,
+        "max": 8,
+        "must_link_target_url": true,
+        "avoid_cannibalization": true
+      },
+      "banned_phrases": [
+        "guaranteed",
+        "we will win",
+        "best attorney"
+      ],
+      "required_sections": [
+        "Overview",
+        "What to do next",
+        "Frequently asked questions"
+      ],
+      "hero_image": "none",
+      "pause_drafting": false,
+      "pause_reason": null
+    },
+    "site_urls": {
+      "practice_areas": [
+        {
+          "slug": "sample-practice",
+          "name": "Sample practice",
+          "url": "/practice-areas/sample-practice",
+          "category": "fixture"
+        },
+        {
+          "slug": "other-practice",
+          "name": "Other practice",
+          "url": "/practice-areas/other-practice",
+          "category": "fixture"
+        }
+      ],
+      "counties": [
+        {
+          "slug": "sample-county",
+          "name": "Sample County",
+          "url": "/locations/sample-county"
+        }
+      ],
+      "locations": [
+        {
+          "url": "/locations/sample-county/sample-city/sample-practice",
+          "county": "Sample County",
+          "practice_area": "Sample practice",
+          "practice_area_slug": "sample-practice"
+        }
+      ],
+      "legal": [
+        {
+          "slug": "privacy-policy",
+          "title": "Privacy Policy",
+          "url": "/privacy-policy"
+        }
+      ],
+      "static": [
+        "/",
+        "/contact",
+        "/about",
+        "/blog"
+      ],
+      "truncated": false
+    }
+  }
+}

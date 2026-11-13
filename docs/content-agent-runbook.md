@@ -84,6 +84,12 @@ returns its topic to the queue with your note.
 
 - **n8n** — same six calls; put `MMG_API_KEY` in a credential, use the HTTP
   Request node with the `Idempotency-Key` header on the two POSTs.
+- **Queue branch (GitHub Actions)** — a task that cannot hold the key pushes one
+  JSON file to a `crew/post-<date>` branch; `.github/workflows/blog-draft.yml` runs
+  `scripts/blog-drafter/draft.mjs` with `MMG_API_KEY` from repository secrets. It
+  reads the brief, respects `pause_drafting`, files a `needs_review` draft and
+  reports the run. It never publishes and refuses past 3 drafts or posts in 7 days.
+  See `scripts/blog-drafter/README.md`.
 - **Dry run / debugging** — `GET /api/admin/agent/brief` returns the same brief
   without starting a run or claiming a topic.
 - **Scheduling later** — once `auto_publish` is on and the key has `blog:publish`,
