@@ -16,7 +16,10 @@ describe("legacy practice template isolation", () => {
       (node) => ts.isFunctionDeclaration(node) && node.name?.text === "generateMetadata",
     );
     expect(metadata).toBeDefined();
-    expect(hash(metadata!.getText(file))).toBe("cfefffe6a170ed0aae89e16bdd85c4ec9f632a872454658aa8ac675d463200ef");
+    // Re-baselined Nov 2026 (OPS-29): the one owner-approved edit since the release baseline is the exact
+    // statewide workplace-discrimination title of #152 ("Apply approved metadata", Oct 18, 2026). The hash had
+    // not followed it, and no pull request workflow runs tests, so nothing showed it red. Still frozen.
+    expect(hash(metadata!.getText(file))).toBe("c9bf3c389a159cfa4cedb93b489512ba06bca465caa8f7d07c77e3640a2c92f1");
   });
 
   it("moves the existing legacy queries, JSX, copy and schema without rewriting them", () => {
