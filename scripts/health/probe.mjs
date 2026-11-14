@@ -1,7 +1,7 @@
 // Health probe for MMG Law (OPS-18). Black-box and read-only: it only sends
 // GET, it never submits the lead form and never requests /api/leads. No key.
 //
-//   node scripts/health/probe.mjs [--base URL] [--attempts 2] [--wait 30]
+//   node scripts/health/probe.mjs [--base URL] [--attempts 2] [--wait 30] [--with-health]
 //
 // Checks, in order:
 //   a. GET /                                home page answers 200 and has "MMG"
@@ -11,6 +11,14 @@
 //                                           the app Worker
 //   d. one script file the contact page names (/_next/static/...js) loads
 //   e. GET /practice-areas/car-accidents    answers 200 and has "Car Accident"
+//   f. GET /api/health  (only with --with-health, OPS-27) 200 and status
+//                                           healthy, prints "database: ok".
+//                                           A 404 prints "database: not deployed
+//                                           yet" and does not fail: the workflow
+//                                           reaches main at the merge, the
+//                                           endpoint only after the owner's
+//                                           deploy approval. A 503 or an
+//                                           unhealthy body fails.
 //
 // Why check c exists: the public hostnames are served by the front Worker
 // (cloudflare/front.ts), which answers public pages from a page store and
@@ -75,7 +83,7 @@ function expectPage(path, res, needles) {
 
 // Runs the checks once. Returns the lines it printed (for tests); throws
 // CheckFailed on the first failure.
-export async function runChecks(get, { log = () => {} } = {}) {
+export async function runChecks(get, { log = () => {}, withHealth = false } = {}) {
   const lines = [];
   const say = (line) => { lines.push(line); log(line); };
 
@@ -99,6 +107,26 @@ export async function runChecks(get, { log = () => {} } = {}) {
   expectPage("/practice-areas/car-accidents", await get("/practice-areas/car-accidents"), ["Car Accident"]);
   say("practice area: ok");
 
+  if (withHealth) {
+    const health = await get("/api/health");
+    if (health.status === 404) {
+      say("database: not deployed yet");
+      log("::warning::/api/health answers 404: the endpoint is not deployed yet (waiting for the production deploy approval)");
+    } else {
+      let body = null;
+      try {
+        body = JSON.parse(health.text);
+      } catch {
+        // not JSON: handled below
+      }
+      if (health.status !== 200 || !body || body.ok !== true || body.status !== "healthy") {
+        const failing = Array.isArray(body?.failing) ? ` (failing: ${body.failing.map((f) => String(f).slice(0, 30)).join(", ")})` : "";
+        throw new CheckFailed("/api/health", `status ${health.status}${failing}`);
+      }
+      say("database: ok");
+    }
+  }
+
   say("health: OK");
   return lines;
 }
@@ -108,7 +136,10 @@ export function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 2) {
     const k = argv[i];
     const v = argv[i + 1];
-    if (k === "--base" && v) out.base = v;
+    if (k === "--with-health") {
+      out.withHealth = true;
+      i -= 1; // a flag with no value
+    } else if (k === "--base" && v) out.base = v;
     else if (k === "--attempts" && v) out.attempts = Math.max(1, Number(v) || 1);
     else if (k === "--wait" && v) out.wait = Math.max(0, Number(v) || 0);
     else throw new Error(`unknown argument ${k}`);
@@ -122,7 +153,7 @@ export async function probe(opts, get, sleep = (ms) => new Promise((r) => setTim
   let last = null;
   for (let attempt = 1; attempt <= opts.attempts; attempt++) {
     try {
-      await runChecks(get, { log: (l) => console.log(l) });
+      await runChecks(get, { log: (l) => console.log(l), withHealth: opts.withHealth });
       return 0;
     } catch (e) {
       if (!(e instanceof CheckFailed)) throw e;
