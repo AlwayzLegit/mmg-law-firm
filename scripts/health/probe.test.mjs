@@ -124,3 +124,64 @@ test("parseArgs has the documented defaults and rejects unknown flags", () => {
   assert.equal(parseArgs(["--base", "https://x.test", "--attempts", "1"]).attempts, 1);
   assert.throws(() => parseArgs(["--bogus", "1"]));
 });
+
+// OPS-27: the database check behind --with-health.
+const HEALTHY = JSON.stringify({ ok: true, status: "healthy", env: "production", failing: [], timestamp: "2026-11-14T19:00:00.000Z" });
+const UNHEALTHY = JSON.stringify({ ok: false, status: "unhealthy", env: "production", failing: ["database"], timestamp: "2026-11-14T19:00:00.000Z" });
+
+async function withHealth(extra) {
+  const { get } = stub({ ...goodRoutes(), ...extra });
+  const logged = [];
+  try {
+    const lines = await runChecks(get, { withHealth: true, log: (l) => logged.push(l) });
+    return { lines, logged };
+  } catch (e) {
+    assert.ok(e instanceof CheckFailed, "a CheckFailed, not a crash");
+    return { error: e.message, logged };
+  }
+}
+
+test("with --with-health a healthy database prints database: ok", async () => {
+  const r = await withHealth({ "/api/health": { text: HEALTHY } });
+  assert.ok(r.lines.includes("database: ok"));
+  assert.equal(r.lines.at(-1), "health: OK");
+});
+
+test("without the flag /api/health is not requested", async () => {
+  const { get, sent } = stub(goodRoutes());
+  await runChecks(get);
+  assert.ok(sent.every((s) => !s.url.includes("/api/health")));
+});
+
+test("a 404 on /api/health is a warning that does not fail the run", async () => {
+  const r = await withHealth({});
+  assert.ok(r.lines.includes("database: not deployed yet"));
+  assert.ok(r.logged.some((l) => l.startsWith("::warning::")));
+  assert.equal(r.lines.at(-1), "health: OK");
+});
+
+test("a 503 or an unhealthy body fails, naming only the failing check", async () => {
+  const r = await withHealth({ "/api/health": { status: 503, text: UNHEALTHY } });
+  assert.match(r.error, /^\/api\/health: status 503 \(failing: database\)/);
+  const r2 = await withHealth({ "/api/health": { status: 200, text: UNHEALTHY } });
+  assert.match(r2.error, /^\/api\/health: status 200/);
+});
+
+test("a 200 that is not the health body fails", async () => {
+  const r = await withHealth({ "/api/health": { text: "<html>Welcome</html>" } });
+  assert.match(r.error, /^\/api\/health: status 200/);
+});
+
+test("the probe stays GET only with the health check on", async () => {
+  const { get, sent } = stub({ ...goodRoutes(), "/api/health": { text: HEALTHY } });
+  await runChecks(get, { withHealth: true });
+  assert.ok(sent.every((s) => s.method === "GET"));
+});
+
+test("parseArgs takes --with-health as a flag with no value", () => {
+  assert.equal(parseArgs(["--with-health"]).withHealth, true);
+  const o = parseArgs(["--base", "https://x.test", "--with-health", "--attempts", "1"]);
+  assert.deepEqual([o.base, o.attempts, o.withHealth], ["https://x.test", 1, true]);
+  assert.equal(parseArgs([]).withHealth, undefined);
+});
+
