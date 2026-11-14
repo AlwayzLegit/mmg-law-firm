@@ -32,7 +32,46 @@ on:
   # approve the newest, which ships everything merged so far.
   push:
     branches: [main]
-    paths-ignore: ["docs/**", "**/*.md"]
+    # A push starts a production deploy unless every changed file is skipped
+    # below. Patterns are read in order: a later "!" pattern skips what an
+    # earlier one matched, a later plain pattern deploys it again. Deny by
+    # default: a path is skipped only when the Worker build provably never
+    # reads it. scripts/deploy-skip/check.mjs proves that on every pull
+    # request (workflow deploy-skip-check.yml); to skip a new path, make the
+    # check pass first. workflow_dispatch is not filtered by any of this.
+    # deploy-skip:start (scripts/deploy-skip/check.mjs reads this block; a later line wins)
+    paths:
+      # Everything deploys unless a line below skips it.
+      - "**"
+      # docs/ is prose for people; the build never reads it.
+      - "!docs/**"
+      # Markdown outside src and public is prose; the build never reads it.
+      - "!**/*.md"
+      # Workflows, health probes and issue config run on GitHub, not in the Worker.
+      - "!.github/**"
+      # scripts/ is run by hand or by workflows; cf:build and the OpenNext build command do not call it.
+      - "!scripts/**"
+      # tools/ holds design handoff material that nothing in src imports.
+      - "!tools/**"
+      # supabase/ holds SQL migrations applied by hand; the build never reads them.
+      - "!supabase/**"
+      # vitest.config.ts is read by vitest only.
+      - "!vitest.config.ts"
+      # Put back: the deploy workflow itself. Its secrets list, --var values and
+      # build env reach the Worker only when a deploy runs, so a change here must deploy.
+      - ".github/workflows/cloudflare-deploy.yml"
+      # Put back: everything under src is shipped (next.config.ts makes .md and
+      # .mdx files pages). Tests are skipped again right below.
+      - "src/**"
+      # Put back: every file under public/ is served as it is, README.md included.
+      - "public/**"
+      # Tests and their helpers are run by vitest, never imported by the app.
+      # A type error in a test shows at the next app deploy (next build checks
+      # every .ts file); pnpm typecheck on every row is the guard.
+      - "!src/**/*.test.ts"
+      - "!src/**/*.test.tsx"
+      - "!src/test/**"
+    # deploy-skip:end
   workflow_dispatch:
     inputs:
       target:
