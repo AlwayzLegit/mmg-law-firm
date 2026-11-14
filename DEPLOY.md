@@ -392,3 +392,33 @@ sender is stubbed and no-ops.
 - **`/admin` 404 for everyone** — `proxy.ts` redirects `/admin/*` to
   `/login` when Supabase env vars are unset. If they're set but you
   still get redirected after login, see §3.
+
+## Health monitor (OPS-18)
+
+`.github/workflows/health-monitor.yml` probes production from outside every
+15 minutes (cron `7,22,37,52 * * * *`) with `scripts/health/probe.mjs`.
+Read-only: it only sends GET, it never submits the lead form and never
+requests `/api/leads`, and it holds no secret.
+
+What it checks: the home page, the lead form on `/contact` twice (the stored
+page copy, then `/contact?_rsc=health`, which skips the page store and is
+rendered fresh by the app Worker, so a broken app Worker behind healthy stored
+pages is caught), one `/_next/static/` script file named by the contact page
+(a page from an older build can point at files the next deploy removed, and
+then the form never hydrates), and `/practice-areas/car-accidents`. It tries
+twice, 30 seconds apart, before it fails.
+
+A red scheduled run is an Incident, and P1 when a contact check fails. If the
+form check passes on the stored page but fails on `?_rsc=health`, the app
+Worker is down behind healthy stored pages: that is the case this exists for.
+If every check answers 403, Cloudflare is challenging the GitHub runner: that
+needs a firewall rule from the owner, not a looser probe.
+
+Cost: the repo is public, so GitHub bills 0 minutes for standard runners, at
+about 2,900 runs a month. If the repo is ever made private this cadence would
+cost about 2,900 minutes a month: slow the cron down first. To silence the
+monitor at once: GitHub, Actions, Health monitor, Disable workflow.
+
+Merging a change to the workflow or the probe starts a "Cloudflare deploy"
+run that waits for the owner's approval although the app did not change; that
+run is not a failure.

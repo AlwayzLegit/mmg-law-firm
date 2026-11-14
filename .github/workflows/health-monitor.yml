@@ -1,0 +1,71 @@
+name: Health monitor
+
+# OPS-18. Probes MMG Law's production site from outside, between deploys:
+# home page, the lead form on /contact (stored page and fresh from the app
+# Worker), one page script, and one practice area page. Read-only: only GET,
+# it never submits the form, no secret, no write.
+#
+# Cost: every 15 minutes is about 2,900 runs a month, under a minute each.
+# This repo is public, so GitHub bills 0 minutes for standard runners. If the
+# repo is ever made private, this cadence would cost about 2,900 minutes a
+# month: slow the cron line down first.
+#
+# A red scheduled run is an Incident (the Merge captain's CI watch reads it),
+# P1 when a contact check fails. To silence it at once: GitHub, Actions,
+# Health monitor, Disable workflow.
+#
+# The self-test job runs on pull requests that touch this file or the probe:
+# it points the probe at a path that does not exist and passes only when the
+# probe fails. A deliberately red run on main would raise an Incident.
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Site to probe (default production)
+        type: string
+        default: https://www.mmg-lawfirm.com
+  pull_request:
+    paths:
+      - .github/workflows/health-monitor.yml
+      - scripts/health/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: health-monitor
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe production
+        env:
+          BASE_URL: ${{ inputs.base_url || 'https://www.mmg-lawfirm.com' }}
+        run: node scripts/health/probe.mjs --base "$BASE_URL"
+
+  self-test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe unit tests
+        run: node --test scripts/health/probe.test.mjs
+      - name: The probe fails for a site that does not exist
+        run: |
+          set +e
+          node scripts/health/probe.mjs --attempts 1 --base "https://www.mmg-lawfirm.com/this-path-does-not-exist"
+          code=$?
+          set -e
+          if [ "$code" != 1 ]; then
+            echo "::error::self-test: the probe exited $code, expected 1"
+            exit 1
+          fi
+          echo "self-test OK: probe exited 1 for https://www.mmg-lawfirm.com/this-path-does-not-exist"
