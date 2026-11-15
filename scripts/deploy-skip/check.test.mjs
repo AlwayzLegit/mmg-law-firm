@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  TARGET_WORKFLOW,
   WORKFLOW,
   buildLines,
   decide,
@@ -18,6 +19,7 @@ import {
 } from "./check.mjs";
 
 const wf = readFileSync(WORKFLOW, "utf8");
+const targetWf = readFileSync(TARGET_WORKFLOW, "utf8");
 const list = readList(wf);
 const d = (f, mode = "min") => decide(list, f, mode);
 
@@ -68,6 +70,7 @@ test("a root README.md is the case the docs leave open: skip in one reading, fla
 test("files the build reads deploy", () => {
   for (const f of [
     ".github/workflows/cloudflare-deploy.yml",
+    ".github/workflows/cloudflare-deploy-target.yml",
     "public/brand/README.md",
     "public/_headers",
     "src/app/x/page.md",
@@ -121,6 +124,7 @@ const ROOT = [
   "sentry.server.config.ts",
   "sentry.edge.config.ts",
   WORKFLOW,
+  TARGET_WORKFLOW,
 ];
 
 test("rule A fails when a shipped path is added to the skip list", () => {
@@ -170,4 +174,26 @@ test("the list reader refuses a broken block", () => {
   assert.throws(() => readList(wf.replace("    paths:\n", "    paths-ignore:\n")), /paths/);
   assert.throws(() => readList(wf.replace('      - "**"\n', '      - "!docs/**"\n').replace('      - "!docs/**"\n      - "!docs/**"\n', '      - "!docs/**"\n')), /first pattern/);
   assert.throws(() => readList(wf.replace('"!tools/**"', '"!to*ls/**"')), /not allowed/);
+});
+
+test("the one-target workflow is a build input, its run lines are read, and only the probe line is allowed", () => {
+  // OPS-58: the new file must decide deploy, like the caller.
+  assert.equal(d(TARGET_WORKFLOW, "min"), "deploy");
+  assert.equal(d(TARGET_WORKFLOW, "max"), "deploy");
+  // The real pair passes Rule C: the probe line in the check job is the one allowance.
+  const real = buildLines("{}", "", wf, targetWf);
+  assert.ok(real.some((l) => l.where.startsWith(TARGET_WORKFLOW) && l.text.includes("scripts/health/probe.mjs")));
+  assert.deepEqual(ruleC(list, [], () => "", real), []);
+  // Any other run line in the new file that names a path under scripts/ fails Rule C.
+  const bad = buildLines("{}", "", wf, targetWf.replace("node scripts/health/probe.mjs", "node scripts/health/other.mjs"));
+  const out = ruleC(list, [], () => "", bad);
+  assert.ok(out.some((l) => l.includes("scripts/health/other.mjs")), out.join("\n"));
+  const extra = buildLines("{}", "", wf, `${targetWf}\n      - run: node scripts/prep.mjs\n`);
+  assert.ok(ruleC(list, [], () => "", extra).some((l) => l.includes("scripts/prep.mjs")));
+  // The allowance is for the new file only: the same line in the caller still fails.
+  const inCaller = buildLines("{}", "", `${wf}\n      - run: node scripts/health/probe.mjs --base "$base" --with-health --attempts 3 --wait 20\n`, targetWf);
+  assert.ok(ruleC(list, [], () => "", inCaller).some((l) => l.includes(`${WORKFLOW}:`)));
+  // Taking the new file off the skip list's put-back line makes Rule A fail.
+  const dropped = readList(wf.replace('      - ".github/workflows/cloudflare-deploy-target.yml"\n', ""));
+  assert.ok(ruleA(dropped, ROOT).some((l) => l.includes("cloudflare-deploy-target.yml")));
 });

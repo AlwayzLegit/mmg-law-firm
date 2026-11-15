@@ -200,8 +200,10 @@ Without these, the lead form will fail every submission server-side.
 > `www.mmg-lawfirm.com` and the apex are custom domains of the
 > `mmg-law-firm` Worker (`routes` in `wrangler.jsonc`). Every merge to
 > `main` that changes a file the Worker build reads starts the "Cloudflare deploy"
-> workflow for production, which waits for your approval in the Actions
-> tab. If several merges pile up, cancel the older waiting runs and
+> workflow: it deploys staging first, reads the staging site from outside,
+> and only then starts the production deploy, which waits for your approval
+> in the Actions tab (OPS-58, see "What starts a production deploy"). If
+> several merges pile up, cancel the older waiting runs and
 > approve the newest: it ships everything merged so far. The Worker runs the scheduled jobs (`vercel.json` crons
 > are empty). Vercel still builds every push but serves no traffic; it is
 > kept, env vars untouched, as the rollback until 2026-11-24
@@ -425,8 +427,9 @@ A change to the workflow or the probe under `.github/` or `scripts/` starts no
 
 ## What starts a production deploy (OPS-33)
 
-A push to `main` starts the "Cloudflare deploy" workflow for production, and the
-run waits for your approval, unless every changed file is on the skip list. The
+A push to `main` starts the "Cloudflare deploy" workflow, unless every changed
+file is on the skip list. The run deploys staging, checks it, and then deploys
+production, which waits for your approval (see "The staging gate" below). The
 list is the `paths:` block between the two `deploy-skip` comments in
 `.github/workflows/cloudflare-deploy.yml`. It skips prose and things that run
 outside the Worker: `docs/`, `*.md` outside `src/` and `public/`, `.github/`
@@ -443,9 +446,56 @@ the lockfile and the Worker configs.
   request will start a production deploy.
 - To skip a new path, add it to the block with a comment saying why it is safe,
   and make the check pass. Do not add a path the check cannot prove.
+- `.github/workflows/cloudflare-deploy-target.yml` (the workflow that does the
+  work of one target) is a build input like the deploy workflow itself, so a
+  change to it deploys. The check reads its `run:` lines too; the one line it
+  allows to name a path under `scripts/` is the probe in its `check` job, which
+  runs after the deploy and which the build never reads.
 - A push touching more than 3,000 files may be judged wrongly by GitHub: check
   the Actions tab after such a merge.
 - To ship by hand at any time: Actions, "Cloudflare deploy", Run workflow, target
   production. A change that was skipped by mistake ships with that run, after
   your approval. The approval on the `cloudflare-production` environment is
   your setting and this list never touches it.
+
+## The staging gate (OPS-58)
+
+A deploy of a merge to `main` is a line of stages, and a failed stage stops it:
+
+1. `staging / deploy`: build and ship the staging Worker
+   (`mmg-law-firm-staging` behind `mmg-law-firm-front-staging`, on
+   `https://staging.mmg-lawfirm.com`). No scheduled jobs run there. Staging
+   shares the production database, so a change that needs a hand-applied
+   migration behaves as it did before this gate.
+2. `staging / check`: `node scripts/health/probe.mjs --with-health` reads the
+   staging site from outside (home page, the lead form twice, one page script,
+   a practice page, `/api/health`). Read-only, no secret.
+3. `production / deploy`: starts only when step 2 is green (`needs: staging`,
+   no `always()` anywhere on the path). It still waits for the owner's click on
+   the `cloudflare-production` environment until the owner removes that click.
+4. `production / check`: the same probe against `https://www.mmg-lawfirm.com`.
+   A red run here means the site is up on the new build but unhealthy: read
+   `/api/health` and the Worker logs, then fix forward or ship by hand.
+
+The gate proves the commit, not the bundle: staging and production are two
+builds of the same commit, because `NEXT_PUBLIC_SITE_URL` and the analytics keys
+are inlined at build time.
+
+The three targets by hand (Actions, "Cloudflare deploy", Run workflow):
+
+- `staging`: staging only, then its check. Cannot touch production.
+- `production`: production alone, not gated. This is the way back when staging
+  itself is broken. `cron_enabled` stays on unless you mean to pause the jobs.
+- `rehearse-gate`: a test of the gate. Staging deploys, its check is pointed at a
+  path that does not exist and must fail, and `production` must end the run as
+  skipped. If `production` ever shows as waiting, queued or running in a
+  rehearsal, cancel the run: the gate is wrong. The guard in the called workflow
+  also refuses a rehearsal that reaches production.
+
+Cost: about 18 billed minutes for every merge that touches the app (staging 9,
+check 1, production 7, check 1) once the repo is private, against 7 before.
+Public repos bill 0.
+
+Way back: revert the merge commit. While the owner's click exists that restores
+the old single job. Once the click is gone, fix forward or ship by hand with
+target `production`, because a revert would deploy unchecked.
