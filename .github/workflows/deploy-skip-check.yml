@@ -1,0 +1,61 @@
+name: Deploy skip check
+
+# Proves the skip list in cloudflare-deploy.yml (the block between the two
+# "deploy-skip" marker comments). A push to main that changes only files on
+# the list starts no production deploy, so a path the Worker build reads must
+# never be on it. No path filter here on purpose: any pull request can add an
+# import that crosses the line. No secrets, no install, read-only.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests
+        run: node --test scripts/deploy-skip/check.test.mjs
+
+      - name: Check
+        run: node scripts/deploy-skip/check.mjs
+
+      # The check must be able to fail: put a shipped folder on a copy of the
+      # list and expect a red result.
+      - name: Self-test
+        run: |
+          sed 's|^    # deploy-skip:end|      - "!src/lib/**"\n    # deploy-skip:end|' .github/workflows/cloudflare-deploy.yml > "$RUNNER_TEMP/deploy-copy.yml"
+          grep -c '"!src/lib/\*\*"' "$RUNNER_TEMP/deploy-copy.yml"
+          if node scripts/deploy-skip/check.mjs --workflow "$RUNNER_TEMP/deploy-copy.yml"; then
+            echo "::error::the check passed with !src/lib/** on the list"; exit 1
+          fi
+          echo "self-test OK: the check exits 1 when !src/lib/** is added to a copy of the list"
+
+      - name: What merging this does
+        run: |
+          out=$(node scripts/deploy-skip/check.mjs --diff "origin/${{ github.base_ref }}" HEAD)
+          echo "$out"
+          {
+            echo "### Deploy skip check"
+            if echo "$out" | grep -qx "deploy"; then
+              echo "Merging this will start a production deploy (it waits for approval)."
+            else
+              echo "Merging this will not start a production deploy."
+            fi
+            echo
+            echo '```'
+            echo "$out"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

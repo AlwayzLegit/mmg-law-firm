@@ -199,7 +199,7 @@ Without these, the lead form will fail every submission server-side.
 > **Since 2026-10-25 production is served by Cloudflare**, not Vercel:
 > `www.mmg-lawfirm.com` and the apex are custom domains of the
 > `mmg-law-firm` Worker (`routes` in `wrangler.jsonc`). Every merge to
-> `main` (docs-only changes excepted) starts the "Cloudflare deploy"
+> `main` that changes a file the Worker build reads starts the "Cloudflare deploy"
 > workflow for production, which waits for your approval in the Actions
 > tab. If several merges pile up, cancel the older waiting runs and
 > approve the newest: it ships everything merged so far. The Worker runs the scheduled jobs (`vercel.json` crons
@@ -419,6 +419,33 @@ about 2,900 runs a month. If the repo is ever made private this cadence would
 cost about 2,900 minutes a month: slow the cron down first. To silence the
 monitor at once: GitHub, Actions, Health monitor, Disable workflow.
 
-Merging a change to the workflow or the probe starts a "Cloudflare deploy"
-run that waits for the owner's approval although the app did not change; that
-run is not a failure.
+A change to the workflow or the probe under `.github/` or `scripts/` starts no
+"Cloudflare deploy" run: those paths are on the deploy skip list (see
+"What starts a production deploy" below).
+
+## What starts a production deploy (OPS-33)
+
+A push to `main` starts the "Cloudflare deploy" workflow for production, and the
+run waits for your approval, unless every changed file is on the skip list. The
+list is the `paths:` block between the two `deploy-skip` comments in
+`.github/workflows/cloudflare-deploy.yml`. It skips prose and things that run
+outside the Worker: `docs/`, `*.md` outside `src/` and `public/`, `.github/`
+(except the deploy workflow itself), `scripts/`, `tools/`, `supabase/`, tests
+under `src/`, and `vitest.config.ts`. Everything else deploys, including
+`src/**` (even `.md` files there), `public/**`, `cloudflare/`, `package.json`,
+the lockfile and the Worker configs.
+
+- The list is proven, not trusted. The pull request check "Deploy skip check"
+  (`scripts/deploy-skip/check.mjs`) fails when a file the build reads could be
+  skipped, when shipped code imports a skipped file or names a skipped folder,
+  or when a shipped folder holds a dot-named file (GitHub's docs do not say how
+  a path filter treats those). Its summary says whether merging that pull
+  request will start a production deploy.
+- To skip a new path, add it to the block with a comment saying why it is safe,
+  and make the check pass. Do not add a path the check cannot prove.
+- A push touching more than 3,000 files may be judged wrongly by GitHub: check
+  the Actions tab after such a merge.
+- To ship by hand at any time: Actions, "Cloudflare deploy", Run workflow, target
+  production. A change that was skipped by mistake ships with that run, after
+  your approval. The approval on the `cloudflare-production` environment is
+  your setting and this list never touches it.
