@@ -1,0 +1,90 @@
+name: Monitor deploy
+
+# OPS-59. Deploys the monitor Worker `mmg-law-firm-monitor`: it checks the site
+# from outside every 15 minutes with the same checks as the GitHub probe
+# (scripts/health/checks.mjs) and serves GET /status. It costs no GitHub minutes
+# once it runs, and it keeps answering when the site does not.
+#
+# Starts on a push to main that changes the monitor or this file, and by hand.
+# NO pull request trigger on purpose: this job holds the Cloudflare deploy token,
+# and unreviewed code must never run with it. The pull request rehearsal is the
+# self-test job of health-monitor.yml, which holds no secret.
+#
+# The paths below are on the deploy skip list (scripts/, .github/), so this file
+# and the monitor never start a deploy of the site.
+#
+# The job uses the environment cloudflare-production, like the site's deploy, so
+# it waits for the same approval click while that click exists.
+#
+# Alert email is the owner's switch: only when the repository variable
+# MONITOR_ALERT_EMAIL is set does the "Alert settings" step give the monitor an
+# address and the mail key this repo already holds. Nobody but the owner sets it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/health/**
+      - .github/workflows/monitor-deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitor-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: cloudflare-production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Health tests
+        run: node --test scripts/health/probe.test.mjs scripts/health/monitor/monitor.test.mjs
+
+      - name: Deploy the monitor
+        run: pnpm exec wrangler deploy --config scripts/health/monitor/wrangler.jsonc
+
+      # Only when the owner has set MONITOR_ALERT_EMAIL. Prints the names only
+      # and deletes its file, the way the site's "Worker secrets" step does.
+      - name: Alert settings
+        if: ${{ vars.MONITOR_ALERT_EMAIL != '' }}
+        run: |
+          node -e '
+            const names = ["ALERT_EMAIL","RESEND_API_KEY","RESEND_FROM_EMAIL"];
+            const out = {};
+            for (const n of names) if (process.env["S_" + n]) out[n] = process.env["S_" + n];
+            require("fs").writeFileSync("monitor-secrets.json", JSON.stringify(out));
+            console.log("setting:", Object.keys(out).join(", ") || "(none)");
+          '
+          pnpm exec wrangler secret bulk monitor-secrets.json --config scripts/health/monitor/wrangler.jsonc
+          rm -f monitor-secrets.json
+        env:
+          S_ALERT_EMAIL: ${{ vars.MONITOR_ALERT_EMAIL }}
+          S_RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          S_RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+
+      - name: Status address
+        run: |
+          sub=$(curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).result.subdomain||"")}catch{console.log("")}})')
+          echo "status address: ${sub:+https://mmg-law-firm-monitor.$sub.workers.dev/status}"

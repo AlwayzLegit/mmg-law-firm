@@ -423,6 +423,49 @@ A change to the workflow or the probe under `.github/` or `scripts/` starts no
 "Cloudflare deploy" run: those paths are on the deploy skip list (see
 "What starts a production deploy" below).
 
+## Monitor (OPS-59)
+
+A small Worker, `mmg-law-firm-monitor`, checks the site from Cloudflare every 15
+minutes and serves its result at `GET /status`, so the check costs no GitHub
+workflow minutes once the repo is private, and it keeps answering when the site
+does not. It is not part of the site's two Workers and shares nothing with them.
+
+- **What it checks.** The same list as the GitHub probe: `scripts/health/checks.mjs`
+  (home page, the lead form twice, the verification fallback, one page script, a
+  practice page and `/api/health`). GET only. A failed round is tried again after
+  30 seconds before it counts.
+- **Status address.** `https://mmg-law-firm-monitor.<account>.workers.dev/status`
+  (the deploy run prints it). Fixed fields only: `v`, `ok`, `checkedAt`,
+  `firstRoundAt`, `quietUntil`, `failingSince`, `streak`, `lines`, `lastFailure`,
+  `alerts`, `wouldHaveRaised`, `incidents`. It answers 503 when no round is stored
+  or the last one is over 45 minutes old (the monitor itself stopped) and 404 for
+  everything else. Read it from GitHub: Actions, "Health monitor", Run workflow,
+  job `monitor-status`.
+- **Quiet start.** A new alarm records what it would have raised and raises
+  nothing. The monitor is quiet for `QUIET_HOURS` (24, in
+  `scripts/health/monitor/wrangler.jsonc`) after its first stored round: failures
+  in that time go to `wouldHaveRaised` and open no incident.
+- **Email is the owner's switch.** Without it `/status` says
+  `"alerts":"not configured"` and nothing is emailed. To turn it on: GitHub,
+  Settings, Secrets and variables, Actions, Variables, New repository variable
+  `MONITOR_ALERT_EMAIL` with the address to tell, then Actions, "Monitor deploy",
+  Run workflow. The workflow gives the monitor that address and the mail key the
+  repo already holds (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`). One email when an
+  incident starts, one an hour while it lasts, one when it ends. Take it back:
+  delete the variable and run "Monitor deploy" again with no variable, then delete
+  the three settings on the Worker in the Cloudflare dashboard.
+- **Deploy.** `.github/workflows/monitor-deploy.yml`, on a push to `main` that
+  changes `scripts/health/`, and by hand. It uses the environment
+  `cloudflare-production`, so it waits for the same approval click. It has no pull
+  request trigger: the job holds the Cloudflare token. The pull request rehearsal
+  is the `self-test` job of "Health monitor": one real round of the Worker under
+  `wrangler dev`, with no account and no secret.
+- **Silence it.** Remove the `crons` line in `scripts/health/monitor/wrangler.jsonc`
+  and run "Monitor deploy", or disable the trigger on the Worker in the Cloudflare
+  dashboard. Deleting the Worker is done in the dashboard.
+- The 15 minute GitHub check stays until the monitor's quiet record has been read
+  (OPS-68 then removes it). Neither workflow starts a deploy of the site.
+
 ## What starts a production deploy (OPS-33)
 
 A push to `main` starts the "Cloudflare deploy" workflow for production, and the
