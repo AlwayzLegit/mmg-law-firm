@@ -35,6 +35,9 @@ import { posix } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const WORKFLOW = ".github/workflows/cloudflare-deploy.yml";
+// OPS-58: the workflow that does the work of one target. cloudflare-deploy.yml
+// calls it, so its run: lines are build commands too.
+export const TARGET_WORKFLOW = ".github/workflows/cloudflare-deploy-target.yml";
 export const START = "# deploy-skip:start";
 export const END = "# deploy-skip:end";
 // GitHub docs: above this many changed files the filter may judge a push wrongly.
@@ -158,6 +161,7 @@ export const ROOT_INPUTS = [
   ["sentry.server.config.ts", "Sentry server init"],
   ["sentry.edge.config.ts", "Sentry edge init"],
   [WORKFLOW, "the deploy itself: its secrets list, --var values and build env reach the Worker only when it runs"],
+  [TARGET_WORKFLOW, "the deploy of one target: the steps, secrets list and build env that WORKFLOW calls"],
 ];
 // Probes for files that do not exist yet: a new file in a shipped root must deploy.
 export const PROBES = [
@@ -268,16 +272,52 @@ export function ruleC(patterns, files, read, buildLines) {
         out.push(`C: ${f}:${i + 1} holds a quoted path into a folder that could be skipped`);
     }
   }
-  for (const { where, text } of buildLines)
+  for (const { where, text } of buildLines) {
+    if (BUILD_ALLOW.some((a) => where.startsWith(`${a.file}:`) && text.trim() === a.text)) continue;
     for (const tok of pathTokens(text)) {
       const probe = tok.endsWith("/") ? `${tok}x` : tok;
       if (decide(patterns, probe, "min") === "skip") out.push(`C: ${where} names ${tok}, which could be skipped`);
     }
+  }
   return out;
 }
 
-/** The strings the Worker build runs: cf:build, the OpenNext build command, and the workflow's run: lines. */
-export function buildLines(pkgText, openNextText, workflowText) {
+// Run lines in a workflow that name a path on the skip list and are known not
+// to feed the build. Each entry names the file, the exact line and the reason.
+export const BUILD_ALLOW = [
+  {
+    file: TARGET_WORKFLOW,
+    text: 'node scripts/health/probe.mjs --base "$base" --with-health --attempts 3 --wait 20',
+    why: "the check job runs after the deploy, against the live address; the build never reads the probe, and a change to it needs no deploy",
+  },
+];
+
+/** The run: lines of one workflow file, as { where, text }. */
+export function runLines(workflowText, path) {
+  const lines = [];
+  const wf = workflowText.split("\n");
+  for (const [i, line] of wf.entries()) {
+    const m = /^(\s*)(?:- )?run:\s*(.*)$/.exec(line);
+    if (!m) continue;
+    if (m[2] && m[2] !== "|" && m[2] !== ">") {
+      lines.push({ where: `${path}:${i + 1}`, text: m[2] });
+      continue;
+    }
+    const indent = m[1].length;
+    for (let j = i + 1; j < wf.length; j++) {
+      const lead = wf[j].length - wf[j].trimStart().length;
+      if (wf[j].trim() && lead <= indent) break;
+      lines.push({ where: `${path}:${j + 1}`, text: wf[j] });
+    }
+  }
+  return lines;
+}
+
+/**
+ * The strings the Worker build runs: cf:build, the OpenNext build command, and
+ * the run: lines of the deploy workflow and of the one-target workflow it calls.
+ */
+export function buildLines(pkgText, openNextText, workflowText, targetText = "") {
   const lines = [];
   try {
     const s = JSON.parse(pkgText).scripts ?? {};
@@ -287,21 +327,7 @@ export function buildLines(pkgText, openNextText, workflowText) {
   }
   const bc = /buildCommand:\s*(["'`])([^"'`\n]*)\1/.exec(openNextText);
   if (bc) lines.push({ where: "open-next.config.ts buildCommand", text: bc[2] });
-  const wf = workflowText.split("\n");
-  for (const [i, line] of wf.entries()) {
-    const m = /^(\s*)(?:- )?run:\s*(.*)$/.exec(line);
-    if (!m) continue;
-    if (m[2] && m[2] !== "|" && m[2] !== ">") {
-      lines.push({ where: `${WORKFLOW}:${i + 1}`, text: m[2] });
-      continue;
-    }
-    const indent = m[1].length;
-    for (let j = i + 1; j < wf.length; j++) {
-      const lead = wf[j].length - wf[j].trimStart().length;
-      if (wf[j].trim() && lead <= indent) break;
-      lines.push({ where: `${WORKFLOW}:${j + 1}`, text: wf[j] });
-    }
-  }
+  lines.push(...runLines(workflowText, WORKFLOW), ...runLines(targetText, TARGET_WORKFLOW));
   return lines;
 }
 
@@ -318,6 +344,14 @@ export function judge(patterns, files) {
     overLimit: files.length > DIFF_LIMIT,
   };
 }
+
+const readTarget = () => {
+  try {
+    return readFileSync(TARGET_WORKFLOW, "utf8");
+  } catch {
+    return "";
+  }
+};
 
 const sh = (args) => execFileSync("git", args, { encoding: "utf8", maxBuffer: 1 << 28 });
 const tracked = () => sh(["ls-files"]).split("\n").filter(Boolean);
@@ -359,7 +393,7 @@ function main(argv) {
   }
   const files = tracked();
   const read = (f) => readFileSync(f, "utf8");
-  const bl = buildLines(read("package.json"), read("open-next.config.ts"), wfText);
+  const bl = buildLines(read("package.json"), read("open-next.config.ts"), wfText, readTarget());
   const failures = [...ruleA(patterns, files), ...ruleB(patterns, files, read), ...ruleC(patterns, files, read, bl), ...ruleD(files)];
   const deploys = files.filter((f) => decide(patterns, f, "min") === "deploy").length;
   console.log(`${patterns.length} patterns; ${files.length} tracked files: ${deploys} deploy, ${files.length - deploys} skip (reading that skips the most)`);

@@ -1,0 +1,330 @@
+name: Cloudflare deploy (one target)
+
+# Called by cloudflare-deploy.yml, never started by hand (OPS-58). One
+# target, two jobs: `deploy` builds and ships the Worker, `check` then reads
+# the live site from outside. The caller makes production wait for staging's
+# `check`, so a failed staging check stops the line before production.
+#
+# What the target does is the old single job of cloudflare-deploy.yml, step
+# for step. Secrets resolve from the matching GitHub environment
+# (`cloudflare-staging` / `cloudflare-production`), then the repository, and
+# reach this file through `secrets: inherit` in the caller.
+#
+# There is no fallback target: every value below reads `inputs.target`.
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: staging or production
+        type: string
+        required: true
+      cron_enabled:
+        description: "production only: run scheduled jobs. Refused for staging."
+        type: boolean
+        default: false
+      fail_check:
+        description: "rehearsal only: point the check at a path that does not exist, so it must fail"
+        type: boolean
+        default: false
+      rehearsal:
+        description: "rehearsal only: refused for production"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: cloudflare-${{ inputs.target }}
+    concurrency:
+      group: cloudflare-target-${{ inputs.target }}
+      cancel-in-progress: false
+    env:
+      IS_PROD: ${{ inputs.target == 'production' }}
+      SITE_URL: ${{ inputs.target == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
+      WORKER: ${{ inputs.target == 'production' && 'mmg-law-firm' || 'mmg-law-firm-staging' }}
+      FRONT: ${{ inputs.target == 'production' && 'mmg-law-firm-front' || 'mmg-law-firm-front-staging' }}
+      BUCKET: ${{ inputs.target == 'production' && 'mmg-law-firm-cache' || 'mmg-law-firm-cache-staging' }}
+      # Careful: in Actions expressions '' is falsy, so `cond && '' || x`
+      # always yields x. Put the non-empty value on the && side.
+      ENV_FLAG: ${{ inputs.target == 'staging' && '--env staging' || '' }}
+      # 1 only for production with cron_enabled true. Staging is always 0.
+      CRON_ENABLED: ${{ inputs.target == 'production' && inputs.cron_enabled && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Guard
+        run: |
+          # The target, Worker name, wrangler env flag and site URL must agree.
+          # Staging shares the production database, so it never runs the
+          # scheduled jobs: CRON_ENABLED is forced to 0 there and it has no
+          # triggers. A rehearsal (the gate test) never reaches production.
+          case "${{ inputs.target }}" in
+            production) want_flag=""; want_worker="mmg-law-firm"; want_front="mmg-law-firm-front"; want_bucket="mmg-law-firm-cache"; want_url="https://www.mmg-lawfirm.com" ;;
+            staging) want_flag="--env staging"; want_worker="mmg-law-firm-staging"; want_front="mmg-law-firm-front-staging"; want_bucket="mmg-law-firm-cache-staging"; want_url="https://staging.mmg-lawfirm.com" ;;
+            *) echo "::error::unknown target"; exit 1 ;;
+          esac
+          if [ "$ENV_FLAG" != "$want_flag" ] || [ "$WORKER" != "$want_worker" ] || [ "$FRONT" != "$want_front" ] || [ "$BUCKET" != "$want_bucket" ] || [ "$SITE_URL" != "$want_url" ]; then
+            echo "::error::target mismatch: ENV_FLAG='$ENV_FLAG' WORKER='$WORKER' FRONT='$FRONT' BUCKET='$BUCKET' SITE_URL='$SITE_URL'"; exit 1
+          fi
+          if [ "${{ inputs.target }}" = staging ] && [ "${{ inputs.cron_enabled }}" = true ]; then
+            echo "::error::staging must not run scheduled jobs (cron_enabled is true)"; exit 1
+          fi
+          if [ "${{ inputs.target }}" = production ] && [ "${{ inputs.rehearsal }}" = true ]; then
+            echo "::error::a rehearsal never reaches production"; exit 1
+          fi
+          echo "deploying ${{ inputs.target }} -> $FRONT -> $WORKER ($SITE_URL) flag='$ENV_FLAG' CRON_ENABLED:$CRON_ENABLED"
+
+      # Cloudflare refuses to attach a Worker custom domain while an ordinary
+      # DNS record exists for the host ("externally managed DNS records",
+      # code 100117), and wrangler's override does not cover it. So for each
+      # production host still pointing at Vercel: delete that record and
+      # attach the host to the already-deployed Worker straight after, a
+      # gap of about a second. A no-op once the hosts are on the Worker.
+      # Rollback (migration plan §E) recreates the Vercel records.
+      - name: Move hosts off Vercel
+        if: inputs.target == 'production'
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZONE_ID: b3dea43809a3d1e1eeefb70df4e433af
+        run: |
+          api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
+          zone="https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"
+          for host in www.mmg-lawfirm.com mmg-lawfirm.com; do
+            recs=$(api "$zone?name=$host&per_page=50"               | jq -c '[.result[] | select((.type=="CNAME" and (.content|test("vercel-dns"))) or (.type=="A" and (.content|startswith("216.150."))))]')
+            if [ "$recs" = "[]" ]; then echo "$host: no Vercel records"; continue; fi
+            for id in $(echo "$recs" | jq -r '.[].id'); do api -X DELETE "$zone/$id" >/dev/null; done
+            res=$(api -X PUT "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/domains"               -d "{\"hostname\":\"$host\",\"service\":\"$FRONT\",\"zone_id\":\"$ZONE_ID\",\"environment\":\"production\"}")
+            if ! echo "$res" | jq -e '.success' >/dev/null; then
+              echo "$res" | jq -c '.errors'
+              # Put the Vercel records back so the site keeps answering.
+              echo "$recs" | jq -c '.[] | {type, name, content, ttl, proxied}' | while read -r rec; do
+                api -X POST "$zone" -d "$rec" | jq -c '{success, errors}'
+              done
+              echo "::error::attaching $host failed; its Vercel records were restored"; exit 1
+            fi
+            echo "$host: Vercel records removed, attached to $FRONT"
+          done
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Worker
+        run: pnpm cf:build
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ env.SITE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          # Files staging errors under "staging" in Sentry, not "production".
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ inputs.target }}
+          NEXT_PUBLIC_LOCALE_PAGES_LIVE: ${{ vars.NEXT_PUBLIC_LOCALE_PAGES_LIVE }}
+          # Analytics and search verification belong to production only, so
+          # staging traffic never lands in the firm's GA / PostHog properties.
+          NEXT_PUBLIC_GA_ID: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_GA_ID || '' }}
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_POSTHOG_KEY || '' }}
+          NEXT_PUBLIC_POSTHOG_HOST: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_POSTHOG_HOST || '' }}
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ inputs.target == 'production' && secrets.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '' }}
+
+      # Next's build id tags every page the app renders (x-build-id). The
+      # front Worker stores only pages of the build it was deployed with, so
+      # it never serves HTML whose /_next/static chunks are gone.
+      - name: Build id
+        run: |
+          id=$(cat .next/BUILD_ID)
+          [ -n "$id" ] || { echo "::error::no .next/BUILD_ID"; exit 1; }
+          echo "BUILD_ID=$id" >> "$GITHUB_ENV"
+          echo "build id: $id"
+
+      # Front first: until the app below is live it still renders the
+      # previous build, whose pages the front Worker passes through without
+      # storing. `--config` also keeps wrangler from handing this to OpenNext.
+      # Retried once: on the deploy that first creates the Worker, the API
+      # answered "This Worker does not exist" (10007) right after the upload.
+      - name: Deploy front Worker
+        run: |
+          for attempt in 1 2; do
+            pnpm exec wrangler deploy --config wrangler.front.jsonc $ENV_FLAG --var "BUILD_ID:$BUILD_ID" && exit 0
+            [ "$attempt" = 2 ] || { echo "retrying in 20s"; sleep 20; }
+          done
+          exit 1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy
+        run: |
+          pnpm exec wrangler deploy $ENV_FLAG \
+            --var "NEXT_PUBLIC_SITE_URL:$SITE_URL" \
+            --var "BUILD_ID:$BUILD_ID" \
+            --var "CRON_ENABLED:$CRON_ENABLED"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Worker secrets
+        # Only secrets that exist are pushed; the rest stay as they are on
+        # the Worker.
+        run: |
+          node -e '
+            const names = ["NEXT_PUBLIC_SUPABASE_URL","NEXT_PUBLIC_SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","RESEND_API_KEY","RESEND_FROM_EMAIL","LEAD_NOTIFY_EMAIL","NEXT_PUBLIC_TURNSTILE_SITE_KEY","TURNSTILE_SECRET_KEY","CRON_SECRET","REVALIDATE_SECRET","ADMIN_API_KEY","NEXT_PUBLIC_SENTRY_DSN","SENTRY_AUTH_TOKEN","POSTHOG_PERSONAL_API_KEY","POSTHOG_PROJECT_ID","TWILIO_ACCOUNT_SID","TWILIO_AUTH_TOKEN","TWILIO_FROM_NUMBER","RESEND_WEBHOOK_SECRET","CONTENT_NOTIFY_EMAIL"];
+            const out = {};
+            for (const n of names) if (process.env["S_" + n]) out[n] = process.env["S_" + n];
+            require("fs").writeFileSync("secrets.json", JSON.stringify(out));
+            console.log("setting:", Object.keys(out).join(", ") || "(none)");
+          '
+          pnpm exec wrangler secret bulk secrets.json $ENV_FLAG
+          rm -f secrets.json
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          S_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          S_NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          S_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          S_RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          S_RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          S_LEAD_NOTIFY_EMAIL: ${{ secrets.LEAD_NOTIFY_EMAIL }}
+          S_NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          S_TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          S_CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          S_REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+          S_ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          S_NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          S_SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          S_POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+          S_POSTHOG_PROJECT_ID: ${{ secrets.POSTHOG_PROJECT_ID }}
+          S_TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          S_TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          S_TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+          S_RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+          S_CONTENT_NOTIFY_EMAIL: ${{ secrets.CONTENT_NOTIFY_EMAIL }}
+
+      - name: Smoke the deployed Worker
+        run: |
+          # The account's workers.dev subdomain, from the API (wrangler has no
+          # command for it and `deployments list --json` carries no URL).
+          sub=$(curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).result.subdomain||"")}catch{console.log("")}})')
+          url=${sub:+https://$WORKER.$sub.workers.dev}
+          echo "workers.dev URL: ${url:-unknown}"
+          [ -n "$url" ] || exit 0
+          fail=0
+          check() {
+            got=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$url$1")
+            echo "$1 -> $got (want $2)"
+            [ "$got" = "$2" ] || fail=1
+          }
+          check / 200
+          check /contact 200
+          check /practice-areas/car-accidents 200
+          check /hy 200
+          check /sitemap.xml 200
+          check /admin 307
+          check /api/cron/sla-alerts 401
+          robots=$(curl -s -D - -o /dev/null --max-time 60 "$url/" | tr -d '\r' | grep -i '^x-robots-tag:' || true)
+          echo "workers.dev ${robots:-x-robots-tag: (none)}"
+          echo "$robots" | grep -qi noindex || { echo "::error::workers.dev host must be noindex"; fail=1; }
+          # Prove this run reached the intended Worker: its pages must carry
+          # this target's canonical origin (a passing smoke on the wrong
+          # Worker is how the first production run went unnoticed).
+          canon=$(curl -s --max-time 60 "$url/contact" | grep -o '<link rel="canonical" href="[^"]*' | head -1 | sed 's/.*href="//')
+          echo "canonical: ${canon:-(none)}"
+          [ "$canon" = "$SITE_URL/contact" ] || { echo "::error::canonical '$canon' is not $SITE_URL/contact — wrong Worker or wrong build"; fail=1; }
+          exit $fail
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Load every sitemap URL once through the front Worker so the new
+      # build's pages are in R2, which every data center reads, before
+      # crawlers arrive. A crawl that meets an empty store waits 1–3 s per
+      # page for the app Worker to start (Semrush's slow-page audits).
+      - name: Pre-load pages
+        run: |
+          urls=$(curl -s --max-time 60 "$SITE_URL/sitemap.xml" | grep -o '<loc>[^<]*' | sed 's/<loc>//' \
+            | xargs -n1 curl -s --max-time 60 | grep -o '<loc>[^<]*' | sed 's/<loc>//' | sort -u)
+          total=$(echo "$urls" | grep -c . || true)
+          echo "pre-loading $total pages"
+          [ "$total" -gt 0 ] || { echo "::warning::the sitemap listed no pages"; exit 0; }
+          # The build is already live here, so one dropped connection among
+          # ~900 requests must not fail the run (xargs exits 123 when any
+          # curl errors). Failed pages get a second try; a few leftovers only
+          # warn, since the next visitor stores them. Many leftovers mean
+          # the site itself is in trouble, and that does fail the run.
+          load() { xargs -P 8 -I{} curl -s -o /dev/null --max-time 60 -A "mmg-preload" -w "%{http_code} %{url_effective}\n" {} || true; }
+          failed() { awk '$1 !~ /^[23]/ { print $2 }' "$1"; }
+          start=$(date +%s)
+          echo "$urls" | load > codes.txt
+          echo "done in $(( $(date +%s) - start ))s; status codes:"; cut -d' ' -f1 codes.txt | sort | uniq -c
+          retry=$(failed codes.txt)
+          if [ -n "$retry" ]; then
+            echo "retrying $(echo "$retry" | grep -c .) pages"
+            sleep 10
+            echo "$retry" | load > retry.txt
+            left=$(failed retry.txt)
+            if [ -n "$left" ]; then
+              n=$(echo "$left" | grep -c .)
+              echo "still failing after a retry:"; grep -v '^[23]' retry.txt
+              if [ "$n" -gt 10 ]; then echo "::error::$n of $total pages failed to pre-load"; exit 1; fi
+              echo "::warning::$n of $total pages failed to pre-load; they are stored on their next visit"
+            fi
+          fi
+          # A second load must come from the store.
+          for u in $(echo "$urls" | head -3); do
+            echo "$u $(curl -s -o /dev/null -D - --max-time 60 "$u" | tr -d '\r' | grep -i '^x-edge-cache:')"
+          done
+
+      # Pages of earlier builds are never read again; R2 drops them after 8
+      # days (page-store.ts already treats anything over 7 days as missing).
+      - name: Expire old stored pages
+        run: |
+          if pnpm exec wrangler r2 bucket lifecycle list "$BUCKET" 2>/dev/null | grep -q expire-edge-pages; then
+            echo "lifecycle rule present"
+          else
+            pnpm exec wrangler r2 bucket lifecycle add "$BUCKET" expire-edge-pages edge-pages/ --expire-days 8 -y \
+              || echo "::warning::could not add the R2 lifecycle rule; add it in the dashboard (prefix edge-pages/, 8 days)"
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # Reads the live site from outside after the deploy (black box, GET only,
+  # no secret, no environment). The caller's production job needs this job of
+  # staging, so a red check here keeps production from starting.
+  check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ inputs.target == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
+      FAIL_CHECK: ${{ inputs.fail_check }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Probe ${{ inputs.target }}
+        run: |
+          base="$SITE_URL"
+          # The gate rehearsal points the probe at a path that does not exist,
+          # the way the health self-test forces a failure.
+          if [ "$FAIL_CHECK" = true ]; then base="$SITE_URL/this-path-does-not-exist"; fi
+          echo "probing $base"
+          node scripts/health/probe.mjs --base "$base" --with-health --attempts 3 --wait 20

@@ -27,7 +27,7 @@ jobs:
           node-version: 22
 
       - name: Tests
-        run: node --test scripts/deploy-skip/check.test.mjs
+        run: node --test scripts/deploy-skip/check.test.mjs scripts/deploy-skip/pipeline.test.mjs
 
       - name: Check
         run: node scripts/deploy-skip/check.mjs
