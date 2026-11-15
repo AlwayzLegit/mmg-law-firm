@@ -1,0 +1,55 @@
+name: Types and tests
+
+# Every pull request to main runs the route types, the TypeScript check and the
+# unit tests. Before this file, only `next build` inside the Lighthouse job
+# checked types (5 to 9 minutes in, under another name) and nothing ran the
+# 91 test files. See OPS-45.
+#
+# "Route types" comes first on purpose: on a fresh checkout `pnpm typecheck`
+# fails with "Cannot find name 'PageProps'" until `next typegen` has written the
+# files Next generates (next-env.d.ts and .next/types, both git-ignored).
+#
+# No secret and no env in this file: a pull request run holds no key.
+# Cost if the repo is private: about 2 billed minutes per push to a pull
+# request. To silence it: GitHub, Actions, Types and tests, Disable workflow.
+# Making it a required check is a branch rule, which is the owner's.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Route types
+        run: pnpm exec next typegen
+
+      - name: Types
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
