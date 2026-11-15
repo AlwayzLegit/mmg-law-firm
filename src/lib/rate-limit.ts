@@ -6,6 +6,19 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 const WINDOW_SECONDS = 60 * 60; // 1 hour
 
+/**
+ * The part of a rate limit key that is safe to log: the text before the first
+ * colon ("leads", "pw-reset", "api"). The part after it can be a visitor's IP
+ * address or an email address and never reaches a log line. A key with no
+ * colon, or an odd scope, is "other".
+ */
+export function rateLimitScope(key: string): string {
+  const i = key.indexOf(":");
+  if (i <= 0) return "other";
+  const scope = key.slice(0, i);
+  return /^[a-z0-9-]{1,32}$/.test(scope) ? scope : "other";
+}
+
 export type RateLimitResult =
   | { allowed: true }
   | { allowed: false; retryAfterSeconds: number };
@@ -38,7 +51,7 @@ export async function checkRateLimit(
 
     if (error || !data) {
       console.warn(
-        `[rate-limit] RPC failed for key=${key}: ${error?.message ?? "no data"}`,
+        `[rate-limit] RPC failed for scope=${rateLimitScope(key)}: ${error?.message ?? "no data"}`,
       );
       return checkInMemory(key, limit);
     }
@@ -54,7 +67,14 @@ export async function checkRateLimit(
     );
     return { allowed: false, retryAfterSeconds };
   } catch (err) {
-    console.warn("[rate-limit] exception:", err);
+    // The error's name and a cut message only: the object can carry a row's key value.
+    const what =
+      err instanceof Error
+        ? `${err.name}: ${err.message.slice(0, 200)}`
+        : "unknown error";
+    console.warn(
+      `[rate-limit] exception for scope=${rateLimitScope(key)}: ${what}`,
+    );
     return checkInMemory(key, limit);
   }
 }
