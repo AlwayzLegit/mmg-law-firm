@@ -6,9 +6,11 @@
 // Checks, in order:
 //   a. GET /                                home page answers 200 and has "MMG"
 //   b. GET /contact                         the lead form is in the page
-//                                           (stored page copy)
+//                                           (stored page copy), and the
+//                                           verification fallback is not
+//                                           shown in place of the widget
 //   c. GET /contact?_rsc=health             the same form, rendered fresh by
-//                                           the app Worker
+//                                           the app Worker, same two checks
 //   d. one script file the contact page names (/_next/static/...js) loads
 //   e. GET /practice-areas/car-accidents    answers 200 and has "Car Accident"
 //   f. GET /api/health  (only with --with-health, OPS-27) 200 and status
@@ -29,6 +31,16 @@
 // the app Worker and is rendered fresh, with no write. If that rule changes,
 // this check is where it shows.
 //
+// Why the fallback check exists (OPS-44): a build without
+// NEXT_PUBLIC_TURNSTILE_SITE_KEY ships a notice in place of the Turnstile
+// widget. The form still loads and the page answers 200, but the server
+// refuses every enquiry. The four form markers pass either way, so only the
+// notice's own sentence shows it. The check starts quiet: until
+// FALLBACK_QUIET_UNTIL a page that holds the sentence prints a warning and the
+// run stays green; from then on it fails the run. It cannot see a widget that
+// Cloudflare rejects in the browser (the same notice, shown after the script
+// runs).
+//
 // Why check d exists: a page from an older build can point at script files
 // the next deploy removed, and then the lead form never hydrates.
 //
@@ -48,6 +60,15 @@ export const FORM_MARKERS = [
   'name="consent_contact"',
   "Request My Free Case Evaluation",
 ];
+
+// One line of the notice in src/components/marketing/turnstile.tsx. It has no
+// apostrophe, so HTML escaping cannot change it. A test keeps both in step.
+export const FALLBACK_MARKER = "verification step is temporarily unavailable";
+
+// Tuesday 2026-11-17 00:00 PST. A new alarm records what it would have raised
+// for its first 24 hours and raises nothing; the date must stay at least 24
+// hours after the merge.
+export const FALLBACK_QUIET_UNTIL = "2026-11-17T08:00:00Z";
 
 export class CheckFailed extends Error {
   constructor(path, reason) {
@@ -81,9 +102,22 @@ function expectPage(path, res, needles) {
   }
 }
 
+// The verification fallback must not be shown in place of the widget.
+function expectNoFallback(path, res, now, log) {
+  if (!res.text.includes(FALLBACK_MARKER)) return;
+  if (now < Date.parse(FALLBACK_QUIET_UNTIL)) {
+    log(`::warning::health monitor (quiet): ${path} shows the verification fallback`);
+    return;
+  }
+  throw new CheckFailed(
+    path,
+    "the verification fallback is shown in place of the widget (NEXT_PUBLIC_TURNSTILE_SITE_KEY missing from the build?)",
+  );
+}
+
 // Runs the checks once. Returns the lines it printed (for tests); throws
 // CheckFailed on the first failure.
-export async function runChecks(get, { log = () => {}, withHealth = false } = {}) {
+export async function runChecks(get, { log = () => {}, withHealth = false, now = Date.now() } = {}) {
   const lines = [];
   const say = (line) => { lines.push(line); log(line); };
 
@@ -93,10 +127,14 @@ export async function runChecks(get, { log = () => {}, withHealth = false } = {}
   const contact = await get("/contact");
   expectPage("/contact", contact, FORM_MARKERS);
   say("contact: form present (stored page)");
+  expectNoFallback("/contact", contact, now, log);
+  say("contact: no fallback (stored page)");
 
   const fresh = await get("/contact?_rsc=health");
   expectPage("/contact?_rsc=health", fresh, FORM_MARKERS);
   say("contact: form present (app Worker)");
+  expectNoFallback("/contact?_rsc=health", fresh, now, log);
+  say("contact: no fallback (app Worker)");
 
   const script = /\/_next\/static\/[^"'\s<>]*\.js/.exec(contact.text);
   if (!script) throw new CheckFailed("/contact", "names no script file under /_next/static/");
