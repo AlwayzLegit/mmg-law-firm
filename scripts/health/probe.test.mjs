@@ -1,8 +1,11 @@
 // Run with: node --test scripts/health/probe.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   CheckFailed,
+  FALLBACK_MARKER,
+  FALLBACK_QUIET_UNTIL,
   FORM_MARKERS,
   PRODUCTION_URL,
   USER_AGENT,
@@ -185,3 +188,68 @@ test("parseArgs takes --with-health as a flag with no value", () => {
   assert.equal(parseArgs([]).withHealth, undefined);
 });
 
+
+// OPS-44: the contact page must not show the verification fallback in place of
+// the Turnstile widget. Quiet (a warning) until FALLBACK_QUIET_UNTIL, then a failure.
+const BEFORE = Date.parse(FALLBACK_QUIET_UNTIL) - 60_000;
+const AFTER = Date.parse(FALLBACK_QUIET_UNTIL) + 60_000;
+const NOTICE = `Our ${FALLBACK_MARKER}, so this form can't be submitted right now.`;
+
+async function withFallback(routes, now) {
+  const { get } = stub({ ...goodRoutes(), ...routes });
+  const logged = [];
+  try {
+    const lines = await runChecks(get, { now, log: (l) => logged.push(l) });
+    return { lines, logged };
+  } catch (e) {
+    assert.ok(e instanceof CheckFailed, "a CheckFailed, not a crash");
+    return { error: e.message, logged };
+  }
+}
+
+test("a clean page prints both no-fallback lines, after the form lines", async () => {
+  const { get } = stub(goodRoutes());
+  const lines = await runChecks(get);
+  const at = (l) => lines.indexOf(l);
+  assert.ok(at("contact: no fallback (stored page)") > at("contact: form present (stored page)"));
+  assert.ok(at("contact: no fallback (app Worker)") > at("contact: form present (app Worker)"));
+  assert.equal(lines.at(-1), "health: OK");
+});
+
+test("after the quiet date the fallback in the stored page fails and names /contact", async () => {
+  const r = await withFallback({ "/contact": { text: `<html>${FORM}${NOTICE}<script src="${SCRIPT}"></script></html>` } }, AFTER);
+  assert.match(r.error, /^\/contact: the verification fallback is shown/);
+  assert.match(r.error, /NEXT_PUBLIC_TURNSTILE_SITE_KEY/);
+});
+
+test("after the quiet date the fallback in the fresh page fails and names the fresh path", async () => {
+  const r = await withFallback({ "/contact?_rsc=health": { text: `<html>${FORM}${NOTICE}</html>` } }, AFTER);
+  assert.match(r.error, /^\/contact\?_rsc=health: the verification fallback is shown/);
+});
+
+test("before the quiet date the fallback is a quiet warning and the run stays green", async () => {
+  const r = await withFallback({ "/contact": { text: `<html>${FORM}${NOTICE}<script src="${SCRIPT}"></script></html>` } }, BEFORE);
+  assert.equal(r.error, undefined);
+  assert.ok(r.logged.includes("::warning::health monitor (quiet): /contact shows the verification fallback"));
+  assert.equal(r.lines.at(-1), "health: OK");
+});
+
+test("the fallback check sends only GET and never touches the lead endpoint", async () => {
+  const { get, sent } = stub(goodRoutes());
+  await runChecks(get, { now: AFTER });
+  assert.ok(sent.every((s) => s.method === "GET"));
+  assert.ok(sent.every((s) => !s.url.includes("/api/leads")));
+});
+
+test("the fallback marker has no apostrophe or markup that HTML escaping could change", () => {
+  assert.match(FALLBACK_MARKER, /^[A-Za-z ]+$/);
+});
+
+test("the quiet date is a valid time", () => {
+  assert.ok(Number.isFinite(Date.parse(FALLBACK_QUIET_UNTIL)));
+});
+
+test("the notice in turnstile.tsx still holds the marker the probe looks for", () => {
+  const src = readFileSync(new URL("../../src/components/marketing/turnstile.tsx", import.meta.url), "utf8");
+  assert.ok(src.includes(FALLBACK_MARKER));
+});
