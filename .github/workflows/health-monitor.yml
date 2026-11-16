@@ -13,7 +13,10 @@ name: Health monitor
 # month: slow the cron line down first.
 #
 # A red scheduled run is an Incident (the Merge captain's CI watch reads it),
-# P1 when a contact check fails. To silence it at once: GitHub, Actions,
+# P1 when a contact check fails. A red run that says "server errors in the last
+# 3 hours" (OPS-21: /api/health counts the site's own 5xx answers, limit 10 in
+# 3 hours, see docs/error-count.md) is an Incident too, P2 unless a contact
+# check also fails. To silence it at once: GitHub, Actions,
 # Health monitor, Disable workflow.
 #
 # The self-test job runs on pull requests that touch this file or the probe:

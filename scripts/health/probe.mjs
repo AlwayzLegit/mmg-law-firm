@@ -1,7 +1,7 @@
 // Health probe for MMG Law (OPS-18). Black-box and read-only: it only sends
 // GET, it never submits the lead form and never requests /api/leads. No key.
 //
-//   node scripts/health/probe.mjs [--base URL] [--attempts 2] [--wait 30] [--with-health]
+//   node scripts/health/probe.mjs [--base URL] [--attempts 2] [--wait 30] [--with-health] [--max-errors-3h 10]
 //
 // Checks, in order:
 //   a. GET /                                home page answers 200 and has "MMG"
@@ -14,7 +14,12 @@
 //   d. one script file the contact page names (/_next/static/...js) loads
 //   e. GET /practice-areas/car-accidents    answers 200 and has "Car Accident"
 //   f. GET /api/health  (only with --with-health, OPS-27) 200 and status
-//                                           healthy, prints "database: ok".
+//                                           healthy, prints "database: ok" and,
+//                                           last, the server error counts
+//                                           (OPS-21): the run fails at
+//                                           --max-errors-3h (default 10) errors
+//                                           in 3 hours, after a quiet start; no
+//                                           numbers yet is a warning.
 //                                           A 404 prints "database: not deployed
 //                                           yet" and does not fail: the workflow
 //                                           reaches main at the merge, the
@@ -50,12 +55,15 @@ import { pathToFileURL } from "node:url";
 
 import {
   CheckFailed,
+  ERRORS_QUIET_UNTIL,
   FALLBACK_MARKER,
   FALLBACK_QUIET_UNTIL,
   FORM_MARKERS,
+  MAX_ERRORS_3H,
   PRODUCTION_URL,
   REQUEST_TIMEOUT_MS,
   USER_AGENT,
+  checkErrors,
   makeGet,
   runChecks,
 } from "./checks.mjs";
@@ -64,12 +72,15 @@ import {
 // list. Everything is exported again here, so callers and tests are unchanged.
 export {
   CheckFailed,
+  ERRORS_QUIET_UNTIL,
   FALLBACK_MARKER,
   FALLBACK_QUIET_UNTIL,
   FORM_MARKERS,
+  MAX_ERRORS_3H,
   PRODUCTION_URL,
   REQUEST_TIMEOUT_MS,
   USER_AGENT,
+  checkErrors,
   makeGet,
   runChecks,
 };
@@ -83,6 +94,7 @@ export function parseArgs(argv) {
       out.withHealth = true;
       i -= 1; // a flag with no value
     } else if (k === "--base" && v) out.base = v;
+    else if (k === "--max-errors-3h" && v) out.maxErrors3h = Math.max(1, Math.floor(Number(v)) || MAX_ERRORS_3H);
     else if (k === "--attempts" && v) out.attempts = Math.max(1, Number(v) || 1);
     else if (k === "--wait" && v) out.wait = Math.max(0, Number(v) || 0);
     else throw new Error(`unknown argument ${k}`);
@@ -96,7 +108,7 @@ export async function probe(opts, get, sleep = (ms) => new Promise((r) => setTim
   let last = null;
   for (let attempt = 1; attempt <= opts.attempts; attempt++) {
     try {
-      await runChecks(get, { log: (l) => console.log(l), withHealth: opts.withHealth });
+      await runChecks(get, { log: (l) => console.log(l), withHealth: opts.withHealth, maxErrors3h: opts.maxErrors3h });
       return 0;
     } catch (e) {
       if (!(e instanceof CheckFailed)) throw e;

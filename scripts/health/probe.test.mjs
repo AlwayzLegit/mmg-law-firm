@@ -4,11 +4,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   CheckFailed,
+  ERRORS_QUIET_UNTIL,
   FALLBACK_MARKER,
   FALLBACK_QUIET_UNTIL,
   FORM_MARKERS,
+  MAX_ERRORS_3H,
   PRODUCTION_URL,
   USER_AGENT,
+  checkErrors,
   makeGet,
   parseArgs,
   probe,
@@ -252,4 +255,107 @@ test("the quiet date is a valid time", () => {
 test("the notice in turnstile.tsx still holds the marker the probe looks for", () => {
   const src = readFileSync(new URL("../../src/components/marketing/turnstile.tsx", import.meta.url), "utf8");
   assert.ok(src.includes(FALLBACK_MARKER));
+});
+
+
+// OPS-21: the server error counts in /api/health. The run fails at the limit
+// (10 in 3 hours by default), after a quiet start. No numbers is a warning.
+const healthBody = (errors24h, errors3h) =>
+  JSON.stringify({ ok: true, status: "healthy", env: "production", failing: [], timestamp: "2026-11-18T19:00:00.000Z", errors24h, errors3h });
+const E_BEFORE = Date.parse(ERRORS_QUIET_UNTIL) - 60_000;
+const E_AFTER = Date.parse(ERRORS_QUIET_UNTIL) + 60_000;
+
+async function withErrors(body, { now = E_AFTER, maxErrors3h } = {}) {
+  const { get } = stub({ ...goodRoutes(), "/api/health": { text: body } });
+  const logged = [];
+  try {
+    const lines = await runChecks(get, { withHealth: true, now, maxErrors3h, log: (l) => logged.push(l) });
+    return { lines, logged };
+  } catch (e) {
+    assert.ok(e instanceof CheckFailed, "a CheckFailed, not a crash");
+    return { error: e.message, logged };
+  }
+}
+
+test("9 errors in 3 hours passes and prints both numbers, after the database line", async () => {
+  const r = await withErrors(healthBody(31, 9));
+  assert.equal(r.error, undefined);
+  assert.ok(r.lines.includes("errors: 9 in 3h, 31 in 24h"));
+  assert.ok(r.lines.indexOf("errors: 9 in 3h, 31 in 24h") > r.lines.indexOf("database: ok"));
+  assert.equal(r.lines.at(-1), "health: OK");
+});
+
+test("10 errors in 3 hours fails with the fixed message, after the quiet time", async () => {
+  const r = await withErrors(healthBody(40, 10));
+  assert.match(r.error, /^\/api\/health errors: 10 server errors in the last 3 hours/);
+  assert.equal(MAX_ERRORS_3H, 10);
+});
+
+test("0 errors passes", async () => {
+  const r = await withErrors(healthBody(0, 0));
+  assert.ok(r.lines.includes("errors: 0 in 3h, 0 in 24h"));
+});
+
+test("no numbers yet (null or missing) is a warning that does not fail the run", async () => {
+  for (const body of [healthBody(null, null), HEALTHY]) {
+    const r = await withErrors(body);
+    assert.equal(r.error, undefined);
+    assert.ok(r.lines.includes("errors: not counted yet (migration 0040)"));
+    assert.ok(r.logged.some((l) => l.startsWith("::warning::") && l.includes("migration 0040")));
+    assert.equal(r.lines.at(-1), "health: OK");
+  }
+});
+
+test("a count that is not a whole number counts as no numbers", async () => {
+  for (const [a, b] of [["4", "1"], [-1, 0], [1.5, 0], [NaN, 0]]) {
+    const r = await withErrors(healthBody(a, b));
+    assert.equal(r.error, undefined);
+    assert.ok(r.lines.includes("errors: not counted yet (migration 0040)"));
+  }
+});
+
+test("before the quiet date a count at the limit is a quiet warning and the run stays green", async () => {
+  const r = await withErrors(healthBody(40, 25), { now: E_BEFORE });
+  assert.equal(r.error, undefined);
+  assert.ok(r.logged.includes("::warning::health monitor (quiet): 25 server errors in the last 3 hours"));
+  assert.ok(r.lines.includes("errors: 25 in 3h, 40 in 24h (quiet)"));
+  assert.equal(r.lines.at(-1), "health: OK");
+});
+
+test("--max-errors-3h changes the limit", async () => {
+  assert.equal((await withErrors(healthBody(10, 3), { maxErrors3h: 3 })).error?.startsWith("/api/health errors: 3 server errors"), true);
+  assert.equal((await withErrors(healthBody(40, 10), { maxErrors3h: 11 })).error, undefined);
+  assert.equal(parseArgs(["--max-errors-3h", "5"]).maxErrors3h, 5);
+  assert.equal(parseArgs(["--max-errors-3h", "-3"]).maxErrors3h, 1);
+  assert.equal(parseArgs(["--max-errors-3h", "0"]).maxErrors3h, MAX_ERRORS_3H);
+  assert.equal(parseArgs(["--max-errors-3h", "abc"]).maxErrors3h, MAX_ERRORS_3H);
+  assert.equal(parseArgs(["--with-health", "--max-errors-3h", "7", "--attempts", "1"]).maxErrors3h, 7);
+  // The documented defaults are unchanged when the flag is not given.
+  assert.deepEqual(parseArgs([]), { base: PRODUCTION_URL, attempts: 2, wait: 30 });
+});
+
+test("a failing database is reported before the error count and the error count never hides it", async () => {
+  const r = await withErrors(JSON.stringify({ ok: false, status: "unhealthy", failing: ["database"], errors24h: 99, errors3h: 99 }));
+  assert.match(r.error, /^\/api\/health: status 200/);
+});
+
+test("without --with-health the counts are not read", async () => {
+  const { get, sent } = stub({ ...goodRoutes(), "/api/health": { text: healthBody(99, 99) } });
+  const lines = await runChecks(get, { now: E_AFTER });
+  assert.ok(sent.every((s) => !s.url.includes("/api/health")));
+  assert.ok(!lines.some((l) => l.startsWith("errors:")));
+});
+
+test("checkErrors prints only numbers and fixed words", () => {
+  assert.match(checkErrors({ errors24h: 12, errors3h: 4 }), /^errors: 4 in 3h, 12 in 24h$/);
+  assert.match(checkErrors({}, {}), /^errors: not counted yet/);
+});
+
+test("the errors quiet date is a valid time", () => {
+  assert.ok(Number.isFinite(Date.parse(ERRORS_QUIET_UNTIL)));
+});
+
+test("a 404 on /api/health still does not read any counts", async () => {
+  const r = await withHealth({});
+  assert.ok(!r.lines.some((l) => l.startsWith("errors:")));
 });
