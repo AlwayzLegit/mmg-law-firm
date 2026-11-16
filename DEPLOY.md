@@ -82,6 +82,8 @@ in order. Paste the contents of each file into a new query and click
 | 36 | `0036_lead_landing_url.sql` | Adds `leads.landing_url` (first-touch landing page; `source_url` stays the page the form was submitted from). |
 | 37 | `0037_lead_intake_checklist.sql` | Adds `leads.intake` jsonb (intake checklist; `government_entity` switches the statute-of-limitations estimate to the 6-month claim). |
 | 38 | `0038_lead_sla_alerted.sql` | Adds `leads.sla_alerted_at` + partial index so `/api/cron/sla-alerts` alerts each lead past the first-response target exactly once. |
+| 39 | `0039_intake_read_only.sql` | Intake admins can read content and settings but not change them (editor-only write policies). |
+| 40 | `0040_error_counts.sql` | Server error counts (OPS-21): `error_counts` table (RLS on, deny-all) plus `bump_error_count()` (service role only) and `error_counts_recent()` (two numbers, anon may read). `/api/health` shows `errors24h` and `errors3h` as `null` until this is applied. See `docs/error-count.md`. |
 
 If you prefer the CLI:
 

@@ -28,6 +28,20 @@ export const FALLBACK_MARKER = "verification step is temporarily unavailable";
 // hours after the merge.
 export const FALLBACK_QUIET_UNTIL = "2026-11-17T08:00:00Z";
 
+// OPS-21: /api/health also shows errors24h and errors3h, the server errors (5xx)
+// the site gave in about the last 24 and 3 hours, counted by the Worker entry.
+// The run fails at this many in 3 hours. The short window on purpose: the probe
+// keeps nothing between runs, and a 24 hour count would hold the alarm red for a
+// day after a burst that ended. The alarm clears itself 3 hours after the errors stop.
+export const MAX_ERRORS_3H = 10;
+
+// A new alarm starts quiet: until this time a count at or above the limit prints
+// a warning and the run stays green. Tuesday 2026-11-17 is too early for a merge
+// that deploys on Monday and waits for an approval click, so the date is
+// Wednesday 2026-11-18 00:00 PST; keep it at least 24 hours after the numbers
+// first appear in /api/health.
+export const ERRORS_QUIET_UNTIL = "2026-11-18T08:00:00Z";
+
 export class CheckFailed extends Error {
   constructor(path, reason) {
     super(`${path}: ${String(reason).slice(0, 200)}`);
@@ -73,9 +87,32 @@ function expectNoFallback(path, res, now, log) {
   );
 }
 
+const isCount = (n) => typeof n === "number" && Number.isInteger(n) && n >= 0;
+
+// The server error counts in the /api/health body. Returns the line to print.
+// No numbers (migration 0040 not applied, or the read failed) is a warning, not
+// a failure: the counts never decide whether the database is healthy. A count at
+// or above max fails the run, except in the quiet time.
+export function checkErrors(body, { max = MAX_ERRORS_3H, now = Date.now(), log = () => {} } = {}) {
+  const e3 = body?.errors3h;
+  const e24 = body?.errors24h;
+  if (!isCount(e3) || !isCount(e24)) {
+    log("::warning::/api/health shows no server error counts yet (migration 0040 not applied?)");
+    return "errors: not counted yet (migration 0040)";
+  }
+  if (e3 >= max) {
+    if (now < Date.parse(ERRORS_QUIET_UNTIL)) {
+      log(`::warning::health monitor (quiet): ${e3} server errors in the last 3 hours`);
+      return `errors: ${e3} in 3h, ${e24} in 24h (quiet)`;
+    }
+    throw new CheckFailed("/api/health errors", `${e3} server errors in the last 3 hours (limit ${max})`);
+  }
+  return `errors: ${e3} in 3h, ${e24} in 24h`;
+}
+
 // Runs the checks once. Returns the lines it printed (for tests); throws
 // CheckFailed on the first failure.
-export async function runChecks(get, { log = () => {}, withHealth = false, now = Date.now() } = {}) {
+export async function runChecks(get, { log = () => {}, withHealth = false, now = Date.now(), maxErrors3h = MAX_ERRORS_3H } = {}) {
   const lines = [];
   const say = (line) => { lines.push(line); log(line); };
 
@@ -120,6 +157,8 @@ export async function runChecks(get, { log = () => {}, withHealth = false, now =
         throw new CheckFailed("/api/health", `status ${health.status}${failing}`);
       }
       say("database: ok");
+      // The last check of the run: a server error count never hides a page or database failure.
+      say(checkErrors(body, { max: maxErrors3h, now, log }));
     }
   }
 
