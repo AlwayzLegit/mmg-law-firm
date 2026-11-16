@@ -1,15 +1,13 @@
 // Run with: node --test scripts/search-report/report.test.mjs
 import assert from "node:assert/strict";
-import crypto from "node:crypto";
 import { test } from "node:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, existsSync } from "node:fs";
+import { mkdtempSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ApiError,
-  NOT_CONFIGURED,
   T,
   addDays,
   alarm,
@@ -19,11 +17,12 @@ import {
   coverageLine,
   filterPages,
   filterQueries,
-  getAccessToken,
   listProperties,
   looksPersonal,
   makeQuery,
-  serviceAccount,
+  noAccessLine,
+  notConfiguredLine,
+  resolveSite,
   shapeReport,
   showTermsFrom,
   totals,
@@ -262,26 +261,23 @@ test("coverage line: indexed against not indexed, or no line at all without a co
 });
 
 // ─── The whole run with a fake Search Console ────────────────────────────────
-const { privateKey } = crypto.generateKeyPairSync("rsa", {
-  modulusLength: 2048,
-});
-const KEY_PEM = privateKey.export({ type: "pkcs8", format: "pem" });
-const SECRET_MARKER = "BEGIN PRIVATE KEY";
+const FAKE_TOKEN = "ya29.fake-token-for-tests";
+const here = path.dirname(fileURLToPath(import.meta.url));
+const SCRIPT = path.join(here, "report.mjs");
+const WORKFLOW = path.join(
+  here,
+  "..",
+  "..",
+  ".github",
+  "workflows",
+  "search-report.yml",
+);
 
-function fakeApi({
-  level = 1000,
-  lastTwo = [level, level],
-  tokenStatus = 200,
-} = {}) {
+function fakeApi({ level = 1000, lastTwo = [level, level] } = {}) {
   const calls = [];
   const rows = series(level, lastTwo, 71, "2026-11-12");
   const fetchImpl = async (url, init) => {
     calls.push({ url: String(url), body: init?.body });
-    if (String(url).startsWith("https://oauth2.googleapis.com/token")) {
-      return tokenStatus === 200
-        ? Response.json({ access_token: "tok" })
-        : new Response(`denied: ${KEY_PEM}`, { status: tokenStatus });
-    }
     const body = JSON.parse(init.body);
     if (body.dimensions[0] === "date") {
       return Response.json({
@@ -316,17 +312,10 @@ function fakeApi({
   return { fetchImpl, calls };
 }
 
-test("a full report run shows totals, the top searches and the position 5 to 20 list, with no key and no personal data", async () => {
+test("a full report run shows totals, the top searches and the position 5 to 20 list, with no token and no personal data", async () => {
   const api = fakeApi();
-  const sa = serviceAccount(
-    JSON.stringify({
-      client_email: "reader@example.iam.gserviceaccount.com",
-      private_key: KEY_PEM,
-    }),
-  );
-  const token = await getAccessToken(sa, api.fetchImpl);
   const result = await buildReport({
-    query: makeQuery(token, "sc-domain:mmg-lawfirm.com", api.fetchImpl),
+    query: makeQuery(FAKE_TOKEN, "sc-domain:mmg-lawfirm.com", api.fetchImpl),
     site: "sc-domain:mmg-lawfirm.com",
     today: "2026-11-14",
     withReport: true,
@@ -350,33 +339,19 @@ test("a full report run shows totals, the top searches and the position 5 to 20 
   assert.ok(!result.summary.includes("waiting for the next coverage sweep"));
   const out = result.summary + JSON.stringify(result.json);
   assert.ok(!out.includes("jane@example.com"), "no email");
-  assert.ok(!out.includes(SECRET_MARKER), "no private key");
+  assert.ok(!out.includes(FAKE_TOKEN), "no token");
   assert.ok(
     !out.includes("Bearer") && !out.includes("access_token"),
-    "no token",
-  );
-  assert.ok(!out.includes("reader@example.iam"), "no service account address");
-  // Read only scope, final data only.
-  assert.ok(
-    api.calls.some(
-      (c) =>
-        c.url.includes("oauth2") &&
-        decodeURIComponent(c.body).includes("assertion="),
-    ),
-  );
-  const assertion = decodeURIComponent(api.calls[0].body).split(
-    "assertion=",
-  )[1];
-  const claims = JSON.parse(
-    Buffer.from(assertion.split(".")[1], "base64url").toString(),
-  );
-  assert.equal(
-    claims.scope,
-    "https://www.googleapis.com/auth/webmasters.readonly",
+    "no token header",
   );
   assert.ok(
-    api.calls.slice(1).every((c) => JSON.parse(c.body).dataState === "final"),
+    !out.includes("iam.gserviceaccount.com"),
+    "no service account address",
   );
+  // Final data only, and the token is never in a URL.
+  assert.ok(api.calls.length > 1);
+  assert.ok(api.calls.every((c) => JSON.parse(c.body).dataState === "final"));
+  assert.ok(api.calls.every((c) => !c.url.includes(FAKE_TOKEN)));
 });
 
 test("a run without --report makes one API call and prints the alarm check only", async () => {
@@ -408,18 +383,34 @@ test("a drop to 29 percent on both newest days exits 1 with ALARM impressions", 
   assert.match(result.summary, /### ALARM impressions/);
 });
 
-test("a failed token exchange reports the status number only, never the response", async () => {
-  const api = fakeApi({ tokenStatus: 401 });
-  const sa = serviceAccount(
-    JSON.stringify({ client_email: "x", private_key: KEY_PEM }),
-  );
-  await assert.rejects(
-    () => getAccessToken(sa, api.fetchImpl),
-    (e) =>
-      e instanceof ApiError &&
-      e.message === "token exchange failed: HTTP 401" &&
-      !e.message.includes("denied"),
-  );
+test("a refused token reports the status number only, never the response", async () => {
+  for (const status of [401, 403, 500]) {
+    const refuse = async () =>
+      new Response(
+        `denied: ${FAKE_TOKEN} reader@example.iam.gserviceaccount.com`,
+        { status },
+      );
+    await assert.rejects(
+      () => listProperties(FAKE_TOKEN, refuse),
+      (e) =>
+        e instanceof ApiError &&
+        e.status === status &&
+        e.message === `sites.list failed: HTTP ${status}` &&
+        !e.message.includes("denied"),
+    );
+    await assert.rejects(
+      () =>
+        makeQuery(
+          FAKE_TOKEN,
+          "sc-domain:mmg-lawfirm.com",
+          refuse,
+        )({ dimensions: ["date"] }),
+      (e) =>
+        e instanceof ApiError &&
+        e.status === status &&
+        e.message === `searchAnalytics.query failed: HTTP ${status}`,
+    );
+  }
 });
 
 test("a property with no data fails clearly", async () => {
@@ -685,50 +676,228 @@ test("listProperties makes one GET with the token and reports the status number 
   );
 });
 
-test("with no secret the script prints the not configured line, writes no file and exits 0", () => {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const dir = mkdtempSync(path.join(tmpdir(), "search-report-"));
-  const env = { ...process.env, GSC_DOMAIN: "mmg-lawfirm.com" };
-  delete env.GSC_SERVICE_ACCOUNT_JSON;
-  delete env.GITHUB_STEP_SUMMARY;
-  const run = spawnSync(
-    process.execPath,
-    [path.join(here, "report.mjs"), "--report"],
-    {
-      cwd: dir,
-      env,
-      encoding: "utf8",
-    },
-  );
-  assert.equal(run.status, 0);
-  assert.ok(run.stdout.includes(NOT_CONFIGURED));
-  assert.equal(
-    NOT_CONFIGURED,
-    "Search results report: not configured (secret GSC_SERVICE_ACCOUNT_JSON is missing)",
-  );
-  assert.equal(run.stdout.trim().split("\n").length, 1, "one line");
-  assert.equal(existsSync(path.join(dir, "search-report.json")), false);
-});
-
-test("a configured run with neither GSC_DOMAIN nor GSC_SITE_URL fails clearly before any call to Google", () => {
-  const here = path.dirname(fileURLToPath(import.meta.url));
+const spawnReport = (extra, drop = []) => {
   const dir = mkdtempSync(path.join(tmpdir(), "search-report-"));
   const env = {
-    ...process.env,
-    GSC_SERVICE_ACCOUNT_JSON:
-      "not even json: the run must stop before reading it",
+    PATH: process.env.PATH,
+    GSC_DOMAIN: "mmg-lawfirm.com",
+    SHOW_SEARCH_TERMS: "true",
+    ...extra,
   };
-  delete env.GSC_DOMAIN;
-  delete env.GSC_SITE_URL;
-  const run = spawnSync(process.execPath, [path.join(here, "report.mjs")], {
+  for (const k of drop) delete env[k];
+  const run = spawnSync(process.execPath, [SCRIPT, "--report"], {
     cwd: dir,
     env,
     encoding: "utf8",
   });
+  return { run, dir };
+};
+
+test("with no token the script prints one fixed waiting line for each of three reasons, writes no file and exits 0", () => {
+  const reasons = [
+    [
+      { REPO_PRIVATE: "false", SIGN_IN_SET: "true" },
+      /public repository.*once the repository is private, OPS-52\)$/,
+    ],
+    [{}, /public repository.*OPS-52\)$/],
+    [
+      { REPO_PRIVATE: "true", SIGN_IN_SET: "false" },
+      /GSC_SERVICE_ACCOUNT is not set, OPS-25\)$/,
+    ],
+    [{ REPO_PRIVATE: "true", SIGN_IN_SET: "true" }, /runs on main only\)$/],
+  ];
+  for (const [env, pattern] of reasons) {
+    const { run, dir } = spawnReport(env);
+    assert.equal(run.status, 0);
+    assert.equal(run.stdout.trim(), `::notice::${notConfiguredLine(env)}`);
+    assert.match(
+      run.stdout.trim(),
+      /^::notice::Search results report: waiting \(/,
+    );
+    assert.match(run.stdout.trim(), pattern);
+    assert.equal(run.stdout.trim().split("\n").length, 1, "one line");
+    assert.equal(run.stderr, "");
+    assert.equal(existsSync(path.join(dir, "search-report.json")), false);
+  }
+});
+
+test("a token with neither GSC_DOMAIN nor GSC_SITE_URL fails clearly before any call to Google, and the token is never printed", () => {
+  const { run, dir } = spawnReport({ GSC_ACCESS_TOKEN: FAKE_TOKEN }, [
+    "GSC_DOMAIN",
+  ]);
   assert.equal(run.status, 2);
   assert.match(
     run.stderr,
     /search report failed: GSC_DOMAIN or GSC_SITE_URL must be set/,
   );
+  assert.ok(!(run.stdout + run.stderr).includes(FAKE_TOKEN));
   assert.equal(existsSync(path.join(dir, "search-report.json")), false);
+});
+
+test("the no-access line names the site and OPS-25 and holds nothing else", () => {
+  assert.equal(
+    noAccessLine("mmg-lawfirm.com", ""),
+    "Search results report: the read-only account cannot read a property for mmg-lawfirm.com yet (owner step OPS-25)",
+  );
+  assert.match(
+    noAccessLine("", "sc-domain:mmg-lawfirm.com"),
+    /for sc-domain:mmg-lawfirm\.com yet/,
+  );
+});
+
+const entry = (siteUrl, permissionLevel = "siteOwner") => ({
+  siteUrl,
+  permissionLevel,
+});
+
+test("Search Console is asked first: GSC_SITE_URL counts only when listed, otherwise the domain picks the property", async () => {
+  let calls = 0;
+  const fetchImpl = async (url, init) => {
+    calls += 1;
+    assert.equal(String(url), "https://www.googleapis.com/webmasters/v3/sites");
+    assert.equal(init.headers.Authorization, "Bearer tok");
+    return Response.json({ siteEntry: [entry("sc-domain:mmg-lawfirm.com")] });
+  };
+  assert.equal(
+    await resolveSite({
+      siteUrl: "sc-domain:mmg-lawfirm.com",
+      domain: "mmg-lawfirm.com",
+      token: "tok",
+      fetchImpl,
+    }),
+    "sc-domain:mmg-lawfirm.com",
+  );
+  assert.equal(calls, 1);
+  // A GSC_SITE_URL the account cannot read is "no access yet", never a guess.
+  assert.equal(
+    await resolveSite({
+      siteUrl: "sc-domain:given.com",
+      domain: "mmg-lawfirm.com",
+      token: "tok",
+      fetchImpl,
+    }),
+    null,
+  );
+  assert.equal(calls, 2);
+  assert.equal(
+    await resolveSite({ domain: "mmg-lawfirm.com", token: "tok", fetchImpl }),
+    "sc-domain:mmg-lawfirm.com",
+  );
+  assert.equal(calls, 3);
+});
+
+test("an empty list, an unlisted GSC_SITE_URL or an unverified property is no access yet (null); a refused listing or no names throws without response text", async () => {
+  const none = async () => Response.json({});
+  assert.equal(
+    await resolveSite({
+      domain: "mmg-lawfirm.com",
+      token: "tok",
+      fetchImpl: none,
+    }),
+    null,
+  );
+  assert.equal(
+    await resolveSite({
+      siteUrl: "sc-domain:mmg-lawfirm.com",
+      token: "tok",
+      fetchImpl: none,
+    }),
+    null,
+  );
+  const unverified = async () =>
+    Response.json({
+      siteEntry: [entry("sc-domain:mmg-lawfirm.com", "siteUnverifiedUser")],
+    });
+  assert.equal(
+    await resolveSite({
+      siteUrl: "sc-domain:mmg-lawfirm.com",
+      domain: "mmg-lawfirm.com",
+      token: "tok",
+      fetchImpl: unverified,
+    }),
+    null,
+  );
+  await assert.rejects(
+    () => resolveSite({ token: "tok", fetchImpl: none }),
+    /GSC_DOMAIN or GSC_SITE_URL must be set/,
+  );
+  for (const status of [401, 500]) {
+    const denied = async () =>
+      new Response("denied: BEGIN PRIVATE KEY", { status });
+    await assert.rejects(
+      () =>
+        resolveSite({
+          domain: "mmg-lawfirm.com",
+          token: "tok",
+          fetchImpl: denied,
+        }),
+      (e) =>
+        e instanceof ApiError &&
+        e.status === status &&
+        e.message === `sites.list failed: HTTP ${status}`,
+    );
+  }
+});
+
+// ─── OPS-82: the keyless sign-in, read from the workflow file ───────────────
+const workflow = () => readFileSync(WORKFLOW, "utf8");
+
+test("the workflow holds no key secret and the script reads none", () => {
+  assert.ok(!/GSC_SERVICE_ACCOUNT_JSON/.test(workflow()));
+  assert.ok(
+    !/GSC_SERVICE_ACCOUNT_JSON|node:crypto/.test(readFileSync(SCRIPT, "utf8")),
+  );
+});
+
+test("id-token: write is asked for inside the job only, never at workflow level", () => {
+  const text = workflow();
+  const jobsAt = text.indexOf("\njobs:");
+  assert.ok(jobsAt > 0);
+  assert.ok(
+    !/id-token/.test(text.slice(0, jobsAt).replace(/^#.*$/gm, "")),
+    "not at workflow level",
+  );
+  assert.equal((text.match(/^\s*id-token: write\s*$/gm) || []).length, 1);
+});
+
+test("the sign-in step runs on main only, never on a pull request, only for a private repo, and does not hide a failure", () => {
+  const text = workflow();
+  const start = text.indexOf("- name: Sign in to Google without a key");
+  assert.ok(start > 0);
+  const step = text.slice(start, text.indexOf("\n      - name:", start + 10));
+  assert.ok(step.includes("github.event_name != 'pull_request'"));
+  assert.ok(step.includes("github.ref == 'refs/heads/main'"));
+  assert.ok(step.includes("vars.GSC_SERVICE_ACCOUNT != ''"));
+  assert.ok(step.includes("steps.terms.outputs.private == 'true'"));
+  assert.ok(!/continue-on-error/.test(step));
+  assert.ok(step.includes("create_credentials_file: false"));
+  assert.ok(step.includes("export_environment_variables: false"));
+  assert.ok(
+    step.includes("https://www.googleapis.com/auth/webmasters.readonly"),
+  );
+});
+
+test("the report step gets the token, the two reason flags and no secret", () => {
+  const text = workflow();
+  const start = text.indexOf("- name: Search results report");
+  const step = text.slice(start, text.indexOf("\n      - name:", start + 10));
+  assert.ok(
+    step.includes("GSC_ACCESS_TOKEN: ${{ steps.gauth.outputs.access_token }}"),
+  );
+  assert.ok(step.includes("REPO_PRIVATE: ${{ steps.terms.outputs.private }}"));
+  assert.ok(
+    step.includes("SIGN_IN_SET: ${{ vars.GSC_SERVICE_ACCOUNT != '' }}"),
+  );
+  assert.ok(!/secrets\./.test(step));
+  assert.ok(step.includes("github.event_name != 'pull_request'"));
+});
+
+test("the account address is never written into the script, the workflow or the doc", () => {
+  const doc = readFileSync(
+    path.join(here, "..", "..", "docs", "search-report.md"),
+    "utf8",
+  );
+  for (const text of [workflow(), readFileSync(SCRIPT, "utf8"), doc]) {
+    assert.ok(!/@[a-z0-9-]+\.iam\.gserviceaccount\.com/.test(text));
+  }
 });
