@@ -4,7 +4,7 @@
  *
  * Copied from AlwayzLegit/weedtip scripts/search-report/report.mjs at df9fdbe
  * (OPS-24) for MMG Law (OPS-37), then changed in five places: it exits 0 with
- * one line when the secret is missing, it finds the Search Console property
+ * one line when there is no sign-in yet, it finds the Search Console property
  * for GSC_DOMAIN itself, it leaves the coverage section out when there is no
  * coverage file, and, because this repository is public, it never prints or
  * stores a search term unless SHOW_SEARCH_TERMS is exactly "true".
@@ -25,11 +25,14 @@
  * run can say "today"; the workflow runs three times a week. Everything else
  * is a finding.
  *
- * Auth: a service account key in GSC_SERVICE_ACCOUNT_JSON, signed locally with
- * node crypto (the same flow as apps/web/scripts/gsc-inspect.mjs, copied here
- * on purpose so that file's auth is not touched). Scope is read only. The key
- * is never printed: a failed call prints its HTTP status number and nothing
- * from the response.
+ * Auth (OPS-82): no key. The workflow signs in to Google with its own short
+ * GitHub sign-in (workload identity) and hands this script a short-lived,
+ * read-only token in GSC_ACCESS_TOKEN. Nothing here signs anything or reads a
+ * key file. The token and the account's address are never printed: a failed
+ * call prints its HTTP status number and nothing from the response. On this
+ * public repository the workflow does not sign in at all (GitHub prints a
+ * step's inputs in public logs), so the run prints one "waiting" line until the
+ * repository is private (OPS-52).
  *
  * No site specific code: the property comes from GSC_SITE_URL, or is found by
  * asking Search Console which properties the service account can read and
@@ -42,18 +45,22 @@
  * certainty, so unless SHOW_SEARCH_TERMS is exactly "true" no search term is
  * printed or stored. Totals, counts and the site's own page addresses stay.
  *
- * Not configured: with no GSC_SERVICE_ACCOUNT_JSON the run prints one notice
- * line, writes no file and exits 0. That is not proof the report works.
+ * Waiting: with no GSC_ACCESS_TOKEN the run prints one notice line (why there
+ * is no token), writes no file and exits 0. When the token cannot read a
+ * property for the domain yet (owner step OPS-25) it prints one plain line, writes
+ * no file and exits 0. Neither is proof the report works.
  *
  * Usage: node report.mjs [--report] [--coverage coverage-summary.json]
  *                        [--previous search-report.json] [--out search-report.json]
  *   --report  also write the full report (the alarm check runs on every run)
- * Env: GSC_SERVICE_ACCOUNT_JSON, GSC_DOMAIN (e.g. mmg-lawfirm.com),
- *      GSC_SITE_URL (optional, overrides the property search),
+ * Env: GSC_ACCESS_TOKEN (from the workflow's sign-in), GSC_DOMAIN (e.g.
+ *      mmg-lawfirm.com), GSC_SITE_URL (optional, overrides the property search,
+ *      used only when the account can read it), REPO_PRIVATE and SIGN_IN_SET
+ *      ("true" or "false", only to say why there is no token),
  *      SHOW_SEARCH_TERMS ("true" shows search terms, anything else withholds)
- * Exit: 0 ok or not configured, 1 ALARM impressions, 2 the run itself broke.
+ * Exit: 0 ok, waiting for a sign-in, or no access to the property yet;
+ *       1 ALARM impressions; 2 the run itself broke (including a refused token).
  */
-import crypto from "node:crypto";
 import {
   appendFileSync,
   existsSync,
@@ -438,41 +445,12 @@ export function renderSummary({
 }
 
 // ─── Search Console API ────────────────────────────────────────────────────
-export function serviceAccount(json) {
-  const sa = JSON.parse(json);
-  sa.private_key = String(sa.private_key).replace(/\\n/g, "\n"); // some secret stores escape newlines
-  return sa;
-}
-
-export class ApiError extends Error {}
-
-/** Token exchange. On failure only the status number is kept, never the response text. */
-export async function getAccessToken(
-  sa,
-  fetchImpl = fetch,
-  nowSec = Math.floor(Date.now() / 1000),
-) {
-  const enc = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
-  const input = `${enc({ alg: "RS256", typ: "JWT" })}.${enc({
-    iss: sa.client_email,
-    scope: "https://www.googleapis.com/auth/webmasters.readonly",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: nowSec + 3600,
-    iat: nowSec,
-  })}`;
-  const signature = crypto
-    .createSign("RSA-SHA256")
-    .update(input)
-    .sign(sa.private_key)
-    .toString("base64url");
-  const body = `grant_type=${encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer")}&assertion=${encodeURIComponent(`${input}.${signature}`)}`;
-  const res = await fetchImpl("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  if (!res.ok) throw new ApiError(`token exchange failed: HTTP ${res.status}`);
-  return (await res.json()).access_token;
+/** An API failure. Only our own message and the HTTP status number, never a response body. */
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
 }
 
 export function makeQuery(token, siteUrl, fetchImpl = fetch) {
@@ -489,7 +467,10 @@ export function makeQuery(token, siteUrl, fetchImpl = fetch) {
       },
     );
     if (!res.ok)
-      throw new ApiError(`searchAnalytics.query failed: HTTP ${res.status}`);
+      throw new ApiError(
+        `searchAnalytics.query failed: HTTP ${res.status}`,
+        res.status,
+      );
     return (await res.json()).rows ?? [];
   };
 }
@@ -538,15 +519,56 @@ export async function listProperties(token, fetchImpl = fetch) {
       headers: { Authorization: `Bearer ${token}` },
     },
   );
-  if (!res.ok) throw new ApiError(`sites.list failed: HTTP ${res.status}`);
+  if (!res.ok)
+    throw new ApiError(`sites.list failed: HTTP ${res.status}`, res.status);
   return (await res.json()).siteEntry ?? [];
 }
 
 /** Search terms are shown only when SHOW_SEARCH_TERMS is exactly "true". */
 export const showTermsFrom = (env) => env.SHOW_SEARCH_TERMS === "true";
 
-export const NOT_CONFIGURED =
-  "Search results report: not configured (secret GSC_SERVICE_ACCOUNT_JSON is missing)";
+/**
+ * Why there is no sign-in token yet, as one fixed line. The reasons are told in
+ * order: a public repository (the sign-in step does not run there, OPS-52), the
+ * repository variable GSC_SERVICE_ACCOUNT not set (OPS-25), then the one left:
+ * the sign-in runs on main only. Nothing from the environment is printed.
+ */
+export function notConfiguredLine(env = process.env) {
+  if (env.REPO_PRIVATE !== "true")
+    return "Search results report: waiting (public repository: the keyless sign-in starts once the repository is private, OPS-52)";
+  if (env.SIGN_IN_SET !== "true")
+    return "Search results report: waiting (the repository variable GSC_SERVICE_ACCOUNT is not set, OPS-25)";
+  return "Search results report: waiting (no sign-in token: the keyless sign-in runs on main only)";
+}
+
+export function noAccessLine(domain, siteUrl) {
+  return `Search results report: the read-only account cannot read a property for ${domain || siteUrl} yet (owner step OPS-25)`;
+}
+
+/**
+ * The property to read. Search Console is asked first, so a refused token is a
+ * failure here (listProperties throws with the status number). GSC_SITE_URL is
+ * used only when the account can read it; otherwise the property that covers
+ * the domain is chosen. Returns the siteUrl, or null when the read-only account
+ * has not been added to a property yet (owner step OPS-25), which is not a failure.
+ */
+export async function resolveSite({
+  siteUrl,
+  domain,
+  token,
+  fetchImpl = fetch,
+}) {
+  if (!siteUrl && !domain)
+    throw new ApiError("GSC_DOMAIN or GSC_SITE_URL must be set");
+  const entries = await listProperties(token, fetchImpl);
+  if (siteUrl) {
+    const listed = entries.some(
+      (e) => e.siteUrl === siteUrl && (RIGHTS[e.permissionLevel] ?? 0) > 0,
+    );
+    return listed ? siteUrl : null;
+  }
+  return chooseProperty(entries, domain);
+}
 
 const asRow = (r) => ({
   key: r.keys[0],
@@ -711,32 +733,29 @@ function arg(name, fallback = "") {
 const readJson = (file) =>
   file && existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
 
+function waitWith(line) {
+  console.log(`::notice::${line}`);
+  if (process.env.GITHUB_STEP_SUMMARY)
+    appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      `## Search results report\n\n${line}\n`,
+    );
+  process.exit(0);
+}
+
 async function main() {
-  const raw = process.env.GSC_SERVICE_ACCOUNT_JSON;
-  if (!raw) {
-    // Not an error: the owner step that adds the secret has not happened yet.
-    // No file is written. This is not proof that the report works.
-    console.log(`::notice::${NOT_CONFIGURED}`);
-    if (process.env.GITHUB_STEP_SUMMARY)
-      appendFileSync(
-        process.env.GITHUB_STEP_SUMMARY,
-        `## Search results report\n\n${NOT_CONFIGURED}\n`,
-      );
-    process.exit(0);
-  }
+  const token = (process.env.GSC_ACCESS_TOKEN || "").trim();
+  // Not an error: the repository is public, or the owner step (OPS-25) is not
+  // done yet. No file is written. This is not proof that the report works.
+  if (!token) waitWith(notConfiguredLine());
   const domain = (process.env.GSC_DOMAIN || "").trim();
-  let site = (process.env.GSC_SITE_URL || "").trim();
-  if (!site && !domain)
+  const siteUrl = (process.env.GSC_SITE_URL || "").trim();
+  // The names are checked before any call is made.
+  if (!siteUrl && !domain)
     throw new ApiError("GSC_DOMAIN or GSC_SITE_URL must be set");
-  const token = await getAccessToken(serviceAccount(raw));
-  if (!site) {
-    site = chooseProperty(await listProperties(token), domain);
-    if (!site) {
-      throw new ApiError(
-        `the service account cannot read a property for ${domain} (see OPS-25 step 2)`,
-      );
-    }
-  }
+  const site = await resolveSite({ siteUrl, domain, token });
+  console.log("sign-in: workload identity");
+  if (!site) waitWith(noAccessLine(domain, siteUrl));
   const result = await buildReport({
     query: makeQuery(token, site),
     site,
