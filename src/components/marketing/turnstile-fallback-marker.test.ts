@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-// OPS-44: the health probe (scripts/health/probe.mjs) fails when the contact
+// OPS-44: the health checks (scripts/health/checks.mjs, run by the GitHub probe
+// and since OPS-59 by the monitor Worker) fail when the contact
 // page shows the verification fallback in place of the Turnstile widget. It
 // finds the fallback by one sentence of the notice in turnstile.tsx. The probe's
 // self-test runs only on pull requests that touch scripts/health, so a change to
@@ -11,7 +12,7 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const probeSource = readFileSync(
-  join(root, "scripts/health/probe.mjs"),
+  join(root, "scripts/health/checks.mjs"),
   "utf8",
 );
 const componentSource = readFileSync(
@@ -20,7 +21,7 @@ const componentSource = readFileSync(
 );
 
 describe("verification fallback marker", () => {
-  it("is declared in the health probe", () => {
+  it("is declared in the health checks", () => {
     expect(probeSource).toMatch(/export const FALLBACK_MARKER = "[^"]+";/);
   });
 

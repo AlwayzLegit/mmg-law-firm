@@ -19,15 +19,33 @@ name: Health monitor
 # The self-test job runs on pull requests that touch this file or the probe:
 # it points the probe at a path that does not exist and passes only when the
 # probe fails. A deliberately red run on main would raise an Incident.
+# It also runs the monitor Worker's tests and one real round of the monitor
+# under the Workers runtime (wrangler dev, no account, no secret) (OPS-59).
+#
+# OPS-59: the monitor Worker (scripts/health/monitor/) checks the site every 15
+# minutes from Cloudflare and serves /status. This workflow's 15 minute
+# schedule stays until the monitor's quiet record has been read (a new alarm
+# starts quiet). Run by hand with job = monitor-status to read the monitor's
+# status page; it fails when the answer is not 200, the last round is over 45
+# minutes old, or an incident began in the last 24 hours.
 on:
   schedule:
     - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
+      job:
+        description: probe (the site, as on the schedule) or monitor-status (read the monitor's status page)
+        type: choice
+        options: [probe, monitor-status]
+        default: probe
       base_url:
-        description: Site to probe (default production)
+        description: "job probe: site to probe (default production)"
         type: string
         default: https://www.mmg-lawfirm.com
+      status_url:
+        description: "job monitor-status: the monitor's status page"
+        type: string
+        default: https://mmg-law-firm-monitor.jetnine-inc.workers.dev/status
   pull_request:
     paths:
       - .github/workflows/health-monitor.yml
@@ -42,7 +60,7 @@ concurrency:
 
 jobs:
   probe:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.job != 'monitor-status')
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -52,14 +70,44 @@ jobs:
           BASE_URL: ${{ inputs.base_url || 'https://www.mmg-lawfirm.com' }}
         run: node scripts/health/probe.mjs --base "$BASE_URL" --with-health
 
+  # Reads the monitor's status page (OPS-59). No secret, GET only. A run by hand.
+  monitor-status:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'monitor-status'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read the status page
+        env:
+          STATUS_URL: ${{ inputs.status_url }}
+        run: |
+          code=$(curl -sS -m 20 -o status.json -w "%{http_code}" "$STATUS_URL" || echo 000)
+          echo "status page answered $code"
+          cat status.json 2>/dev/null || true
+          echo
+          [ "$code" = 200 ] || { echo "::error::the monitor's status page answered $code"; exit 1; }
+          now=$(date -u +%s)
+          checked=$(jq -r '.checkedAt // empty' status.json)
+          [ -n "$checked" ] || { echo "::error::no checkedAt in the answer"; exit 1; }
+          age=$(( now - $(date -u -d "$checked" +%s) ))
+          echo "last round $age s ago"
+          [ "$age" -le 2700 ] || { echo "::error::the last round is over 45 minutes old"; exit 1; }
+          recent=$(jq -r --argjson since "$(( (now - 86400) * 1000 ))" '[.incidents[]? | select(.from != null) | select((.from | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601 * 1000) >= $since)] | length' status.json)
+          open=$(jq -r 'if .failingSince != null then 1 else 0 end' status.json)
+          echo "incidents in the last 24 hours: $recent, failing now: $open"
+          [ "$recent" = 0 ] && [ "$open" = 0 ] || { echo "::error::an incident began in the last 24 hours or the site is failing now"; exit 1; }
+          echo "monitor status: OK"
+
   self-test:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Probe unit tests
         run: node --test scripts/health/probe.test.mjs
+
+      - name: Monitor unit tests
+        run: node --test scripts/health/monitor/monitor.test.mjs
       - name: The probe fails for a site that does not exist
         run: |
           set +e
@@ -71,3 +119,41 @@ jobs:
             exit 1
           fi
           echo "self-test OK: probe exited 1 for https://www.mmg-lawfirm.com/this-path-does-not-exist"
+
+      # One real round of the monitor Worker under the Workers runtime, against
+      # the live site. No account and no secret: wrangler dev runs locally.
+      # Passes only when /status answers 200 with "ok":true after the round.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: One real round under the Workers runtime
+        run: |
+          pnpm exec wrangler dev --config scripts/health/monitor/wrangler.jsonc --test-scheduled --port 8787 > wrangler-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -s -o /dev/null http://127.0.0.1:8787/status && break
+            sleep 2
+          done
+          curl -s -o /dev/null -w "scheduled: %{http_code}\n" "http://127.0.0.1:8787/__scheduled?cron=3+*+*+*+*"
+          code=000
+          for i in $(seq 1 40); do
+            code=$(curl -s -o status.json -w "%{http_code}" http://127.0.0.1:8787/status)
+            [ "$code" = 200 ] && break
+            sleep 5
+          done
+          echo "status answered $code"
+          cat status.json
+          echo
+          kill %1 2>/dev/null || true
+          if [ "$code" != 200 ] || ! jq -e '.v == 1 and .ok == true and (.lines | last) == "health: OK"' status.json >/dev/null; then
+            echo "::error::the monitor's round did not pass"; tail -n 30 wrangler-dev.log; exit 1
+          fi
+          echo "round OK"

@@ -1,0 +1,30 @@
+// The monitor Worker (OPS-59): checks the site from outside every 15 minutes
+// and serves GET /status. Deployed by .github/workflows/monitor-deploy.yml:
+//
+//   pnpm exec wrangler deploy --config scripts/health/monitor/wrangler.jsonc
+//
+// Optional settings (the owner's switch, alerts only): ALERT_EMAIL,
+// RESEND_API_KEY and RESEND_FROM_EMAIL, set by the workflow's "Alert settings"
+// step when the repository variable MONITOR_ALERT_EMAIL exists. Without them the
+// monitor records and never emails.
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "mmg-law-firm-monitor",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-01",
+  // Reach the site the way a visitor does, never through a private route.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+
+  // Off the app's own crons.
+  "triggers": { "crons": ["3,18,33,48 * * * *"] },
+
+  // QUIET_HOURS: a new alarm starts quiet. The monitor is quiet for this many
+  // hours after its first stored round (24 when missing, below 24 or not a
+  // number; never more than 720). Failures in that time go to wouldHaveRaised.
+  "vars": { "SITE_URL": "https://www.mmg-lawfirm.com", "QUIET_HOURS": "24" },
+
+  "durable_objects": { "bindings": [{ "name": "MONITOR_STATE", "class_name": "MonitorState" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MonitorState"] }]
+}
