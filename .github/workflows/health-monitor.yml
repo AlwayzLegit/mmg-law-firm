@@ -7,17 +7,17 @@ name: Health monitor
 # endpoint is deployed. Read-only: only GET,
 # it never submits the form, no secret, no write.
 #
-# Cost: every 15 minutes is about 2,900 runs a month, under a minute each.
-# This repo is public, so GitHub bills 0 minutes for standard runners. If the
-# repo is ever made private, this cadence would cost about 2,900 minutes a
-# month: slow the cron line down first.
+# Cost (OPS-68): one scheduled run a day, about 31 runs a month, under a minute
+# each (about 31 workflow minutes if the repo is private). Before OPS-68 the
+# schedule ran every 15 minutes, about 2,900 runs a month, which would have used
+# up the account's 3,000 free minutes as soon as the repo was made private.
 #
-# A red scheduled run is an Incident (the Merge captain's CI watch reads it),
-# P1 when a contact check fails. A red run that says "server errors in the last
-# 3 hours" (OPS-21: /api/health counts the site's own 5xx answers, limit 10 in
-# 3 hours, see docs/error-count.md) is an Incident too, P2 unless a contact
-# check also fails. To silence it at once: GitHub, Actions,
-# Health monitor, Disable workflow.
+# A red scheduled run (the daily monitor-status read) is an Incident (the Merge
+# captain's CI watch reads it), P1 when a contact check is among the failures. A
+# red run that says "server errors in the last 3 hours" (OPS-21: /api/health
+# counts the site's own 5xx answers, limit 10 in 3 hours, see
+# docs/error-count.md) is an Incident too, P2 unless a contact check also fails.
+# To silence it at once: GitHub, Actions, Health monitor, Disable workflow.
 #
 # The self-test job runs on pull requests that touch this file or the probe:
 # it points the probe at a path that does not exist and passes only when the
@@ -26,14 +26,17 @@ name: Health monitor
 # under the Workers runtime (wrangler dev, no account, no secret) (OPS-59).
 #
 # OPS-59: the monitor Worker (scripts/health/monitor/) checks the site every 15
-# minutes from Cloudflare and serves /status. This workflow's 15 minute
-# schedule stays until the monitor's quiet record has been read (a new alarm
-# starts quiet). Run by hand with job = monitor-status to read the monitor's
-# status page; it fails when the answer is not 200, the last round is over 45
-# minutes old, or an incident began in the last 24 hours.
+# minutes from Cloudflare and serves /status. OPS-68 removed this workflow's 15
+# minute schedule after the monitor's quiet record was read clean on 2026-11-17
+# (a new alarm starts quiet): the Worker now holds the 15 minute checks and
+# emails when its alerts are configured (ALERT_EMAIL, RESEND_API_KEY and
+# RESEND_FROM_EMAIL on the Worker, OPS-88). This workflow now reads the monitor's
+# status page once a day (job monitor-status, also by hand); it fails when the
+# answer is not 200, the last round is over 45 minutes old, or an incident began
+# in the last 24 hours. The probe job (the site, as before) now runs by hand only.
 on:
   schedule:
-    - cron: "7,22,37,52 * * * *"
+    - cron: "29 18 * * *"
   workflow_dispatch:
     inputs:
       job:
@@ -63,7 +66,7 @@ concurrency:
 
 jobs:
   probe:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.job != 'monitor-status')
+    if: github.event_name == 'workflow_dispatch' && inputs.job != 'monitor-status'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -73,15 +76,16 @@ jobs:
           BASE_URL: ${{ inputs.base_url || 'https://www.mmg-lawfirm.com' }}
         run: node scripts/health/probe.mjs --base "$BASE_URL" --with-health
 
-  # Reads the monitor's status page (OPS-59). No secret, GET only. A run by hand.
+  # Reads the monitor's status page (OPS-59). No secret, GET only. Runs on the daily
+  # schedule (OPS-68) and by hand.
   monitor-status:
-    if: github.event_name == 'workflow_dispatch' && inputs.job == 'monitor-status'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.job == 'monitor-status')
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - name: Read the status page
         env:
-          STATUS_URL: ${{ inputs.status_url }}
+          STATUS_URL: ${{ inputs.status_url || 'https://mmg-law-firm-monitor.jetnine-inc.workers.dev/status' }}
         run: |
           code=$(curl -sS -m 20 -o status.json -w "%{http_code}" "$STATUS_URL" || echo 000)
           echo "status page answered $code"
