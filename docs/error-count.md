@@ -18,6 +18,19 @@ once made every request fail), and it never sees an error a route catches itself
 
 The scheduled jobs (`scheduled()`) are not counted.
 
+The site's own background page refreshes are not counted either (OPS-185). A
+refresh is a HEAD request with `x-isr: 1` and an `x-prerender-revalidate` header,
+sent by OpenNext's revalidation queue through the Worker's self binding, and
+on a 500 it is retried up to 6 times. The stored page keeps serving meanwhile, so
+no visitor gets the error. Such an answer writes one log line with kind
+`revalidate-error` (same fields as `server-error`) and adds nothing to the count,
+so the health limit measures what visitors get. Why: on 2026-11-18, 21:30 to
+21:40 UTC, a short database failure made 316 of these refreshes answer 500 on
+location pages; visitors got 200, yet `/api/health` read 287 server errors and
+the monitor failed for about 2.5 hours. A cold page that a visitor asks for is a
+GET and is still counted. In Workers Logs filter on the field `kind`, not on the
+message text.
+
 ## What is never stored
 
 A count per environment (`production` or `staging`), route group and hour. The
