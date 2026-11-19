@@ -48,9 +48,9 @@ test("validate: one failing case per rule", () => {
   bad({ excerpt: "x".repeat(301) }, /excerpt/);
   bad({ tags: ["a", "b"] }, /tags: 3 to 6/);
   bad({ primary_keyword: "" }, /primary_keyword/);
-  bad({ body_md: "word ".repeat(100) }, /minimum 1000/);
+  bad({ body_md: "word ".repeat(100) }, /minimum 1200/);
   bad({}, /maximum 5/, withPolicy({ max_words: 5 }));
-  bad({ body_md: body().replace("## What to do next", "## Something else") }, /missing required H2 section: What to do next/);
+  bad({ body_md: body().replace("## Deadlines", "## Something else") }, /missing required H2 section: deadlines/);
   bad({ body_md: body() + "\n\nThis result is guaranteed." }, /banned phrase present: guaranteed/);
   bad({ body_md: body().replace("for general information purposes only", "for fun") }, /general disclaimer/);
   bad({ body_md: body().replaceAll("(/contact)", "(/about)") }, /link to \/contact/);
@@ -59,6 +59,21 @@ test("validate: one failing case per rule", () => {
   bad({ body_md: body() + "\n\n[x](/not-in-the-inventory)" }, /not in site_urls: \/not-in-the-inventory/);
   bad({ title: "A — dash" }, /dashes/);
   bad({ excerpt: "An – dash" }, /dashes/);
+});
+
+test("the fixture brief and the sample mirror the live contract", () => {
+  const staticUrls = readFileSync(new URL("../../src/lib/content-agent/site-urls.ts", import.meta.url), "utf8")
+    .match(/export const STATIC_URLS = \[([^\]]*)\]/)[1]
+    .match(/"([^"]+)"/g)
+    .map((q) => q.slice(1, -1));
+  assert.equal(staticUrls.length, 6);
+  assert.deepEqual(brief.site_urls.static, staticUrls);
+  assert.deepEqual(brief.policy.required_sections, ["intro", "what-to-do", "deadlines", "how-a-lawyer-helps", "faq", "cta"]);
+  assert.equal(brief.policy.min_words, 1200);
+  assert.equal(brief.policy.banned_phrases.length, 7);
+  const links = internalLinks(sample().body_md);
+  assert.ok(links.length >= 3 && links.length <= 8);
+  for (const l of links) assert.ok(staticUrls.includes(l), `${l} is not a static URL`);
 });
 
 test("validate: forbidden fields are refused", () => {

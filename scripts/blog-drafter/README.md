@@ -32,4 +32,6 @@ node --test scripts/blog-drafter/*.test.mjs
 node scripts/blog-drafter/draft.mjs scripts/blog-drafter/sample-post.json --dry-run --offline
 ```
 
+The sample and the fixture brief (`fixtures/brief.json`) mirror the live brief, instructions v1, and link only the static URLs of `src/lib/content-agent/site-urls.ts`; when the owner changes the brief in the admin, refresh both.
+
 With `MMG_API_KEY` set, `--dry-run` without `--offline` reads the live brief and post list and creates nothing.
