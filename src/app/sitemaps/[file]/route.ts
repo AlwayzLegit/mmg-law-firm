@@ -1,5 +1,6 @@
 import { getSitemapEntries } from "@/lib/seo/sitemap-entries";
 import {
+  SITEMAP_CACHE_CONTROL,
   SITEMAP_GROUPS,
   sitemapGroup,
   sitemapXml,
@@ -18,5 +19,6 @@ export async function GET(
   const entries = await getSitemapEntries();
   return xmlResponse(
     sitemapXml(entries.filter((entry) => sitemapGroup(entry.url) === group)),
+    SITEMAP_CACHE_CONTROL,
   );
 }

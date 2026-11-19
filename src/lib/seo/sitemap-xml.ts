@@ -68,11 +68,21 @@ export function sitemapXml(entries: MetadataRoute.Sitemap): string {
   );
 }
 
-export function xmlResponse(body: string): Response {
-  return new Response(body, {
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+/**
+ * The topic sitemaps are public and identical for every visitor, so they say
+ * so: `s-maxage` lets the site's own edge store (src/lib/cloudflare/page-cache.ts,
+ * which stores only responses with `s-maxage`) serve them instead of rendering
+ * them on every crawl. Publishes drop the stored copies (revalidateSitemaps).
+ * HTTP caching, RFC 9111.
+ */
+export const SITEMAP_CACHE_CONTROL =
+  "public, s-maxage=3600, stale-while-revalidate=86400";
+
+export function xmlResponse(body: string, cacheControl?: string): Response {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/xml; charset=utf-8",
+    "X-Content-Type-Options": "nosniff",
+  };
+  if (cacheControl) headers["Cache-Control"] = cacheControl;
+  return new Response(body, { headers });
 }

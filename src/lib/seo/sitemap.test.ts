@@ -66,6 +66,7 @@ vi.mock("@/lib/data/queries", () => ({
 import { getSitemapEntries, validSitemapDate } from "./sitemap-entries";
 import { getPublishedPosts } from "@/lib/data/blog";
 import {
+  SITEMAP_CACHE_CONTROL,
   SITEMAP_GROUPS,
   sitemapGroup,
   sitemapIndexXml,
@@ -73,6 +74,7 @@ import {
 } from "./sitemap-xml";
 import robots from "@/app/robots";
 import { GET as childGet } from "@/app/sitemaps/[file]/route";
+import { isShareable } from "@/lib/cloudflare/page-cache";
 
 describe("sitemap integrity", () => {
   it("does not publish an incomplete sitemap after a data failure", async () => {
@@ -184,6 +186,33 @@ describe("sitemap integrity", () => {
     const xml = await response.text();
     expect(xml).toContain("/practice-areas/truck-accidents");
     expect(xml).not.toContain("/practice-areas/car-accidents");
+  });
+  it("lets the edge store every topic sitemap, but not a missing one", async () => {
+    for (const group of SITEMAP_GROUPS) {
+      const response = await childGet(new Request("https://example.com"), {
+        params: Promise.resolve({ file: `${group}.xml` }),
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Cache-Control")).toBe(SITEMAP_CACHE_CONTROL);
+      expect(isShareable(response)).toBe(true);
+    }
+    const missing = await childGet(new Request("https://example.com"), {
+      params: Promise.resolve({ file: "nope.xml" }),
+    });
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get("Cache-Control")).toBeNull();
+    expect(isShareable(missing)).toBe(false);
+  });
+  it("keeps the sitemap body the same when the cache header is added", async () => {
+    const entries = await getSitemapEntries();
+    const response = await childGet(new Request("https://example.com"), {
+      params: Promise.resolve({ file: "car-accidents.xml" }),
+    });
+    expect(await response.text()).toBe(
+      sitemapXml(
+        entries.filter((entry) => sitemapGroup(entry.url) === "car-accidents"),
+      ),
+    );
   });
   it("preserves robots crawl rules without unsupported Host", () => {
     expect(robots().host).toBeUndefined();
