@@ -45,6 +45,25 @@ export function routeGroup(pathname: string): string {
   return "/page";
 }
 
+/**
+ * True for the site's own background page refresh (OPS-185): a HEAD request with
+ * x-isr: 1 and a non-empty x-prerender-revalidate header.
+ *
+ * Who sends it: OpenNext's revalidation queue (open-next.config.ts uses doQueue),
+ * through the WORKER_SELF_REFERENCE binding to this same Worker
+ * (@opennextjs/cloudflare 1.20.13, dist/api/durable-objects/queue.js,
+ * executeRevalidation). On a 500 it retries up to 6 times, so one failing page
+ * can answer 5xx seven times. The stored page keeps serving meanwhile
+ * (stale-while-revalidate), so no visitor sees the error: it is a cause to log,
+ * not a symptom to count.
+ */
+export function isBackgroundRevalidation(request: Request): boolean {
+  if (request.method !== "HEAD") return false;
+  if (request.headers.get("x-isr") !== "1") return false;
+  const marker = request.headers.get("x-prerender-revalidate");
+  return marker !== null && marker !== "";
+}
+
 /** A server error: status 500 to 599. */
 export function shouldCount(status: number): boolean {
   return Number.isInteger(status) && status >= 500 && status <= 599;

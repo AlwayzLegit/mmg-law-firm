@@ -4,6 +4,7 @@ import {
   COUNT_TIMEOUT_MS,
   MAX_COUNTS_PER_MINUTE,
   envName,
+  isBackgroundRevalidation,
   makeCounter,
   routeGroup,
   shouldCount,
@@ -65,6 +66,57 @@ describe("routeGroup", () => {
       expect(g, p).toMatch(accepted);
       expect(g.length).toBeLessThanOrEqual(60);
     }
+  });
+});
+
+describe("isBackgroundRevalidation", () => {
+  const url = "https://www.mmg-lawfirm.com/locations/los-angeles-county";
+  const refresh = { "x-isr": "1", "x-prerender-revalidate": "build-token" };
+
+  it("is true for OpenNext's own refresh: HEAD, x-isr 1, x-prerender-revalidate set", () => {
+    expect(
+      isBackgroundRevalidation(
+        new Request(url, { method: "HEAD", headers: refresh }),
+      ),
+    ).toBe(true);
+  });
+
+  it("is false for a GET carrying both headers", () => {
+    expect(
+      isBackgroundRevalidation(
+        new Request(url, { method: "GET", headers: refresh }),
+      ),
+    ).toBe(false);
+  });
+
+  it("is false for a HEAD without x-prerender-revalidate", () => {
+    expect(
+      isBackgroundRevalidation(
+        new Request(url, { method: "HEAD", headers: { "x-isr": "1" } }),
+      ),
+    ).toBe(false);
+  });
+
+  it("is false for a HEAD with x-isr 0", () => {
+    expect(
+      isBackgroundRevalidation(
+        new Request(url, {
+          method: "HEAD",
+          headers: { "x-isr": "0", "x-prerender-revalidate": "build-token" },
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("is false for a HEAD with an empty x-prerender-revalidate", () => {
+    expect(
+      isBackgroundRevalidation(
+        new Request(url, {
+          method: "HEAD",
+          headers: { "x-isr": "1", "x-prerender-revalidate": "" },
+        }),
+      ),
+    ).toBe(false);
   });
 });
 
