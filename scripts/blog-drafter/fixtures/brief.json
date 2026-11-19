@@ -22,7 +22,7 @@
       "may_publish": false,
       "default_review_status": "needs_review",
       "posts_per_run": 1,
-      "min_words": 1000,
+      "min_words": 1200,
       "max_words": 2000,
       "internal_links": {
         "min": 3,
@@ -31,14 +31,21 @@
         "avoid_cannibalization": true
       },
       "banned_phrases": [
+        "guarantee",
         "guaranteed",
-        "we will win",
-        "best attorney"
+        "best lawyer",
+        "#1",
+        "we always win",
+        "no risk",
+        "top-rated"
       ],
       "required_sections": [
-        "Overview",
-        "What to do next",
-        "Frequently asked questions"
+        "intro",
+        "what-to-do",
+        "deadlines",
+        "how-a-lawyer-helps",
+        "faq",
+        "cta"
       ],
       "hero_image": "none",
       "pause_drafting": false,
@@ -83,8 +90,10 @@
       ],
       "static": [
         "/",
+        "/attorneys/mihran-ghazaryan",
         "/contact",
-        "/about",
+        "/practice-areas",
+        "/locations",
         "/blog"
       ],
       "truncated": false
