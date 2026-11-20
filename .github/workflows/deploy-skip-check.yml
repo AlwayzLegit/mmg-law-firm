@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
 
       - name: Tests
         run: node --test scripts/deploy-skip/check.test.mjs scripts/deploy-skip/pipeline.test.mjs
