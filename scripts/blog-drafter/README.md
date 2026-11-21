@@ -12,6 +12,10 @@ Files one post on mmg-lawfirm.com as a **draft for attorney review**, from GitHu
 
 Read the live brief (`GET /api/admin/agent/brief`). Stop when `policy.pause_drafting` is true, when the cap is reached, or when the post breaks the brief. Only then start a run (`POST /api/admin/agent/runs`, agent `crew-blog-desk`), create the draft (`POST /api/admin/blog`, with `Idempotency-Key`), check it is `needs_review`, unpublished and 404 on the public page, and finish the run report. Any failure after the run starts ends it as `failed`. A `409 duplicate_topic` ends it as skipped and is never retried with another slug.
 
+## How required sections are matched
+
+Each key in the brief's `required_sections` names a kind of section, not the words of a heading, and every key is still required. A key is met when some H2 carries the key read in words (hyphens and case do not matter, whole words only) or one of its aliases: `intro` (introduction, overview, or 40 words before the first H2), `what-to-do` (what to do, steps to take, next steps), `deadlines` (deadline, time limit, how long, how soon, when to file, statute of limitations), `how-a-lawyer-helps` (a heading with lawyer or attorney), `faq` (faq, frequently asked questions, common questions), `cta` (contact, talk, get help, next step, free case, consultation, call, or a last section, not counting Sources or References, that links to /contact). A key not in this list is read in words with no alias. A refusal names the accepted words, for example `missing required H2 section: deadlines (a heading with deadlines, deadline, time limit, ...)`. The aliases live in `SECTION_ALIASES` in `draft.mjs`.
+
 ## Queue file fields
 
 `title` (60 max), `slug`, `body_md`, `excerpt` (300 max), `meta_description` (120 to 155), `tags` (3 to 6), `primary_keyword`, optional `secondary_keywords`, `practice_area_ids`, `related_county_ids`, `hero_image_url`, `hero_image_alt`, `topic_id`. Firm facts and the four disclaimers come from `src/lib/constants.ts`; the general disclaimer must appear word for word.

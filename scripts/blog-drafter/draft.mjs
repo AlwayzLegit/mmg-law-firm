@@ -70,6 +70,62 @@ export function allowedUrls(siteUrls = {}) {
   return urls;
 }
 
+/** Heading or key text read as plain words: lowercase, hyphens and underscores as spaces, other punctuation dropped. */
+const plain = (s) =>
+  String(s ?? "")
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+/** Whole-word phrase match, so "call" does not match "medically". */
+const hasPhrase = (heading, phrase) => ` ${plain(heading)} `.includes(` ${plain(phrase)} `);
+
+/**
+ * The brief names each required section by a key. A key names a kind of section, not the
+ * words of a heading, so a heading is accepted when it carries the key in words or one of
+ * these aliases. A key that is not listed here is read in words, with no alias.
+ */
+export const SECTION_ALIASES = {
+  intro: ["intro", "introduction", "overview"],
+  "what-to-do": ["what to do", "steps to take", "next steps"],
+  deadlines: ["deadline", "deadlines", "time limit", "time limits", "how long", "how soon", "when to file", "statute of limitations"],
+  "how-a-lawyer-helps": ["lawyer", "attorney"],
+  faq: ["faq", "frequently asked questions", "common questions"],
+  cta: ["contact", "talk", "get help", "next step", "free case", "consultation", "call"],
+};
+const INTRO_MIN_WORDS = 40;
+const END_MATTER = ["sources", "references"];
+
+/** H2 sections of a markdown body: [{ heading, text }], and the text before the first H2. */
+function splitSections(md) {
+  const parts = (md ?? "").split(/^## (.+)$/gm);
+  const sections = [];
+  for (let i = 1; i < parts.length; i += 2) sections.push({ heading: parts[i], text: parts[i + 1] ?? "" });
+  return { lead: parts[0] ?? "", sections };
+}
+
+/** True when the body meets one required section key. Every required key still has to be met. */
+export function hasSection(h2List, key, body = "") {
+  const aliases = SECTION_ALIASES[key] ?? [];
+  if (h2List.some((h) => [key, ...aliases].some((a) => hasPhrase(h, a)))) return true;
+  const { lead, sections } = splitSections(body);
+  if (key === "intro") return words(lead) >= INTRO_MIN_WORDS;
+  if (key === "cta") {
+    const last = [...sections].reverse().find((s) => !END_MATTER.includes(plain(s.heading)));
+    return Boolean(last) && internalLinks(last.text).includes("/contact");
+  }
+  return false;
+}
+
+/** The words a refused draft can use, so the message says what to write. */
+function sectionHint(key) {
+  const accepted = [key.replace(/-/g, " "), ...(SECTION_ALIASES[key] ?? [])].filter((a, i, all) => all.indexOf(a) === i);
+  const extra =
+    key === "intro" ? `, or ${INTRO_MIN_WORDS} words before the first H2` : key === "cta" ? ", or a last section that links to /contact" : "";
+  return ` (a heading with ${accepted.join(", ")}${extra})`;
+}
+
 /** Pure checks against the brief. Returns a list of problems. */
 export function validate(post, brief) {
   const problems = [];
@@ -88,9 +144,9 @@ export function validate(post, brief) {
   if (policy.min_words && n < policy.min_words) problems.push(`body_md is ${n} words, minimum ${policy.min_words}`);
   if (policy.max_words && n > policy.max_words) problems.push(`body_md is ${n} words, maximum ${policy.max_words}`);
 
-  const h2 = [...body.matchAll(/^## (.+)$/gm)].map((m) => norm(m[1]));
+  const h2 = [...body.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
   for (const s of policy.required_sections ?? []) {
-    if (!h2.some((h) => h.includes(norm(s)))) problems.push(`missing required H2 section: ${s}`);
+    if (!hasSection(h2, s, body)) problems.push(`missing required H2 section: ${s}${sectionHint(s)}`);
   }
   const all = norm([post.title, post.excerpt, post.meta_description, body, ...(post.tags ?? [])].join(" "));
   for (const phrase of policy.banned_phrases ?? []) {

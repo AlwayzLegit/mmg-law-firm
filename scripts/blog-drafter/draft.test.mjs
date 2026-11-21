@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { ALLOWED_FIELDS, CAP, WINDOW_DAYS, buildPayload, capCheck, capLine, internalLinks, validate } from "./draft.mjs";
+import { ALLOWED_FIELDS, CAP, SECTION_ALIASES, WINDOW_DAYS, buildPayload, capCheck, capLine, hasSection, internalLinks, validate } from "./draft.mjs";
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), "utf8"));
 const brief = read("./fixtures/brief.json").brief;
@@ -91,4 +91,99 @@ test("buildPayload copies the allow-list only and adds run_id", () => {
 
 test("internalLinks drops query and hash, dedupes, ignores outside links", () => {
   assert.deepEqual(internalLinks("[a](/contact) [b](https://x.com) [c](/about#top) [d](/contact/) [e](/)"), ["/contact", "/about", "/"]);
+});
+
+// Required sections are kinds of sections (OPS-254): a heading in reader words meets a key, every key is still required.
+const FILLER = "word ".repeat(40).trim();
+const para = (n = 40) => Array.from({ length: n }, () => "word").join(" ");
+const sectionProblems = (post) => validate({ ...sample(), ...post }, brief).filter((p) => /missing required H2 section/.test(p));
+const missingKeys = (post) => sectionProblems(post).map((p) => p.match(/section: ([a-z-]+)/)[1]);
+const mdPost = (parts) => ({ body_md: parts.join("\n\n") });
+
+test("sections: the headings of a live post, plus a deadlines and a lawyer heading, meet every key", () => {
+  const post = mdPost([
+    FILLER,
+    "## What California Minimum Car Insurance Requires Today",
+    para(),
+    "## Why 30/60/15 Isn't Enough in a Serious Crash",
+    para(),
+    "## What to Do When the At-Fault Driver Has Minimum Coverage",
+    para(),
+    "## The Penalty for Driving Without Insurance in California",
+    para(),
+    "## Reporting Requirements After a California Crash",
+    para(),
+    "## Deadlines to know",
+    para(),
+    "## How a lawyer can help",
+    para(),
+    "## Frequently Asked Questions",
+    para(),
+    "## Ready to talk?",
+    "Reach the firm through [the contact page](/contact).",
+  ]);
+  assert.deepEqual(missingKeys(post), []);
+});
+
+test("sections: a draft shaped like OPS-39 still lacks deadlines, how-a-lawyer-helps and cta", () => {
+  const post = mdPost([
+    "## Overview",
+    para(),
+    "## When the DMV report is required",
+    para(),
+    "## Who has to file, and how",
+    para(),
+    "## What happens if you do not file",
+    para(),
+    "## A separate duty: the police report",
+    para(),
+    "## How the SR-1 can relate to an injury claim",
+    para(),
+    "## What to do next",
+    "Reach the firm through the [contact page](/contact).",
+    "## Frequently asked questions",
+    para(),
+    "## Sources",
+    "- California DMV",
+  ]);
+  assert.deepEqual(missingKeys(post).sort(), ["cta", "deadlines", "how-a-lawyer-helps"]);
+});
+
+test("sections: the refusal names the words a heading can use", () => {
+  const [problem] = sectionProblems({ body_md: body().replace("## Deadlines to know", "## Something else") });
+  assert.match(problem, /^missing required H2 section: deadlines \(a heading with deadlines, deadline, time limit/);
+  assert.equal(/[\u2013\u2014]/.test(problem), false);
+});
+
+test("sections: an unknown key is read in words, with no alias", () => {
+  const keyed = withPolicy({ required_sections: [...brief.policy.required_sections, "sources"] });
+  assert.deepEqual(validate(sample(), keyed).filter((p) => /missing required/.test(p)), ["missing required H2 section: sources (a heading with sources)"]);
+  const withSources = { ...sample(), body_md: body() + "\n\n## Sources\n\n- California DMV" };
+  assert.deepEqual(validate(withSources, keyed).filter((p) => /missing required/.test(p)), []);
+});
+
+test("sections: cta is met by a last section that links to /contact, whatever its heading", () => {
+  const h2 = ["Wrap up"];
+  assert.equal(hasSection(h2, "cta", `${para()}\n\n## Wrap up\n\nSee [us](/contact).`), true);
+  assert.equal(hasSection(h2, "cta", `${para()}\n\n## Wrap up\n\nSee [us](/about).`), false);
+  // Sources and References do not count as the last section.
+  assert.equal(hasSection(["Wrap up", "Sources"], "cta", "## Wrap up\n\n[us](/contact)\n\n## Sources\n\n- a"), true);
+  // A link in an earlier section is not a closing call to action.
+  assert.equal(hasSection(["Wrap up", "More"], "cta", "## Wrap up\n\n[us](/contact)\n\n## More\n\ntext"), false);
+});
+
+test("sections: intro is met by 40 words before the first H2, and not by 39", () => {
+  assert.equal(hasSection(["Facts"], "intro", `${para(40)}\n\n## Facts\n\ntext`), true);
+  assert.equal(hasSection(["Facts"], "intro", `${para(39)}\n\n## Facts\n\ntext`), false);
+  assert.equal(hasSection(["Facts"], "intro", "## Facts\n\ntext"), false);
+  assert.equal(hasSection(["Overview"], "intro", "## Overview\n\ntext"), true);
+});
+
+test("sections: whole words only, hyphens and case do not matter", () => {
+  assert.equal(hasSection(["Medically Speaking"], "cta", ""), false);
+  assert.equal(hasSection(["What-To-Do after a crash"], "what-to-do", ""), true);
+  assert.equal(hasSection(["How-a-lawyer-helps in review"], "how-a-lawyer-helps", ""), true);
+  assert.equal(hasSection(["Time limits for a claim"], "deadlines", ""), true);
+  assert.equal(hasSection(["Statute of limitations"], "deadlines", ""), true);
+  assert.deepEqual(Object.keys(SECTION_ALIASES), brief.policy.required_sections);
 });
