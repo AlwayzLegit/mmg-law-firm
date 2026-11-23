@@ -56,4 +56,4 @@ Other rules applied during conversion:
 `routes.mjs` mirrors the paths in `src/lib/v3/pages.ts` — keep them in sync.
 
 Generated files are safe to hand-edit, but a re-run overwrites them.
-`src/components/v3/pages/glendale.tsx` carries a hand edit (OPS-280: the "Motorcycle accidents" card links the Glendale motorcycle page), guarded by `glendale-links.test.ts`.
+`src/components/v3/pages/glendale.tsx` carries a hand edit (OPS-280 and OPS-290: the "Motorcycle accidents", "Car accidents" and "Truck accidents" cards link the Glendale motorcycle, car and truck pages), guarded by `glendale-links.test.ts`.
