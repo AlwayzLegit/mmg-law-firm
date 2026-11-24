@@ -1,0 +1,85 @@
+name: Crew ready
+
+# When every pull_request workflow run on the current head of a crew/ pull request
+# has finished green, put the label crew-ready on it. The label starts the Crew's
+# Merge captain task for this repo. Own token, no secret. Twin of JetNine's
+# crew-ready.yml, extended for repos where more than one workflow checks a pull request.
+
+on:
+  workflow_run:
+    # Every workflow with a pull_request trigger in this repo (names exactly as in their `name:`).
+    workflows: ["Draft queued blog post", "Types and tests", "Cloudflare build spike", "Deploy skip check", "Health monitor", "Lighthouse (live site)", "Lighthouse", "Search results report"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to evaluate
+        required: true
+        type: string
+      dry_run:
+        description: Print the decision, label nothing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: read
+  issues: read
+  pull-requests: write
+
+concurrency:
+  group: crew-ready-${{ github.event.workflow_run.head_branch || inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  label:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'pull_request' &&
+       startsWith(github.event.workflow_run.head_branch, 'crew/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Label the pull request when all its checks are green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          IN_PR: ${{ inputs.pr }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          pr="${IN_PR:-$RUN_PR}"
+          if [ -z "$pr" ] && [ -n "$RUN_BRANCH" ]; then
+            pr=$(gh api "repos/$REPO/pulls?state=open&head=${REPO%%/*}:$RUN_BRANCH" --jq '.[0].number // empty')
+          fi
+          [ -n "$pr" ] || { echo "no pull request for this run"; exit 0; }
+          read -r state head ref < <(gh api "repos/$REPO/pulls/$pr" --jq '"\(.state) \(.head.sha) \(.head.ref)"')
+          case "$ref" in crew/*) ;; *) echo "#$pr is not a crew/ branch ($ref)"; exit 0;; esac
+          if [ -n "$RUN_SHA" ] && [ "$head" != "$RUN_SHA" ]; then echo "stale run: head is $head"; exit 0; fi
+          runs=$(gh api "repos/$REPO/actions/runs?head_sha=$head&event=pull_request&per_page=100" \
+            --jq '[.workflow_runs[] | {name, status, conclusion, created_at}]')
+          # A closed and reopened pull request starts new runs for the same head:
+          # only the newest run of each workflow counts.
+          runs=$(jq 'group_by(.name) | map(max_by(.created_at))' <<<"$runs")
+          total=$(jq length <<<"$runs")
+          open=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+          bad=$(jq -r '[.[] | select(.status == "completed" and ((.conclusion // "") | IN("success","skipped","neutral") | not)) | "\(.name)=\(.conclusion)"] | join(", ")' <<<"$runs")
+          first=$(jq -r 'map(.created_at) | min // ""' <<<"$runs")
+          echo "#$pr head $head: $total pull_request runs, $open not finished${bad:+, not green: $bad}"
+          [ "$total" -gt 0 ] || { echo "no pull_request runs on the head yet"; exit 0; }
+          [ "$open" -eq 0 ] || { echo "waiting for the other runs"; exit 0; }
+          [ -z "$bad" ] || { echo "not all green"; exit 0; }
+          labeled=$(gh api --paginate "repos/$REPO/issues/$pr/events?per_page=100" \
+            --jq '.[] | select(.event == "labeled" and .label.name == "crew-ready") | .created_at' | sort | tail -1)
+          # One label per head: a label added after the first check of this head started
+          # belongs to this head (a rerun or a reopen starts no earlier check). A new push
+          # starts newer checks than the last label, so it is labeled again.
+          if [ -n "$labeled" ] && [[ "$labeled" > "$first" ]]; then echo "already labeled at $labeled for this head"; exit 0; fi
+          if [ "${DRY_RUN:-false}" = "true" ]; then echo "would label #$pr crew-ready at $head ($total of $total runs green, state $state)"; exit 0; fi
+          [ "$state" = "open" ] || { echo "#$pr is $state, not labeled"; exit 0; }
+          gh api -X DELETE "repos/$REPO/issues/$pr/labels/crew-ready" >/dev/null 2>&1 || true
+          gh api -X POST "repos/$REPO/issues/$pr/labels" -f 'labels[]=crew-ready' >/dev/null
+          echo "labeled #$pr crew-ready at $head ($total of $total runs green)"
