@@ -54,9 +54,11 @@ const LINK_TIMEOUT_MS = 20_000;
 const MAX_LINKS = 40;
 const DASHES = /[–—]/g;
 
-// Hosts of other law firms, attorney directories and lead sellers. Government
-// hosts (.gov, which includes the courts and the DMV) are primary sources and
-// pass. Any other external link fails the second test too: see below. The desk's
+// An external link must be https to a government host (.gov, which includes the
+// courts and the DMV): a primary source. Any other host fails. FIRM_HOST only
+// words the reason when the host looks like another law firm, an attorney
+// directory or a lead seller. A keyword list alone would let a firm with an
+// unrelated domain name through, so it does not decide. The desk's
 // "site_rules" and "voice" points cover what a list cannot.
 const FIRM_HOST = /(?:law|lawyer|attorney|injury|legal|justia|avvo|findlaw|nolo)/i;
 const isPrimarySource = (host) => /(?:^|\.)[a-z0-9-]+\.gov$/i.test(host);
@@ -194,12 +196,12 @@ export function checkMechanics({ post, brief, problems = [], site = SITE_DEFAULT
     try {
       const u = new URL(href);
       if (u.protocol !== "https:") comp.push(`${href} is not https`);
-      else if (!isPrimarySource(u.hostname) && FIRM_HOST.test(u.hostname)) comp.push(`${u.hostname} looks like another law firm, a directory or a lead seller`);
+      else if (!isPrimarySource(u.hostname)) comp.push(FIRM_HOST.test(u.hostname) ? `${u.hostname} looks like another law firm, a directory or a lead seller` : `${u.hostname} is not a .gov source (only .gov hosts may be linked from outside the site)`);
     } catch {
       comp.push(`${href} is not a valid address`);
     }
   }
-  out.push(verdict("no_competitor_links", comp, `${external.length} external links, none to a law firm, directory or lead seller`));
+  out.push(verdict("no_competitor_links", comp, `${external.length} external links, every one https to a .gov source`));
 
   const dashes = [...bucket.no_dashes];
   if (!dashes.length) {

@@ -75,6 +75,9 @@ test("external links: only https .gov sources pass, a firm or directory fails", 
   assert.equal(mech(withLink("https://www.dmv.ca.gov/portal/"), "no_competitor_links").pass, true);
   assert.equal(mech(withLink("https://www.example-injury-law.com/"), "no_competitor_links").pass, false);
   assert.equal(mech(withLink("https://www.justia.com/x"), "no_competitor_links").pass, false);
+  assert.equal(mech(withLink("https://example.com/"), "no_competitor_links").pass, false);
+  assert.match(mech(withLink("https://example.com/"), "no_competitor_links").saw, /not a \.gov source/);
+  assert.equal(mech(withLink("https://www.lead-seller-xyz.net/"), "no_competitor_links").pass, false);
   assert.equal(mech(withLink("http://www.dmv.ca.gov/"), "no_competitor_links").pass, false);
 });
 
