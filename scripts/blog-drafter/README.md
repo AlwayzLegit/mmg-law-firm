@@ -18,22 +18,30 @@ Each key in the brief's `required_sections` names a kind of section, not the wor
 
 ## Queue file fields
 
-`title` (60 max), `slug`, `body_md`, `excerpt` (300 max), `meta_description` (120 to 155), `tags` (3 to 6), `primary_keyword`, optional `secondary_keywords`, `practice_area_ids`, `related_county_ids`, `hero_image_url`, `hero_image_alt`, `topic_id`. Firm facts and the four disclaimers come from `src/lib/constants.ts`; the general disclaimer must appear word for word.
+`title` (60 max), `slug`, `body_md`, `excerpt` (300 max), `meta_description` (120 to 155), `tags` (3 to 6), `primary_keyword`, optional `secondary_keywords`, `practice_area_ids`, `related_county_ids`, `hero_image_url`, `hero_image_alt`, `topic_id`. One more field feeds the quality check and is never sent to the site: `desk`, the Blog desk's verdict on six points, each `{ "pass": true, "saw": "what it saw" }` (`need`, `new`, `true`, `site_rules`, `voice`, `not_a_repeat`); a file that leaves one out is refused. Firm facts and the four disclaimers come from `src/lib/constants.ts`; the general disclaimer must appear word for word.
 
 ## What is refused
 
 - The cap: 3 drafts or posts filed in any 7 days, every status and source, counted by `created_at`. A constant; no flag, env var or queue field changes it.
 - Any of `is_published`, `published_at`, `review_status`, `author_name`, `allow_duplicate`, `run_id` in the file.
 - A post that breaks the brief: word range, required H2 sections, banned phrases, `/contact` link, 3 to 8 internal links all in `site_urls`, em or en dashes.
+- A draft that fails any point of the quality check, including a missing `desk` verdict.
 - A slug starting with `sample-` in a real run.
 
 Logs and the job summary hold numbers and section names only, never the instructions text or the key.
+
+## The quality check (OPS-317)
+
+`quality-check.mjs` runs on every queue file in every mode (real, `--dry-run`, `--dry-run --offline`), after the brief and the cap are read and before anything is written. It prints one line per point ("pass" or "FAIL" with what it saw) and `check: N of 17 pass`; the lines print also when the cap or a pause refuses. Any FAIL refuses the draft with the reasons. A pass never publishes anything: the draft is filed as needs review and the attorney still reviews and publishes it.
+
+The six desk points are judgment, made by the Blog desk against the site's published posts; the script only refuses a missing or empty verdict. The eleven measured points: `title_meta` (title, meta description and excerpt rules of `validate`), `one_h1` (no `# ` line in the body), `target_in_title_and_first_100_words` (the `primary_keyword`), `internal_links` (the brief's count and `site_urls`), `contact_link`, `faq` (3 questions, only when the brief requires a FAQ section), `image_alt` (10 to 200 characters when a hero image is set), `links_200` (every link answers 200; offline runs only check that links are well formed and say so), `no_competitor_links` (an external link must be https to a `.gov` host and not look like another law firm, a directory or a lead seller), `no_dashes`, and `markdown` (the brief's word range, required sections, banned phrases and disclaimer, plain Markdown, no skipped heading level). Every problem `validate` reports lands under one of these points.
 
 ## Try it
 
 ```
 node --test scripts/blog-drafter/*.test.mjs
 node scripts/blog-drafter/draft.mjs scripts/blog-drafter/sample-post.json --dry-run --offline
+node scripts/blog-drafter/draft.mjs scripts/blog-drafter/fixtures/failing-draft.json --dry-run --offline   # exits 1: markdown, three missing sections
 ```
 
 The sample and the fixture brief (`fixtures/brief.json`) mirror the live brief, instructions v1, and link only the static URLs of `src/lib/content-agent/site-urls.ts`; when the owner changes the brief in the admin, refresh both.

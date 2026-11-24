@@ -11,9 +11,15 @@
 // drafts or posts filed in WINDOW_DAYS days) is a constant that no flag, env
 // var or queue field can change. Only numbers and section names from the
 // brief are printed, never the instructions text.
+//
+// Every mode first runs the quality check (quality-check.mjs): 17 named
+// points, one line each, fail-closed before anything is written. The queue
+// file may carry a `desk` field (the Blog desk's verdict on six points) for it;
+// it is not in ALLOWED_FIELDS, so it never reaches the API.
 import { appendFileSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatLine, runCheck, summaryLine } from "./quality-check.mjs";
 
 export const CAP = 3;
 export const WINDOW_DAYS = 7;
@@ -236,11 +242,19 @@ async function main() {
   const problems = validate(post, brief);
   const paused = brief.policy?.pause_drafting === true;
 
+  // The quality check always prints, also when the cap or a pause refuses.
+  const result = await runCheck(post, { brief, problems, offline });
+  const lines = result.checks.map(formatLine);
+  for (const l of lines) console.log(l);
+  console.log(summaryLine(result));
+  summary(`Quality check:\n${lines.map((l) => `- ${l}`).join("\n")}\n\n**${summaryLine(result)}**`);
+  const failedPoints = result.checks.filter((c) => !c.pass).map(formatLine);
+
   if (dry) {
     if (paused) console.log(`note: drafting is paused on the site (${brief.policy.pause_reason ? "backlog over its limit" : "policy"})`);
-    if (problems.length) {
-      summary(`Dry run problems:\n${problems.map((p) => `- ${p}`).join("\n")}`);
-      fail(`dry run found problems:\n  - ${problems.join("\n  - ")}`);
+    if (failedPoints.length) {
+      summary(`Dry run problems:\n${failedPoints.map((p) => `- ${p}`).join("\n")}`);
+      fail(`dry run found problems:\n  - ${failedPoints.join("\n  - ")}`);
     }
     console.log(`dry run OK: ${post.slug}, draft payload valid, nothing created`);
     summary(`Dry run OK: ${post.slug}, nothing created`);
@@ -251,9 +265,9 @@ async function main() {
   if (paused) fail(`paused: ${brief.policy.pause_reason ?? "drafting is paused by policy"}`);
   if (!cap.allowed) fail(`not filed: cap reached, ${cap.count} drafts or posts in the last ${WINDOW_DAYS} days (limit ${CAP}), next slot opens ${cap.nextSlotAt.toISOString()}`);
   if (String(post.slug).startsWith("sample-")) fail("not filed: sample slugs are never filed");
-  if (problems.length) {
-    summary(`Not filed:\n${problems.map((p) => `- ${p}`).join("\n")}`);
-    fail(`not filed:\n  - ${problems.join("\n  - ")}`);
+  if (failedPoints.length) {
+    summary(`Not filed:\n${failedPoints.map((p) => `- ${p}`).join("\n")}`);
+    fail(`not filed:\n  - ${failedPoints.join("\n  - ")}`);
   }
 
   const started = Date.now();
