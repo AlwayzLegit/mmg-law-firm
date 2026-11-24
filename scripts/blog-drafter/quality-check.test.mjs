@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { ALLOWED_FIELDS, buildPayload, validate } from "./draft.mjs";
-import { DESK_POINTS, MECHANICAL_POINTS, REQUIRED_POINTS, checkDesk, checkLinks, checkMechanics, formatLine, linksOf, runCheck, summaryLine } from "./quality-check.mjs";
+import { DESK_POINTS, MECHANICAL_POINTS, REQUIRED_POINTS, checkDesk, checkLinks, checkMechanics, formatLine, internalPath, linksOf, runCheck, summaryLine } from "./quality-check.mjs";
 
 const read = (rel) => JSON.parse(readFileSync(new URL(rel, import.meta.url), "utf8"));
 const brief = read("./fixtures/brief.json").brief;
@@ -102,4 +102,53 @@ test("links_200: a 404, a thrown error, a HEAD-only refusal, and the offline lin
   assert.equal(o.pass, true);
   assert.deepEqual(calls, []);
   assert.match(o.saw, /offline: 2 distinct links are well formed, none fetched/);
+});
+
+test("linksOf reads every link form the renderer makes: reference style, autolink, bare URL", () => {
+  const md = [
+    "A [reference link][ref] and a [shortcut] and an <https://auto.example.com/a> and bare https://bare.example.com/b, and www.www-bare.example.com/c.",
+    "![an image][pic] and ![inline](/img.png).",
+    "",
+    "[ref]: https://competitor.example/not-found",
+    "[shortcut]: /contact \"title\"",
+    "[pic]: /images/x.webp",
+  ].join("\n");
+  assert.deepEqual(linksOf(md).sort(), [
+    "/contact",
+    "https://auto.example.com/a",
+    "https://bare.example.com/b",
+    "https://competitor.example/not-found",
+    "https://www.www-bare.example.com/c",
+  ].sort());
+});
+
+test("a link hidden in a reference definition or an autolink is checked like any other", async () => {
+  const hidden = `${sample().body_md}\n\nSee [a firm][b] and <https://some-injury-law.example.com/page>.\n\n[b]: https://www.justia.com/x\n`;
+  const post = { ...sample(), body_md: hidden };
+  const m = byPoint(checkMechanics({ post, brief, problems: validate(post, brief) }), "no_competitor_links");
+  assert.equal(m.pass, false);
+  assert.match(m.saw, /justia\.com/);
+  const seen = [];
+  const r = await checkLinks({ text: hidden, fetchFn: async (u) => { seen.push(u); return { status: 404 }; } });
+  assert.equal(r.pass, false);
+  assert.ok(seen.some((u) => u.startsWith("https://www.justia.com/x")));
+});
+
+test("internalPath: relative and same-host absolute URLs are this site, anything else is not", () => {
+  assert.equal(internalPath("/contact"), "/contact");
+  assert.equal(internalPath("https://www.mmg-lawfirm.com/contact?a=1"), "/contact?a=1");
+  assert.equal(internalPath("https://mmg-lawfirm.com/blog#top"), "/blog#top");
+  assert.equal(internalPath("https://www.mmg-lawfirm.com.evil.example/contact"), null);
+  assert.equal(internalPath("//www.mmg-lawfirm.com/contact"), null);
+  assert.equal(internalPath("https://www.dmv.ca.gov/x"), null);
+});
+
+test("an absolute link to the firm's own site is not another law firm, and is fetched on the site", async () => {
+  const body = `${sample().body_md}\n\nSee [the contact page](https://www.mmg-lawfirm.com/contact).`;
+  const post = { ...sample(), body_md: body };
+  assert.equal(byPoint(checkMechanics({ post, brief, problems: validate(post, brief) }), "no_competitor_links").pass, true);
+  const seen = [];
+  const r = await checkLinks({ text: body, site: "https://www.mmg-lawfirm.com", fetchFn: async (u) => { seen.push(u); return { status: 200 }; } });
+  assert.equal(r.pass, true);
+  assert.ok(seen.every((u) => u.startsWith("https://www.mmg-lawfirm.com/")));
 });
