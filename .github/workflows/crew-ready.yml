@@ -60,18 +60,24 @@ jobs:
           case "$ref" in crew/*) ;; *) echo "#$pr is not a crew/ branch ($ref)"; exit 0;; esac
           if [ -n "$RUN_SHA" ] && [ "$head" != "$RUN_SHA" ]; then echo "stale run: head is $head"; exit 0; fi
           runs=$(gh api "repos/$REPO/actions/runs?head_sha=$head&event=pull_request&per_page=100" \
-            --jq '[.workflow_runs[] | {name, status, conclusion, updated_at}]')
+            --jq '[.workflow_runs[] | {name, status, conclusion, created_at}]')
+          # A closed and reopened pull request starts new runs for the same head:
+          # only the newest run of each workflow counts.
+          runs=$(jq 'group_by(.name) | map(max_by(.created_at))' <<<"$runs")
           total=$(jq length <<<"$runs")
           open=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
           bad=$(jq -r '[.[] | select(.status == "completed" and ((.conclusion // "") | IN("success","skipped","neutral") | not)) | "\(.name)=\(.conclusion)"] | join(", ")' <<<"$runs")
-          last=$(jq -r 'map(.updated_at) | max // ""' <<<"$runs")
+          first=$(jq -r 'map(.created_at) | min // ""' <<<"$runs")
           echo "#$pr head $head: $total pull_request runs, $open not finished${bad:+, not green: $bad}"
           [ "$total" -gt 0 ] || { echo "no pull_request runs on the head yet"; exit 0; }
           [ "$open" -eq 0 ] || { echo "waiting for the other runs"; exit 0; }
           [ -z "$bad" ] || { echo "not all green"; exit 0; }
           labeled=$(gh api --paginate "repos/$REPO/issues/$pr/events?per_page=100" \
             --jq '.[] | select(.event == "labeled" and .label.name == "crew-ready") | .created_at' | sort | tail -1)
-          if [ -n "$labeled" ] && [[ "$labeled" > "$last" ]]; then echo "already labeled at $labeled for this head"; exit 0; fi
+          # One label per head: a label added after the first check of this head started
+          # belongs to this head (a rerun or a reopen starts no earlier check). A new push
+          # starts newer checks than the last label, so it is labeled again.
+          if [ -n "$labeled" ] && [[ "$labeled" > "$first" ]]; then echo "already labeled at $labeled for this head"; exit 0; fi
           if [ "${DRY_RUN:-false}" = "true" ]; then echo "would label #$pr crew-ready at $head ($total of $total runs green, state $state)"; exit 0; fi
           [ "$state" = "open" ] || { echo "#$pr is $state, not labeled"; exit 0; }
           gh api -X DELETE "repos/$REPO/issues/$pr/labels/crew-ready" >/dev/null 2>&1 || true
