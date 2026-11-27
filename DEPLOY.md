@@ -578,15 +578,15 @@ Supabase.
   a new Supabase migration cannot ship without its D1 change.
 - CI job "D1 data layer": applies the schema to wrangler's local D1 (workerd)
   with `cloudflare/wrangler.d1-ci.jsonc` and runs `src/lib/db/d1Smoke.test.ts`,
-  which prints `d1 smoke: N of 5`. No secret.
+  which prints `d1 smoke: N of 7`. No secret.
 
 **What D1 mode does not have yet (part 2 and later), so nobody sets it first**
 
 - Row-level security. D1 has none: the 49 Supabase policies must become
   server-side checks with a test per route before any traffic reads D1.
-- The Postgres functions (`bump_rate_limit`, `claim_content_topics`,
-  `content_health_issues`, `bump_error_count`, `error_counts_recent`, and the
-  `is_admin` family). `rpc()` answers `PGRST202` for each until its part.
+- The policy helpers `is_admin`, `is_owner` and `is_editor`. `rpc()` answers
+  `PGRST202` for them until the policy map (OPS-404). The other Postgres
+  functions run in code since part 2a (OPS-364): see below.
 - The seed rows and the data copy, sign-in (Supabase Auth), file storage (R2),
   and the D1 database and its binding in `wrangler.jsonc`.
 
@@ -619,6 +619,24 @@ Neither builds or deploys the app, sets secrets or pre-loads pages. The build id
 
 **Way back.** Revert the pull request and run `front-production` on `main` again (it redeploys the earlier front Worker with the live build id), or roll `mmg-law-firm-front` back to its previous version in Cloudflare.
 
+## D1 functions in code (OPS-364, part 2a of OPS-353)
+
+`src/lib/db/d1Rpcs.ts` ports the six Postgres functions the app calls through
+`rpc()`, registered by name in `RPCS` (`d1Client.ts`) with the same argument
+names and result shapes as PostgREST: `bump_rate_limit` (one upsert),
+`claim_content_topics` (one UPDATE that still checks `status = 'queued'`, in
+place of row locking: D1 runs one statement at a time), `content_health_issues`
+and `content_health_issues_unguarded` (same checks and order as migration 0031;
+in D1 mode `content_health_issues` has no `is_admin()` guard, the caller's admin
+gate is the check until OPS-404), `bump_error_count` and `error_counts_recent`
+(migration 0040). `rpc()` calls also take `.single()`, `.maybeSingle()` and
+`.abortSignal()`, as the callers in `rate-limit.ts` and `health.ts` use them.
+The `updated_at` and blog review-status triggers already exist in
+`migrations/d1/0001_schema.sql`, so no code or migration is added for them.
+Still on Supabase and not touched here: `src/lib/cloudflare/error-count.ts`
+writes `bump_error_count` through Supabase's REST address; it moves with the
+staging flip (OPS-366). `DATA_PROVIDER` stays unset everywhere.
+
 ## Admin sign-in on Better Auth and D1 (OPS-365, part 3 of OPS-353)
 
 The admin sign-in can run on Better Auth with the sessions, users and one-time links in D1, as The Look's does. It changes nothing that runs: `AUTH_PROVIDER` is unset, so production and staging keep Supabase Auth, and `/api/auth/ba/*` answers 404.
@@ -642,6 +660,6 @@ The admin sign-in can run on Better Auth with the sessions, users and one-time l
 - Password change (first password after an invite, a reset, the Security card): ends every session of the user and gives this browser a new one; the reset flow then signs out as today.
 - `pnpm bootstrap-owner --provider better-auth --email ... --name ...` prints three SQL statements and the invite link, for you to run by hand with `wrangler d1 execute`.
 
-**Proof in CI.** The job "D1 data layer" applies `0002_auth.sql` in the smoke test itself and now prints `d1 smoke: 7 of 7` (steps 6 and 7: an imported user signs in and gets a session row; a recovery token works once). The workflow file and the older "N of 5" lines above are as they were.
+**Proof in CI.** The job "D1 data layer" applies `0002_auth.sql` in the smoke test itself and now prints `d1 smoke: 9 of 9` (steps 8 and 9: an imported user signs in and gets a session row; a recovery token works once; steps 6 and 7 are OPS-364's). Only the comment in the workflow file changed; the older "N of 5" and "N of 7" lines above are as they were.
 
 **Way back.** Nothing turns this on: unset `AUTH_PROVIDER` on the Worker (it is unset today), or revert the merge. The `auth_*` tables can stay empty.

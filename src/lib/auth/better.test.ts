@@ -12,7 +12,7 @@ import { nodeD1 } from "@/test/node-d1";
 // Better Auth against the real D1 schema (migrations/d1/0001 and 0002) in
 // Node's built-in SQLite. The Worker runs the same code against D1; the
 // "D1 data layer" CI job repeats the sign-in and the one-time link on wrangler's
-// local D1 (src/lib/db/d1Smoke.test.ts, "d1 smoke: 7 of 7").
+// local D1 (src/lib/db/d1Smoke.test.ts, "d1 smoke: 9 of 9").
 
 const ROOT = join(__dirname, "../../..");
 const SECRET = "test-secret-test-secret-test-secret-0123456789";

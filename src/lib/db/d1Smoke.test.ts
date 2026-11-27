@@ -15,7 +15,7 @@ import { consumeLink, issueLink } from "@/lib/auth/links";
 //   wrangler d1 execute DB --local --persist-to .wrangler/state --config cloudflare/wrangler.d1-ci.jsonc --file migrations/d1/0001_schema.sql
 //   D1_SMOKE=1 pnpm exec vitest run src/lib/db/d1Smoke.test.ts
 //
-// Steps 6 and 7 (OPS-365) run the admin sign-in on the same engine: a user
+// Steps 8 and 9 (OPS-365) run the admin sign-in on the same engine: a user
 // imported from Supabase rows signs in through Better Auth and gets a session
 // row, and a recovery token works once. They apply migrations/d1/0002_auth.sql
 // themselves, statement by statement (it is additive and safe to run twice).
@@ -44,7 +44,7 @@ describe.skipIf(!RUN)("d1 smoke (local D1)", () => {
   }, 60_000);
 
   afterAll(async () => {
-    process.stdout.write(`d1 smoke: ${passed.length} of 7\n`);
+    process.stdout.write(`d1 smoke: ${passed.length} of 9\n`);
     await dispose?.();
   });
 
@@ -102,14 +102,38 @@ describe.skipIf(!RUN)("d1 smoke (local D1)", () => {
     expect(String(after.data!.updated_at) > String(before.data!.updated_at)).toBe(true);
     passed.push("count");
   });
-  // Steps 6 and 7: the admin sign-in (OPS-365).
+
+  // OPS-364: the Postgres functions that run in code on D1.
+  it("6. bump_rate_limit counts inside a window", async () => {
+    const call = () => client().rpc<Row>("bump_rate_limit", { p_key: `smoke:${RUN_ID}`, p_window_seconds: 3600 }).maybeSingle();
+    expect((await call()).data?.count).toBe(1);
+    const second = await call();
+    expect(second.error).toBeNull();
+    expect(second.data?.count).toBe(2);
+    passed.push("rate-limit");
+  });
+
+  it("7. claim_content_topics claims a queued topic once", async () => {
+    const c = client();
+    const { data: agentRun } = await c.from<Row>("agent_runs").insert({ agent_name: RUN_ID }).select("id").single();
+    const { data: topic } = await c.from<Row>("content_topics").insert({ keyword: `${RUN_ID} keyword`, priority: 0 }).select("id").single();
+    const first = await c.rpc<Row[]>("claim_content_topics", { p_run_id: agentRun!.id, p_limit: 1, p_topic_ids: [topic!.id] });
+    expect(first.error).toBeNull();
+    expect(first.data).toHaveLength(1);
+    expect(first.data![0]).toMatchObject({ id: topic!.id, status: "claimed", claimed_by_run_id: agentRun!.id });
+    const again = await c.rpc<Row[]>("claim_content_topics", { p_run_id: agentRun!.id, p_limit: 1, p_topic_ids: [topic!.id] });
+    expect(again.data).toEqual([]);
+    passed.push("claim");
+  });
+
+  // Steps 8 and 9: the admin sign-in (OPS-365).
   const USER_ID = crypto.randomUUID();
   const EMAIL = `${RUN_ID}@smoke.test`;
   const PASSWORD = "smoke test password";
   const auth = () => buildBetterAuth({ database: db, db, secret: "smoke-secret-smoke-secret-smoke-secret!", secure: false, allow: async () => true });
   const count = async (sql: string, ...binds: unknown[]) => Number(((await db.prepare(sql).bind(...binds).all<{ n: number }>()).results[0] ?? { n: 0 }).n);
 
-  it("6. a user imported from Supabase rows signs in through Better Auth and gets a session row", async () => {
+  it("8. a user imported from Supabase rows signs in through Better Auth and gets a session row", async () => {
     const { users, accounts } = authRowsFromSupabase([{ id: USER_ID, email: EMAIL, encrypted_password: bcrypt.hashSync(PASSWORD, 4), email_confirmed_at: "2026-01-01T00:00:00Z" }]);
     const u = users[0];
     const a = accounts[0];
@@ -122,7 +146,7 @@ describe.skipIf(!RUN)("d1 smoke (local D1)", () => {
     passed.push("sign-in");
   });
 
-  it("7. a recovery token works once and is refused the second time", async () => {
+  it("9. a recovery token works once and is refused the second time", async () => {
     const { token } = await issueLink(db, { userId: USER_ID, type: "recovery" });
     expect(await consumeLink(db, { token, type: "recovery" })).toBe(USER_ID);
     expect(await consumeLink(db, { token, type: "recovery" })).toBeNull();
