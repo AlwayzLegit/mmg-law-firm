@@ -544,3 +544,56 @@ Public repos bill 0.
 Way back: revert the merge commit. While the owner's click exists that restores
 the old single job. Once the click is gone, fix forward or ship by hand with
 target `production`, because a revert would deploy unchecked.
+
+## D1 data layer (OPS-353 part 1)
+
+Part 1 of moving the database from Supabase to Cloudflare D1 (OPS-353, owner
+approved 2026-11-27). It adds the D1 schema and a drop-in query client and
+changes nothing that runs: `DATA_PROVIDER` is unset everywhere, no wrangler
+config names a D1 database, and production and staging still read and write
+Supabase.
+
+**What is in the repo**
+
+- `migrations/d1/0001_schema.sql`: the 27 tables as they stand after Supabase
+  migration 0040, with the indexes and the `updated_at` and `blog_posts.review_status`
+  triggers. Same table and column names as Supabase, so rows can be copied 1:1
+  later. Types: ids TEXT (UUID), timestamps ISO-8601 UTC TEXT, booleans INTEGER
+  0/1, jsonb and arrays JSON TEXT.
+- `src/lib/db/d1Client.ts`, `d1Sql.ts`: a PostgREST-compatible query client over
+  a D1 binding, ported from The Look (commit a6db2f6). Same call shapes as
+  supabase-js (`from().select().eq()...`, results `{ data, error, count, status }`,
+  never rejects). Adds what MMG Law's queries use and The Look's did not: nested
+  and `!inner` embeds, filters on embedded columns (`cities.counties.slug`),
+  `.contains("tags", [...])`.
+- `src/lib/db/d1Schema.generated.ts`: generated from the SQL by
+  `pnpm d1:schema`; a test fails while it is stale.
+- `src/lib/db/provider.ts`: the switch. `DATA_PROVIDER=d1` (exactly that value)
+  sends `.from()` and `.rpc()` to the binding named `DB`; `.auth` and
+  `.storage` still go to Supabase. Anything else leaves the Supabase client
+  untouched. Wired into `getServiceSupabase`, `getServerSupabase` and
+  `getStaticSupabase`.
+- `scripts/cloudflare/pg-tables.mjs` and `src/lib/db/d1Schema.test.ts`: the test
+  that fails when a table or column in `supabase/migrations` has no D1 twin, so
+  a new Supabase migration cannot ship without its D1 change.
+- CI job "D1 data layer": applies the schema to wrangler's local D1 (workerd)
+  with `cloudflare/wrangler.d1-ci.jsonc` and runs `src/lib/db/d1Smoke.test.ts`,
+  which prints `d1 smoke: N of 5`. No secret.
+
+**What D1 mode does not have yet (part 2 and later), so nobody sets it first**
+
+- Row-level security. D1 has none: the 49 Supabase policies must become
+  server-side checks with a test per route before any traffic reads D1.
+- The Postgres functions (`bump_rate_limit`, `claim_content_topics`,
+  `content_health_issues`, `bump_error_count`, `error_counts_recent`, and the
+  `is_admin` family). `rpc()` answers `PGRST202` for each until its part.
+- The seed rows and the data copy, sign-in (Supabase Auth), file storage (R2),
+  and the D1 database and its binding in `wrangler.jsonc`.
+
+Differences to know when reading D1 results: `word_count` counts spaces, so
+double spaces over-count by one (Postgres counts words); `agent_instructions.version`
+has no sequence, the caller supplies it; `order()` and filters on a column of an
+embedded table are not supported except the `!inner` filters above.
+
+To run it locally: `pnpm exec wrangler d1 execute DB --local --persist-to .wrangler/state --config cloudflare/wrangler.d1-ci.jsonc --file migrations/d1/0001_schema.sql`, then
+`D1_SMOKE=1 pnpm exec vitest run src/lib/db`.

@@ -1,0 +1,16 @@
+{
+  // CI only (OPS-362): a local, throwaway D1 for the "D1 data layer" job in
+  // .github/workflows/ci.yml. `wrangler d1 execute --local` and getPlatformProxy
+  // keep it in .wrangler/state on the runner. The id below is a placeholder:
+  // nothing here talks to Cloudflare, and no production config references it.
+  "name": "mmg-d1-ci",
+  "compatibility_date": "2026-10-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mmg-ci-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../migrations/d1"
+    }
+  ]
+}

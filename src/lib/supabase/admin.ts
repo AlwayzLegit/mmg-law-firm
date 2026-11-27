@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
+import { withDataProvider } from "@/lib/db/provider";
 import { env } from "@/lib/env";
 
 /**
@@ -13,6 +14,12 @@ import { env } from "@/lib/env";
  * either: keep it scoped to API routes and server actions.
  */
 export function getServiceSupabase() {
+  // DATA_PROVIDER=d1 sends from()/rpc() to D1 (src/lib/db/provider.ts);
+  // by default this is the Supabase client, unchanged.
+  return withDataProvider(buildServiceClient);
+}
+
+function buildServiceClient() {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error(
       "[supabase] SUPABASE_SERVICE_ROLE_KEY is not configured. " +

@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import { withDataProvider } from "@/lib/db/provider";
 import { env } from "@/lib/env";
 
 /**
@@ -11,7 +12,9 @@ import { env } from "@/lib/env";
  */
 export async function getServerSupabase() {
   const cookieStore = await cookies();
-  return createServerClient(
+  // DATA_PROVIDER=d1 sends from()/rpc() to D1; sign-in (.auth) stays on
+  // Supabase. By default this is the Supabase client, unchanged.
+  return withDataProvider(() => createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
@@ -32,7 +35,7 @@ export async function getServerSupabase() {
         },
       },
     },
-  );
+  ));
 }
 
 /**
@@ -41,7 +44,7 @@ export async function getServerSupabase() {
  * is unavailable.
  */
 export function getStaticSupabase() {
-  return createServerClient(
+  return withDataProvider(() => createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
@@ -50,7 +53,7 @@ export function getStaticSupabase() {
         setAll: () => {},
       },
     },
-  );
+  ));
 }
 
 export function isSupabaseConfigured(): boolean {
