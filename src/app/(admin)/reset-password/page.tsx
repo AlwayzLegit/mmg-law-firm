@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 
 import AuthCard from "@/components/admin/auth-card";
 import PasswordForm from "@/components/admin/password-form";
-import { getServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
+import { authProvider } from "@/lib/auth/provider";
+import { getSessionUser } from "@/lib/auth/session";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Choose a new password",
@@ -18,11 +20,8 @@ export const metadata = {
  * sends them back to /login with the "link expired" notice.
  */
 export default async function ResetPasswordPage() {
-  if (!isSupabaseConfigured()) redirect("/login");
-  const supabase = await getServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (authProvider() === "supabase" && !isSupabaseConfigured()) redirect("/login");
+  const user = await getSessionUser();
   if (!user) redirect("/login?error=auth-failed");
 
   return (

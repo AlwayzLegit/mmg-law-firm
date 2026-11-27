@@ -2,16 +2,16 @@
 
 import { redirect } from "next/navigation";
 
-import { getServerSupabase } from "@/lib/supabase/server";
+import { signOut } from "@/lib/auth/session";
 
 /**
  * Server-side sign-out. Running on the server (not the browser client) means
- * the Supabase SSR cookie writer clears the auth cookies for certain, then we
+ * the session cookie writer clears the auth cookies for certain, then we
  * redirect to /login. This is more reliable than a client-only signOut, which
- * can leave the server-rendered session cookie in place.
+ * can leave the server-rendered session cookie in place. The session facade
+ * ends the Supabase or the Better Auth session, whichever is active.
  */
 export async function signOutAction() {
-  const supabase = await getServerSupabase();
-  await supabase.auth.signOut();
+  await signOut();
   redirect("/login");
 }

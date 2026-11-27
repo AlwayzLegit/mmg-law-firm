@@ -1,21 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 
+import { isLinkType } from "@/lib/auth/links";
+import { authProvider } from "@/lib/auth/provider";
+import { verifyBetterLink } from "@/lib/auth/session";
 import { getServerSupabase } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Link types this callback accepts. All are `token_hash` links produced by
-// `auth.admin.generateLink` (invite, magiclink for re-invites, recovery for
-// password resets) and sent through Resend. They are verified with
+// Link types this callback accepts. With Supabase all are `token_hash` links
+// produced by `auth.admin.generateLink` (invite, magiclink for re-invites,
+// recovery for password resets) and sent through Resend. They are verified with
 // `verifyOtp`, which needs no prior browser state, so they work from any
-// device or mail app.
+// device or mail app. With Better Auth (OPS-365) the links carry `token`, a
+// one-time token stored hashed in D1 (src/lib/auth/links.ts), and are redeemed
+// through the session facade, with the same property.
 const OTP_TYPES = new Set<EmailOtpType>(["invite", "magiclink", "recovery"]);
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.clone();
-  const tokenHash = url.searchParams.get("token_hash");
+  const better = authProvider() === "better-auth";
+  const tokenHash = url.searchParams.get(better ? "token" : "token_hash");
   const type = url.searchParams.get("type");
   const next = url.searchParams.get("next") ?? "/admin";
 
@@ -25,12 +31,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const supabase = await getServerSupabase();
-  const { error } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: type as EmailOtpType,
-  });
-  if (error) {
+  let verified: boolean;
+  if (better) {
+    verified = isLinkType(type) && (await verifyBetterLink(tokenHash, type));
+  } else {
+    const supabase = await getServerSupabase();
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: type as EmailOtpType,
+    });
+    verified = !error;
+  }
+  if (!verified) {
     url.pathname = "/login";
     url.search = "?error=auth-failed";
     return NextResponse.redirect(url);

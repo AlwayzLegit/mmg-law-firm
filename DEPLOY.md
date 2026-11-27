@@ -636,3 +636,30 @@ The `updated_at` and blog review-status triggers already exist in
 Still on Supabase and not touched here: `src/lib/cloudflare/error-count.ts`
 writes `bump_error_count` through Supabase's REST address; it moves with the
 staging flip (OPS-366). `DATA_PROVIDER` stays unset everywhere.
+
+## Admin sign-in on Better Auth and D1 (OPS-365, part 3 of OPS-353)
+
+The admin sign-in can run on Better Auth with the sessions, users and one-time links in D1, as The Look's does. It changes nothing that runs: `AUTH_PROVIDER` is unset, so production and staging keep Supabase Auth, and `/api/auth/ba/*` answers 404.
+
+**The switch.** `AUTH_PROVIDER=better-auth` (exactly that value; anything else is Supabase). It also needs `DATA_PROVIDER=d1`, because the admin gate reads `admin_profiles` from the same database; without it the first sign-in throws a clear error. Every caller goes through `src/lib/auth/session.ts`, which holds the Supabase calls it always made and the Better Auth ones; `src/lib/auth/provider.ts` reads the variable on every call.
+
+**The tables.** `migrations/d1/0002_auth.sql`: `auth_users`, `auth_sessions`, `auth_accounts` (the bcrypt hash is `password`, provider `credential`) and `auth_verifications` (invite and reset tokens). Tables and indexes only, so it is an additive migration; `admin_profiles` is not touched. `auth_users.id` is the Supabase auth user id, kept as it is, so `admin_profiles.user_id` and every `assigned_to`, `author_id` and `created_by` stay valid. It is not applied anywhere yet: the Merge captain files the additive-migration row for staging D1 `mmg-law-staging` after the merge.
+
+**What OPS-366 must place for the staging flip.**
+
+- A Worker secret `BETTER_AUTH_SECRET`, at least 32 characters (the code refuses to start without it). It signs the session cookie.
+- `AUTH_PROVIDER=better-auth` and `DATA_PROVIDER=d1` on the staging Worker, and the D1 binding `DB`.
+- `BETTER_AUTH_URL` only if the site URL differs from `NEXT_PUBLIC_SITE_URL` (Better Auth checks the Origin of its POST requests against it).
+- The copy of `auth.users`: `authRowsFromSupabase()` in `src/lib/auth/import-users.ts` maps the rows. A user whose hash is bcrypt (`$2a$`, `$2b$`, `$2y$`) moves with the hash and signs in with the same password. A user with no hash (an invite never finished) or another format is returned in `needInvite` and gets a new invite after the flip.
+
+**How it behaves.**
+
+- Sign-in: email and password only, no self sign-up. Bcrypt cost 12 for new hashes, 10 to 72 characters. The error text stays "Incorrect email or password." A session is refused for a user without an `admin_profiles` row or with `banned_until` in the future. Rate limits: 10 per email and 30 per address, each in the fixed one-hour window of `checkRateLimit` (the Supabase path has none on sign-in).
+- Sessions: 8 hours, refreshed after 1 hour, cookie `mmg.session_token` (HttpOnly, Secure in production, SameSite Lax). `src/proxy.ts` trusts the signed cookie for 5 minutes without a database read; `requireAdmin()` checks the database on every admin render, so "sign out other devices" and a password change take effect there at the latest.
+- Links: one-time, 32 random bytes, only the SHA-256 stored, read by a `DELETE ... RETURNING` so two requests cannot both win. Reset 1 hour, invite and magic link 72 hours. They go to `/auth/callback?token=...&type=...&next=...`; the Supabase path keeps `token_hash`. A new link for the same user and type retires the old one.
+- Password change (first password after an invite, a reset, the Security card): ends every session of the user and gives this browser a new one; the reset flow then signs out as today.
+- `pnpm bootstrap-owner --provider better-auth --email ... --name ...` prints three SQL statements and the invite link, for you to run by hand with `wrangler d1 execute`.
+
+**Proof in CI.** The job "D1 data layer" applies `0002_auth.sql` in the smoke test itself and now prints `d1 smoke: 9 of 9` (steps 8 and 9: an imported user signs in and gets a session row; a recovery token works once; steps 6 and 7 are OPS-364's). Only the comment in the workflow file changed; the older "N of 5" and "N of 7" lines above are as they were.
+
+**Way back.** Nothing turns this on: unset `AUTH_PROVIDER` on the Worker (it is unset today), or revert the merge. The `auth_*` tables can stay empty.

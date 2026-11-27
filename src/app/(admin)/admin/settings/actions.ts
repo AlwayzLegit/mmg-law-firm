@@ -4,6 +4,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { authProvider } from "@/lib/auth/provider";
+import {
+  createBetterInviteLink,
+  getAuthUserEmail,
+  setOwnPassword,
+  signOutEverywhere,
+  signOutOtherSessions,
+} from "@/lib/auth/session";
 import { siteUrl } from "@/lib/seo/canonical";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -49,10 +57,15 @@ type ServiceClient = ReturnType<typeof getServiceSupabase>;
 async function generateAdminSignInLink(
   supabase: ServiceClient,
   email: string,
+  name = "",
 ): Promise<
   | { ok: true; userId: string; url: string; created: boolean }
   | { ok: false; error: string }
 > {
+  // Better Auth on D1 (OPS-365): the same one-time link, minted from D1.
+  if (authProvider() === "better-auth") {
+    return createBetterInviteLink(email, name);
+  }
   const next = encodeURIComponent("/onboarding");
 
   async function linkFor(
@@ -163,7 +176,11 @@ export async function inviteAdmin(formData: FormData): Promise<InviteResult> {
 
   const supabase = getServiceSupabase();
 
-  const link = await generateAdminSignInLink(supabase, parsed.data.email);
+  const link = await generateAdminSignInLink(
+    supabase,
+    parsed.data.email,
+    parsed.data.full_name,
+  );
   if (!link.ok) {
     return { ok: false, error: link.error };
   }
@@ -267,10 +284,8 @@ async function pendingInviteLink(
     };
   }
 
-  const { data: authUser, error: userErr } =
-    await supabase.auth.admin.getUserById(parsed.data.userId);
-  const email = authUser?.user?.email;
-  if (userErr || !email) {
+  const email = await getAuthUserEmail(parsed.data.userId);
+  if (!email) {
     return { ok: false, error: "Couldn't find that user's email." };
   }
 
@@ -473,15 +488,14 @@ export async function setPassword(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: "Passwords don't match." };
   }
 
-  const supabase = await getServerSupabase();
-  const { error } = await supabase.auth.updateUser({ password: parsed.data });
-  if (error) {
-    return { ok: false, error: error.message };
+  const saved = await setOwnPassword(parsed.data);
+  if (!saved.ok) {
+    return { ok: false, error: saved.error };
   }
   // Password reset: end the recovery session so the admin signs in fresh
   // with the new password (and any other sessions are revoked).
   if (formData.get("signOut") === "1") {
-    await supabase.auth.signOut({ scope: "global" });
+    await signOutEverywhere();
   }
 
   // Mark onboarding complete (so requireAdmin stops sending them to
@@ -507,9 +521,8 @@ export async function signOutOtherDevices(): Promise<ActionResult> {
   const { user } = await requireAdmin();
   // Revoke every other session for this user; the current browser stays
   // signed in. Anyone else holding a session has to sign in again.
-  const supabase = await getServerSupabase();
-  const { error } = await supabase.auth.signOut({ scope: "others" });
-  if (error) return { ok: false, error: error.message };
+  const ended = await signOutOtherSessions();
+  if (!ended.ok) return { ok: false, error: ended.error };
   logAudit({
     actor_id: user.id,
     entity: "admin_profiles",

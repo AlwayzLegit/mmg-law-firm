@@ -1,5 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import bcrypt from "bcryptjs";
 import { createD1DataClient, type D1Like } from "@/lib/db/d1Client";
+import { buildBetterAuth } from "@/lib/auth/better";
+import { authRowsFromSupabase } from "@/lib/auth/import-users";
+import { consumeLink, issueLink } from "@/lib/auth/links";
 
 // Smoke test against a REAL D1 database (wrangler's local one, in workerd),
 // not the Node SQLite fake: it proves the schema file and the client's SQL
@@ -8,6 +14,11 @@ import { createD1DataClient, type D1Like } from "@/lib/db/d1Client";
 //
 //   wrangler d1 execute DB --local --persist-to .wrangler/state --config cloudflare/wrangler.d1-ci.jsonc --file migrations/d1/0001_schema.sql
 //   D1_SMOKE=1 pnpm exec vitest run src/lib/db/d1Smoke.test.ts
+//
+// Steps 8 and 9 (OPS-365) run the admin sign-in on the same engine: a user
+// imported from Supabase rows signs in through Better Auth and gets a session
+// row, and a recovery token works once. They apply migrations/d1/0002_auth.sql
+// themselves, statement by statement (it is additive and safe to run twice).
 //
 // It uses no secret and no Cloudflare account: the database is local.
 
@@ -26,10 +37,14 @@ describe.skipIf(!RUN)("d1 smoke (local D1)", () => {
     const proxy = await getPlatformProxy<{ DB: D1Like }>({ configPath: "cloudflare/wrangler.d1-ci.jsonc", persist: { path: ".wrangler/state/v3" } });
     dispose = proxy.dispose;
     db = proxy.env.DB;
+    // OPS-365: the Better Auth tables. Statements are split on ";" outside comments.
+    const sql = readFileSync(join(process.cwd(), "migrations/d1/0002_auth.sql"), "utf8");
+    const code = sql.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
+    for (const st of code.split(";").map((x) => x.trim()).filter(Boolean)) await db.prepare(st).run();
   }, 60_000);
 
   afterAll(async () => {
-    process.stdout.write(`d1 smoke: ${passed.length} of 7\n`);
+    process.stdout.write(`d1 smoke: ${passed.length} of 9\n`);
     await dispose?.();
   });
 
@@ -109,5 +124,32 @@ describe.skipIf(!RUN)("d1 smoke (local D1)", () => {
     const again = await c.rpc<Row[]>("claim_content_topics", { p_run_id: agentRun!.id, p_limit: 1, p_topic_ids: [topic!.id] });
     expect(again.data).toEqual([]);
     passed.push("claim");
+  });
+
+  // Steps 8 and 9: the admin sign-in (OPS-365).
+  const USER_ID = crypto.randomUUID();
+  const EMAIL = `${RUN_ID}@smoke.test`;
+  const PASSWORD = "smoke test password";
+  const auth = () => buildBetterAuth({ database: db, db, secret: "smoke-secret-smoke-secret-smoke-secret!", secure: false, allow: async () => true });
+  const count = async (sql: string, ...binds: unknown[]) => Number(((await db.prepare(sql).bind(...binds).all<{ n: number }>()).results[0] ?? { n: 0 }).n);
+
+  it("8. a user imported from Supabase rows signs in through Better Auth and gets a session row", async () => {
+    const { users, accounts } = authRowsFromSupabase([{ id: USER_ID, email: EMAIL, encrypted_password: bcrypt.hashSync(PASSWORD, 4), email_confirmed_at: "2026-01-01T00:00:00Z" }]);
+    const u = users[0];
+    const a = accounts[0];
+    await db.prepare("INSERT INTO auth_users (id, email, name, email_verified, banned_until, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(u.id, u.email, u.name, u.email_verified, u.banned_until, u.created_at, u.updated_at).run();
+    await db.prepare("INSERT INTO auth_accounts (id, user_id, account_id, provider_id, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(a.id, a.user_id, a.account_id, a.provider_id, a.password, a.created_at, a.updated_at).run();
+    await db.prepare("INSERT INTO admin_profiles (user_id, role, full_name, password_set) VALUES (?, 'owner', 'Smoke', 1)").bind(USER_ID).run();
+    const res = await auth().api.signInEmail({ body: { email: EMAIL, password: PASSWORD }, headers: new Headers() });
+    expect(res.user.id).toBe(USER_ID);
+    expect(await count("SELECT COUNT(*) AS n FROM auth_sessions WHERE user_id = ?", USER_ID)).toBe(1);
+    passed.push("sign-in");
+  });
+
+  it("9. a recovery token works once and is refused the second time", async () => {
+    const { token } = await issueLink(db, { userId: USER_ID, type: "recovery" });
+    expect(await consumeLink(db, { token, type: "recovery" })).toBe(USER_ID);
+    expect(await consumeLink(db, { token, type: "recovery" })).toBeNull();
+    passed.push("link");
   });
 });

@@ -19,8 +19,15 @@ describe("D1 schema twin of supabase/migrations", () => {
     expect(pg).not.toHaveProperty("trusted_devices");
   });
 
-  it("has a D1 table for every Postgres table", () => {
-    expect(Object.keys(D1_SCHEMA).sort()).toEqual(Object.keys(pg).sort());
+  // The auth_* tables (migrations/d1/0002_auth.sql, OPS-365) are Better Auth's
+  // own: the Postgres twin of the sign-in is Supabase's auth schema, which
+  // supabase/migrations does not hold. Everything else is the twin.
+  const BETTER_AUTH_TABLES = ["auth_accounts", "auth_sessions", "auth_users", "auth_verifications"];
+
+  it("has a D1 table for every Postgres table, plus the four Better Auth tables", () => {
+    const twin = Object.keys(D1_SCHEMA).filter((t) => !BETTER_AUTH_TABLES.includes(t));
+    expect(twin.sort()).toEqual(Object.keys(pg).sort());
+    expect(Object.keys(D1_SCHEMA).filter((t) => BETTER_AUTH_TABLES.includes(t)).sort()).toEqual(BETTER_AUTH_TABLES);
   });
 
   it.each(Object.keys(pg))("table %s has every Postgres column and no other", (table) => {
@@ -57,8 +64,24 @@ describe("D1 schema twin of supabase/migrations", () => {
     expect(() => db.exec(SQL)).not.toThrow();
   });
 
+  it("0002_auth.sql is additive: tables and indexes only, safe to run twice, admin_profiles untouched", () => {
+    const sql = readFileSync(join(ROOT, "migrations/d1/0002_auth.sql"), "utf8");
+    const code = sql.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
+    const statements = code.split(";").map((x) => x.trim()).filter(Boolean);
+    expect(statements.length).toBeGreaterThan(0);
+    for (const st of statements) expect(st).toMatch(/^CREATE (TABLE|INDEX) IF NOT EXISTS /);
+    expect(code).not.toMatch(/\b(ALTER|DROP|UPDATE|INSERT|REPLACE)\b|DELETE\s+FROM/i);
+    expect(code).not.toMatch(/admin_profiles/);
+    const db = new DatabaseSync(":memory:");
+    db.exec(SQL);
+    db.exec(sql);
+    expect(() => db.exec(sql)).not.toThrow();
+    const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'auth_%' ORDER BY name").all() as { name: string }[]).map((r) => r.name);
+    expect(tables).toEqual(["auth_accounts", "auth_sessions", "auth_users", "auth_verifications"]);
+  });
+
   it("parseSchema agrees with the map on table count", () => {
-    expect(parseSchema(SQL)).toHaveLength(Object.keys(D1_SCHEMA).length);
+    expect(parseSchema(SQL)).toHaveLength(Object.keys(D1_SCHEMA).length - 4); // minus the Better Auth tables of 0002
     expect(convertValue(true, "bool")).toBe(1);
     expect(sqlLiteral("it's")).toBe("'it''s'");
   });

@@ -21,6 +21,18 @@
  *
  * No email is sent here on purpose: the first owner is usually created
  * before the Resend domain is verified.
+ *
+ * With `--provider better-auth` (OPS-365, Better Auth on D1) nothing is
+ * written and no Supabase variable is needed. The script prints three SQL
+ * statements (an auth_users row, an admin_profiles row and the hash of a
+ * one-time token) and the sign-in link, for you to run by hand against the D1
+ * database, for example:
+ *
+ *   pnpm bootstrap-owner --provider better-auth --email owner@mmg-lawfirm.com --name "Mihran Ghazaryan"
+ *   wrangler d1 execute <database> --remote --command "<the three statements>"
+ *
+ * The link works once and expires in 72 hours. Only the token's SHA-256 is in
+ * the SQL; the token itself is in the link and nowhere else.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -63,6 +75,25 @@ const email = arg("email")?.trim().toLowerCase();
 const name = arg("name")?.trim() || "Site Owner";
 if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
   fail('Usage: pnpm bootstrap-owner --email you@example.com --name "Your Name"');
+}
+
+if (arg("provider") === "better-auth") {
+  const { createHash, randomBytes, randomUUID } = await import("node:crypto");
+  const sql = (v) => `'${String(v).replace(/'/g, "''")}'`;
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  const id = randomUUID();
+  const token = randomBytes(32).toString("base64url");
+  const hash = createHash("sha256").update(token).digest("hex");
+  const now = new Date();
+  const expires = new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString();
+  console.log("\nRun these statements once against the D1 database (migrations/d1/0001 and 0002 applied):\n");
+  console.log(`INSERT OR IGNORE INTO auth_users (id, email, name, email_verified, created_at, updated_at) VALUES (${sql(id)}, ${sql(email)}, ${sql(name)}, 1, ${sql(now.toISOString())}, ${sql(now.toISOString())});`);
+  console.log(`INSERT OR REPLACE INTO admin_profiles (user_id, role, full_name, password_set) VALUES ((SELECT id FROM auth_users WHERE email = ${sql(email)}), 'owner', ${sql(name)}, 0);`);
+  console.log(`INSERT INTO auth_verifications (id, identifier, value, expires_at, created_at, updated_at) VALUES (${sql(randomUUID())}, ${sql(`mmg-link:invite:${hash}`)}, (SELECT id FROM auth_users WHERE email = ${sql(email)}), ${sql(expires)}, ${sql(now.toISOString())}, ${sql(now.toISOString())});`);
+  console.log("\nThen open this link in a browser to sign in and choose a password.");
+  console.log("It works once and expires in 72 hours.\n");
+  console.log(`  ${site}/auth/callback?token=${encodeURIComponent(token)}&type=invite&next=${encodeURIComponent("/onboarding")}\n`);
+  process.exit(0);
 }
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
