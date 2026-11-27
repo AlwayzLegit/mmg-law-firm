@@ -67,9 +67,43 @@ export async function runRound(env, deps = {}) {
   return state;
 }
 
-/** GET /status from the stored state; 404 for everything else. Makes no outbound request. */
-export async function handleFetch(request, env, now = Date.now()) {
+/** Same text, compared without stopping at the first difference. */
+function sameText(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/**
+ * OPS-397: the rehearsal copy runs its round on request instead of waiting for a
+ * fresh Worker's cron. It exists only when REHEARSAL is "1" (the copy: the live
+ * monitor never has it) and REHEARSAL_NONCE is a per-run secret of at least 32
+ * characters that the workflow sends in x-rehearsal-nonce. Everything else, on
+ * either Worker, is the same 404 as any unknown path.
+ */
+export function isRehearsalStart(request, env) {
+  const nonce = env.REHEARSAL_NONCE;
+  return (
+    env.REHEARSAL === "1" &&
+    typeof nonce === "string" &&
+    nonce.length >= 32 &&
+    request.method === "POST" &&
+    new URL(request.url).pathname === "/rehearse" &&
+    sameText(request.headers.get("x-rehearsal-nonce"), nonce)
+  );
+}
+
+/** GET /status from the stored state, and POST /rehearse on a rehearsal copy; 404 for everything else. */
+export async function handleFetch(request, env, now = Date.now(), deps = {}) {
   const url = new URL(request.url);
+  if (isRehearsalStart(request, env)) {
+    await runRound(env, { ...deps, now });
+    return new Response(JSON.stringify({ ok: true, round: "done" }), {
+      status: 200,
+      headers: { "content-type": "application/json", "cache-control": "no-store", "x-robots-tag": "noindex" },
+    });
+  }
   if (url.pathname !== "/status" || request.method !== "GET") return new Response("Not found", { status: 404 });
   const answer = publicStatus(await stub(env).get(), now, {
     alertsConfigured: alertsConfigured(env),

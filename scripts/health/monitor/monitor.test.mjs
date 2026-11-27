@@ -371,6 +371,86 @@ test("REHEARSAL makes no request to the site, files exactly one row and never tw
   assert.equal(status.rowAlerts.lastResult, "filed");
 });
 
+const NONCE = "n".repeat(48);
+const rehearseRequest = (nonce = NONCE, method = "POST", path = "/rehearse") =>
+  new Request(`https://m.example${path}`, { method, headers: nonce === null ? {} : { "x-rehearsal-nonce": nonce } });
+
+test("OPS-397: POST /rehearse with the right nonce runs one round on a rehearsal copy and answers 200", async () => {
+  const { env, peek } = fakeEnv({ REHEARSAL: "1", REHEARSAL_NONCE: NONCE });
+  const intake = fakeIntake();
+  env.CREW_INTAKE = intake.binding;
+  const sent = [];
+  const deps = { fetchImpl: async (url) => { sent.push(url); return new Response("x"); }, alertFetch: async () => new Response("{}"), sleep: async () => {}, log: () => {} };
+  const res = await handleFetch(rehearseRequest(), env, T0, deps);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await res.json(), { ok: true, round: "done" });
+  assert.equal(sent.length, 0); // a rehearsal makes no request to the site
+  assert.equal(intake.calls.length, 1);
+  assert.equal(intake.calls[0].rehearsal, true);
+  assert.equal(peek().rows.filed, 1);
+  // The status page then shows what the workflow polls for.
+  const status = await (await handleFetch(new Request("https://m.example/status"), env, T0 + 1000)).json();
+  assert.equal(status.rowAlerts.filed, 1);
+  assert.equal(status.rowAlerts.lastResult, "filed");
+  // A second request files nothing more.
+  await handleFetch(rehearseRequest(), env, T0 + 15 * 60_000, deps);
+  assert.equal(intake.calls.length, 1);
+});
+
+test("OPS-397: a wrong, missing or short nonce, a wrong method or path, or no REHEARSAL is the same 404 and runs no round", async () => {
+  const cases = [
+    ["wrong nonce", { REHEARSAL: "1", REHEARSAL_NONCE: NONCE }, rehearseRequest("x".repeat(48))],
+    ["same length, one character off", { REHEARSAL: "1", REHEARSAL_NONCE: NONCE }, rehearseRequest(NONCE.slice(0, 47) + "m")],
+    ["no header", { REHEARSAL: "1", REHEARSAL_NONCE: NONCE }, rehearseRequest(null)],
+    ["GET", { REHEARSAL: "1", REHEARSAL_NONCE: NONCE }, rehearseRequest(NONCE, "GET")],
+    ["other path", { REHEARSAL: "1", REHEARSAL_NONCE: NONCE }, rehearseRequest(NONCE, "POST", "/rehearse/x")],
+    ["the live monitor (no REHEARSAL), even with the right nonce", { REHEARSAL_NONCE: NONCE }, rehearseRequest()],
+    ["REHEARSAL 0", { REHEARSAL: "0", REHEARSAL_NONCE: NONCE }, rehearseRequest()],
+    ["a nonce under 32 characters in the env", { REHEARSAL: "1", REHEARSAL_NONCE: "short" }, rehearseRequest("short")],
+    ["no nonce in the env, empty header", { REHEARSAL: "1" }, rehearseRequest("")],
+  ];
+  for (const [name, extra, request] of cases) {
+    const { env, peek } = fakeEnv(extra);
+    const intake = fakeIntake();
+    env.CREW_INTAKE = intake.binding;
+    const res = await handleFetch(request, env, T0, { fetchImpl: async () => new Response("x"), alertFetch: async () => new Response("{}"), sleep: async () => {}, log: () => {} });
+    assert.equal(res.status, 404, name);
+    assert.equal(await res.text(), "Not found", name);
+    assert.equal(intake.calls.length, 0, name);
+    assert.equal(peek(), null, name); // no round, nothing stored
+  }
+});
+
+test("OPS-397: GET /status is unchanged on a rehearsal copy", async () => {
+  const { env, poke } = fakeEnv({ REHEARSAL: "1", REHEARSAL_NONCE: NONCE });
+  poke(nextRound(null, PASS, T0, "24").state);
+  const res = await handleFetch(new Request("https://m.example/status"), env, T0 + 1000);
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).alerts, "not configured");
+});
+
+test("OPS-397: the workflow starts the round on request with a masked per-run nonce, and prints fixed fields at each poll", () => {
+  const text = readFileSync(new URL("../../../.github/workflows/monitor-deploy.yml", import.meta.url), "utf8");
+  assert.match(text, /nonce=\$\(openssl rand -hex 24\)/);
+  assert.match(text, /echo "::add-mask::\$nonce"/);
+  assert.match(text, /--var REHEARSAL:1 --var "REHEARSAL_NONCE:\$nonce"/);
+  assert.match(text, /-X POST -H "x-rehearsal-nonce: \$nonce" "\$base\/rehearse"/);
+  assert.match(text, /for i in \$\(seq 1 6\)/);
+  assert.match(text, /echo "rehearsal: round started: \$started"/);
+  assert.match(text, /for i in \$\(seq 1 10\)/);
+  assert.match(text, /echo "rehearsal: poll \$i: /);
+  assert.match(text, /rowAlerts\.filed/);
+  assert.match(text, /rehearsal: row filed: /);
+  assert.match(text, /rehearsal: lastResult: /);
+  // The nonce is never printed: no echo line carries it other than the mask line.
+  for (const line of text.split("\n").filter((l) => /\becho\b/.test(l) && /\$nonce|REHEARSAL_NONCE/.test(l))) assert.match(line, /::add-mask::/);
+  // The copy no longer waits 17 minutes for a cron, and the live monitor is never given the nonce.
+  assert.doesNotMatch(text, /seq 1 17/);
+  assert.equal(text.split("REHEARSAL_NONCE").length - 1 >= 1, true);
+  assert.doesNotMatch(text, /name: Deploy the monitor\n\s+if: \$\{\{ !inputs\.rehearse \}\}\n\s+run: [^\n]*REHEARSAL/);
+});
+
 test("the real monitor never rehearses: without REHEARSAL it asks the site", async () => {
   const { env } = fakeEnv();
   const stub = stubFetch(goodRoutes());

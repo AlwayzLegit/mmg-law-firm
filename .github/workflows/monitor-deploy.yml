@@ -25,10 +25,15 @@ name: Monitor deploy
 # its own 24 hour quiet. REHEARSAL, by hand only: start this workflow with
 # "rehearse" true. It then skips the real deploy and runs a throwaway copy of the
 # monitor, the Worker mmg-law-firm-monitor-rehearsal (REHEARSAL=1: no request to the
-# site, one forced failure, both quiets over, at most one row). It reads that copy's
-# /status every 60 seconds for up to 17 minutes until rowAlerts.filed is 1, prints
-# "rehearsal: row filed: yes" or "no" and the fixed word rowAlerts.lastResult, and a
-# final step that always runs deletes the copy and prints "rehearsal worker deleted".
+# site, one forced failure, both quiets over, at most one row). OPS-397: the copy does
+# not wait for its cron (a fresh Worker's first cron never fired in 17 minutes). The
+# workflow makes a per-run nonce, deploys the copy with it (REHEARSAL_NONCE), starts the
+# round with POST /rehearse and the header x-rehearsal-nonce, and prints "rehearsal:
+# round started: <status>". It then reads /status up to 10 times, 15 seconds apart,
+# printing fixed fields only at each poll (checkedAt, rowAlerts.filed, rowAlerts.lastResult),
+# until rowAlerts.filed is 1, prints "rehearsal: row filed: yes" or "no" and the fixed
+# word rowAlerts.lastResult, and a final step that always runs deletes the copy and
+# prints "rehearsal worker deleted".
 # The Inbox shows one row ending in [rehearsal]. If a run is cut and the copy is
 # left behind: pnpm exec wrangler delete --name mmg-law-firm-monitor-rehearsal --force
 
@@ -109,24 +114,37 @@ jobs:
           echo "status address: ${sub:+https://mmg-law-firm-monitor.$sub.workers.dev/status}"
 
       # Rehearsal (by hand, rehearse true). The copy has the same code and the same
-      # CREW_INTAKE binding, REHEARSAL=1 and no secret. Its first cron round (within
-      # 15 minutes) files one row; the loop waits for it.
-      - name: Rehearsal, deploy the copy and wait for its row
+      # CREW_INTAKE binding, REHEARSAL=1 and a per-run nonce, and no secret. The round
+      # is started on request (POST /rehearse), not by the copy's cron (OPS-397).
+      - name: Rehearsal, deploy the copy, start its round and wait for its row
         if: ${{ inputs.rehearse }}
         run: |
-          pnpm exec wrangler deploy --config scripts/health/monitor/wrangler.jsonc --name mmg-law-firm-monitor-rehearsal --var REHEARSAL:1
+          nonce=$(openssl rand -hex 24)
+          echo "::add-mask::$nonce"
+          pnpm exec wrangler deploy --config scripts/health/monitor/wrangler.jsonc --name mmg-law-firm-monitor-rehearsal --var REHEARSAL:1 --var "REHEARSAL_NONCE:$nonce"
           sub=$(curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).result.subdomain||"")}catch{console.log("")}})')
           if [ -z "$sub" ]; then echo "rehearsal: no workers.dev address"; echo "rehearsal: row filed: no"; exit 1; fi
-          url="https://mmg-law-firm-monitor-rehearsal.$sub.workers.dev/status"
-          echo "rehearsal address: $url"
-          read_field='let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const r=JSON.parse(d).rowAlerts||{};console.log(process.argv[1]==="filed"?(r.filed>=1?"1":"0"):String(r.lastResult||"none"))}catch{console.log(process.argv[1]==="filed"?"0":"none")}})'
+          base="https://mmg-law-firm-monitor-rehearsal.$sub.workers.dev"
+          echo "rehearsal address: $base/status"
+          # A fresh workers.dev address can take a few seconds to answer.
+          started=none
+          for i in $(seq 1 6); do
+            started=$(curl -s -o /dev/null -w '%{http_code}' -m 60 -X POST -H "x-rehearsal-nonce: $nonce" "$base/rehearse" || true)
+            [ "$started" = "200" ] && break
+            sleep 10
+          done
+          echo "rehearsal: round started: $started"
+          # Fixed fields only: the status page's checkedAt (an ISO time or null), rowAlerts.filed
+          # (a number) and rowAlerts.lastResult (a short fixed word). Never a URL or row text.
+          read_field='let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{let out="";try{const j=JSON.parse(d),r=j.rowAlerts||{};const at=/^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(String(j.checkedAt))?String(j.checkedAt):"null";const n=Number.isFinite(r.filed)?r.filed:0;const w=typeof r.lastResult==="string"&&/^[a-z][a-z -]{0,39}$/.test(r.lastResult)?r.lastResult:"none";out=process.argv[1]==="line"?`checkedAt ${at}, rowAlerts.filed ${n}, rowAlerts.lastResult ${w}`:process.argv[1]==="filed"?(n>=1?"1":"0"):w}catch{out=process.argv[1]==="line"?"checkedAt null, rowAlerts.filed 0, rowAlerts.lastResult none":process.argv[1]==="filed"?"0":"none"}console.log(out)})'
           filed=0
-          for i in $(seq 1 17); do
-            body=$(curl -s -m 20 "$url" || true)
+          for i in $(seq 1 10); do
+            body=$(curl -s -m 20 "$base/status" || true)
+            echo "rehearsal: poll $i: $(printf '%s' "$body" | node -e "$read_field" line)"
             filed=$(printf '%s' "$body" | node -e "$read_field" filed)
             [ "$filed" = "1" ] && break
-            sleep 60
+            sleep 15
           done
           last=$(printf '%s' "$body" | node -e "$read_field" last)
           if [ "$filed" = "1" ]; then echo "rehearsal: row filed: yes"; else echo "rehearsal: row filed: no"; fi
