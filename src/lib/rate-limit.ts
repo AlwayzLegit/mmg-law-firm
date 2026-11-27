@@ -1,10 +1,15 @@
 import "server-only";
 
+import { withDeadline } from "@/lib/deadline";
 import { env } from "@/lib/env";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 const WINDOW_SECONDS = 60 * 60; // 1 hour
+
+// A database that does not answer must not hold the form (OPS-347): after this
+// long the RPC counts as failed and the in-memory bucket decides.
+const RPC_DEADLINE_MS = 3000;
 
 /**
  * The part of a rate limit key that is safe to log: the text before the first
@@ -42,12 +47,23 @@ export async function checkRateLimit(
 
   try {
     const supabase = getServiceSupabase();
-    const { data, error } = await supabase
-      .rpc("bump_rate_limit", {
-        p_key: key,
-        p_window_seconds: WINDOW_SECONDS,
-      })
-      .maybeSingle();
+    const answer = await withDeadline(
+      supabase
+        .rpc("bump_rate_limit", {
+          p_key: key,
+          p_window_seconds: WINDOW_SECONDS,
+        })
+        .maybeSingle(),
+      RPC_DEADLINE_MS,
+    );
+
+    if (!answer) {
+      console.warn(
+        `[rate-limit] RPC timed out for scope=${rateLimitScope(key)}`,
+      );
+      return checkInMemory(key, limit);
+    }
+    const { data, error } = answer;
 
     if (error || !data) {
       console.warn(

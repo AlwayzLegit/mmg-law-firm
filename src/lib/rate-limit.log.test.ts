@@ -113,3 +113,30 @@ describe("checkRateLimit log lines when the database call fails", () => {
     expect(logged()).not.toContain("x".repeat(201));
   });
 });
+
+// OPS-347: a database that does not answer must not hold the lead form. After 3 s the
+// RPC counts as failed, the scope is logged without the key's second half, and the
+// in-memory bucket decides.
+describe("rate limit RPC deadline (OPS-347)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("falls back to the in-memory bucket when the RPC never answers", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    rpcResults.push(() => new Promise(() => {}));
+    const pending = checkRateLimit(IP_KEY, 5);
+    await vi.advanceTimersByTimeAsync(2999);
+    let settled = false;
+    void pending.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await pending).toEqual({ allowed: true });
+    const text = logged();
+    expect(text).toContain("RPC timed out for scope=leads");
+    expect(text).not.toContain("203.0.113.7");
+  });
+});
