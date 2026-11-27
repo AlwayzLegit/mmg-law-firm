@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { createD1DataClient, isTransientD1Error, retryRead, type D1Like, type D1Statement } from "@/lib/db/d1Client";
+import { createD1DataClient, isTransientD1Error, retryRead, RPCS, type D1Like, type D1Statement } from "@/lib/db/d1Client";
 import { likeToGlob, parseLogicString, parseSelect, splitTopLevel } from "@/lib/db/d1Sql";
 import { buildSchemaMap, loadMigrationSql, renderSchemaModule } from "../../../scripts/cloudflare/gen-d1-schema-map.mjs";
 
@@ -328,11 +328,17 @@ describe("writes and triggers", () => {
 });
 
 describe("rpc", () => {
-  it("answers PGRST202 for every function until its part moves it", async () => {
-    for (const name of ["bump_rate_limit", "claim_content_topics", "content_health_issues", "bump_error_count", "error_counts_recent", "is_admin"]) {
+  it("answers PGRST202 for the policy helpers, which belong to OPS-404", async () => {
+    for (const name of ["is_admin", "is_owner", "is_editor", "no_such_function"]) {
       const res = await client.rpc(name, {});
       expect(res.error?.code).toBe("PGRST202");
       expect(res.data).toBeNull();
+    }
+  });
+
+  it("answers the moved functions (OPS-364) by name", async () => {
+    for (const name of ["bump_rate_limit", "claim_content_topics", "content_health_issues", "content_health_issues_unguarded", "bump_error_count", "error_counts_recent"]) {
+      expect(RPCS[name], name).toBeTypeOf("function");
     }
   });
 });

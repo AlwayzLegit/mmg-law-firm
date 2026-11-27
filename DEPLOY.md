@@ -578,15 +578,15 @@ Supabase.
   a new Supabase migration cannot ship without its D1 change.
 - CI job "D1 data layer": applies the schema to wrangler's local D1 (workerd)
   with `cloudflare/wrangler.d1-ci.jsonc` and runs `src/lib/db/d1Smoke.test.ts`,
-  which prints `d1 smoke: N of 5`. No secret.
+  which prints `d1 smoke: N of 7`. No secret.
 
 **What D1 mode does not have yet (part 2 and later), so nobody sets it first**
 
 - Row-level security. D1 has none: the 49 Supabase policies must become
   server-side checks with a test per route before any traffic reads D1.
-- The Postgres functions (`bump_rate_limit`, `claim_content_topics`,
-  `content_health_issues`, `bump_error_count`, `error_counts_recent`, and the
-  `is_admin` family). `rpc()` answers `PGRST202` for each until its part.
+- The policy helpers `is_admin`, `is_owner` and `is_editor`. `rpc()` answers
+  `PGRST202` for them until the policy map (OPS-404). The other Postgres
+  functions run in code since part 2a (OPS-364): see below.
 - The seed rows and the data copy, sign-in (Supabase Auth), file storage (R2),
   and the D1 database and its binding in `wrangler.jsonc`.
 
@@ -622,3 +622,21 @@ Neither builds or deploys the app, sets secrets or pre-loads pages. The build id
 ## Background page refreshes are capped (OPS-394)
 
 A crawler (the daily Semrush Site Audit) can find thousands of stale pages at once, and each one queues a background refresh that reads the database. `wrangler.jsonc` (production and staging) sets three vars that cap that queue: `MAX_REVALIDATE_CONCURRENCY` 2 (queue shards, OpenNext default 10), `NEXT_CACHE_DO_QUEUE_MAX_REVALIDATION` 2 (refreshes at once per shard, default 5) and `NEXT_CACHE_DO_QUEUE_MAX_RETRIES` 2 (default 6). That is at most 4 refreshes at once instead of 50. No page's `revalidate` time changed. A test in `src/lib/cron/schedules.test.ts` keeps both environments equal. If a stale page refreshes too slowly, raise the numbers; reverting the change puts back OpenNext's defaults.
+
+## D1 functions in code (OPS-364, part 2a of OPS-353)
+
+`src/lib/db/d1Rpcs.ts` ports the six Postgres functions the app calls through
+`rpc()`, registered by name in `RPCS` (`d1Client.ts`) with the same argument
+names and result shapes as PostgREST: `bump_rate_limit` (one upsert),
+`claim_content_topics` (one UPDATE that still checks `status = 'queued'`, in
+place of row locking: D1 runs one statement at a time), `content_health_issues`
+and `content_health_issues_unguarded` (same checks and order as migration 0031;
+in D1 mode `content_health_issues` has no `is_admin()` guard, the caller's admin
+gate is the check until OPS-404), `bump_error_count` and `error_counts_recent`
+(migration 0040). `rpc()` calls also take `.single()`, `.maybeSingle()` and
+`.abortSignal()`, as the callers in `rate-limit.ts` and `health.ts` use them.
+The `updated_at` and blog review-status triggers already exist in
+`migrations/d1/0001_schema.sql`, so no code or migration is added for them.
+Still on Supabase and not touched here: `src/lib/cloudflare/error-count.ts`
+writes `bump_error_count` through Supabase's REST address; it moves with the
+staging flip (OPS-366). `DATA_PROVIDER` stays unset everywhere.

@@ -57,8 +57,9 @@ jobs:
   # OPS-362 (part 1 of OPS-353): the D1 data layer against a real D1 engine.
   # The "Tests" step above already runs the client and schema tests in Node's
   # built-in SQLite. This job applies migrations/d1 to wrangler's local D1
-  # (workerd, on the runner, no Cloudflare account) and runs the five-step
-  # smoke test (src/lib/db/d1Smoke.test.ts), which prints "d1 smoke: N of 5".
+  # (workerd, on the runner, no Cloudflare account) and runs the seven-step
+  # smoke test (src/lib/db/d1Smoke.test.ts), which prints "d1 smoke: N of 7"
+  # (steps 6 and 7, OPS-364: bump_rate_limit and claim_content_topics).
   # No secret and no env: the database is a throwaway file in .wrangler.
   d1:
     name: D1 data layer
