@@ -449,6 +449,20 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<PostgrestLikeRes
 
 export const RPCS: Record<string, RpcImpl> = D1_RPCS;
 
+/**
+ * Run `work`, but reject as soon as `signal` aborts; the listener is removed
+ * once either side settles. Without a signal it is just `work()`.
+ */
+function raceAbort<R>(signal: AbortSignal | null, work: () => Promise<R>): Promise<R> {
+  if (!signal) return work();
+  return new Promise<R>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason);
+    if (signal.aborted) return onAbort();
+    signal.addEventListener("abort", onAbort, { once: true });
+    work().then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
+  });
+}
+
 class D1RpcCall<T = unknown> implements PromiseLike<PostgrestLikeResult<T>> {
   private pending: Promise<PostgrestLikeResult<T>> | null = null;
   private cardinality: "many" | "single" | "maybeSingle" = "many";
@@ -463,9 +477,11 @@ class D1RpcCall<T = unknown> implements PromiseLike<PostgrestLikeResult<T>> {
     if (!impl) return fail<T>(new QueryError(`Could not find the function public.${this.name} in the schema cache`, "PGRST202"), 404);
     try {
       this.signal?.throwIfAborted();
-      const db = await this.db();
-      // Writes are never retried here.
-      let data: unknown = await impl(db, this.args);
+      // The call settles the moment the signal fires, even while the binding or
+      // the statement is still pending (D1 cannot cancel a statement already
+      // sent, as with PostgREST; a late write still lands). Writes are never
+      // retried here.
+      let data: unknown = await raceAbort(this.signal, async () => impl(await this.db(), this.args));
       this.signal?.throwIfAborted();
       if (this.cardinality !== "many" && Array.isArray(data)) {
         if (data.length === 1) data = data[0];

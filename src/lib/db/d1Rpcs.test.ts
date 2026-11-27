@@ -282,4 +282,44 @@ describe("rpc() the way supabase-js callers use it", () => {
     expect(res.data).toBeNull();
     expect(res.error).not.toBeNull();
   });
+
+  it(".abortSignal() settles a call that is still waiting for the binding when the signal fires (review finding on 263)", async () => {
+    const hung = createD1DataClient(() => new Promise<D1Like>(() => {})); // the binding never arrives
+    const ctl = new AbortController();
+    const started = Date.now();
+    const pending = hung.rpc("error_counts_recent", { p_env: "production" }).abortSignal(ctl.signal);
+    setTimeout(() => ctl.abort(), 20);
+    const res = await pending;
+    expect(res.data).toBeNull();
+    expect(res.error).not.toBeNull();
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it(".abortSignal() settles a call whose statement is still running, and a call that finishes first keeps its data and leaves no listener", async () => {
+    const slowDb: D1Like = {
+      prepare: () => ({
+        bind() { return this; },
+        all: () => new Promise(() => {}),
+        run: () => new Promise(() => {}),
+      }) as unknown as D1Statement,
+      batch: () => new Promise(() => {}),
+    };
+    const ctl = new AbortController();
+    const slow = createD1DataClient(async () => slowDb).rpc("bump_rate_limit", { p_key: "k", p_window_seconds: 60 }).abortSignal(ctl.signal);
+    setTimeout(() => ctl.abort(), 20);
+    expect((await slow).error).not.toBeNull();
+
+    const fine = new AbortController();
+    let added = 0;
+    let removed = 0;
+    const add = fine.signal.addEventListener.bind(fine.signal);
+    const remove = fine.signal.removeEventListener.bind(fine.signal);
+    fine.signal.addEventListener = ((...a: Parameters<typeof add>) => { added += 1; return add(...a); }) as typeof add;
+    fine.signal.removeEventListener = ((...a: Parameters<typeof remove>) => { removed += 1; return remove(...a); }) as typeof remove;
+    const ok = await client.rpc("error_counts_recent", { p_env: "production" }).abortSignal(fine.signal);
+    expect(ok.error).toBeNull();
+    expect(ok.data).toEqual([{ errors24h: 0, errors3h: 0 }]);
+    expect(added).toBe(1);
+    expect(removed).toBe(1);
+  });
 });
