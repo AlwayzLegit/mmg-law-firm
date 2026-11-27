@@ -26,6 +26,25 @@ describe("cron schedule registry", () => {
     expect(wrangler.env?.staging?.triggers?.crons).toEqual([]);
   });
 
+  it("caps OpenNext's background page refreshes in both environments (OPS-394)", () => {
+    // A crawl of thousands of stale pages must not become thousands of
+    // database reads at once: 2 queue shards x 2 refreshes, 2 retries.
+    const raw = readFileSync("wrangler.jsonc", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    const wrangler = JSON.parse(raw) as {
+      vars?: Record<string, string>;
+      env?: Record<string, { vars?: Record<string, string> }>;
+    };
+    const caps = {
+      MAX_REVALIDATE_CONCURRENCY: "2",
+      NEXT_CACHE_DO_QUEUE_MAX_REVALIDATION: "2",
+      NEXT_CACHE_DO_QUEUE_MAX_RETRIES: "2",
+    };
+    expect(wrangler.vars).toMatchObject(caps);
+    expect(wrangler.env?.staging?.vars).toMatchObject(caps);
+  });
+
   it("keeps the production hostnames on the production front Worker only", () => {
     type Config = {
       services?: Array<{ binding: string; service: string }>;

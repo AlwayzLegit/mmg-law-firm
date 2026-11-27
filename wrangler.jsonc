@@ -45,8 +45,15 @@
   "triggers": {
     "crons": ["0 14 * * 1", "0 15 * * 1-5", "*/15 * * * *", "0 * * * *"]
   },
+  // OPS-394: cap OpenNext's background page refreshes so a crawler cannot turn
+  // thousands of stale pages into a flood of database reads. At most 2 queue
+  // shards x 2 refreshes at once = 4 (OpenNext default: 10 x 5 = 50), and 2
+  // retries per failed refresh (default 6). Raising them is the way back.
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://www.mmg-lawfirm.com"
+    "NEXT_PUBLIC_SITE_URL": "https://www.mmg-lawfirm.com",
+    "MAX_REVALIDATE_CONCURRENCY": "2",
+    "NEXT_CACHE_DO_QUEUE_MAX_REVALIDATION": "2",
+    "NEXT_CACHE_DO_QUEUE_MAX_RETRIES": "2"
   },
   // No routes: the public hostnames belong to the front Worker
   // (wrangler.front.jsonc), which calls this one through a service binding.
@@ -92,8 +99,12 @@
       // staging front Worker (wrangler.front.jsonc).
       "routes": [],
       "workers_dev": true,
+      // Same refresh caps as production (OPS-394); a test keeps them equal.
       "vars": {
-        "NEXT_PUBLIC_SITE_URL": "https://staging.mmg-lawfirm.com"
+        "NEXT_PUBLIC_SITE_URL": "https://staging.mmg-lawfirm.com",
+        "MAX_REVALIDATE_CONCURRENCY": "2",
+        "NEXT_CACHE_DO_QUEUE_MAX_REVALIDATION": "2",
+        "NEXT_CACHE_DO_QUEUE_MAX_RETRIES": "2"
       },
       "observability": { "enabled": true }
     }
