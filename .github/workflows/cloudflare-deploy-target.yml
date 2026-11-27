@@ -353,35 +353,48 @@ jobs:
       #    deletes it. Nothing real is posted anywhere.
       - name: Smoke lead hold
         run: |
+          # Staging first: the self test never calls the app, so it proves the hold
+          # even while the database is down and the app cannot answer.
+          if [ "${{ inputs.target }}" = staging ]; then
+            res=$(curl -s --max-time 60 -X POST -H "content-type: application/json" -H "x-hold-selftest: 1" \
+              --data '{"full_name":"Crew Selftest","phone":"+15555550100","consent":true,"turnstileToken":"selftest-not-kept"}' \
+              -w '\n%{http_code}' "$SITE_URL/api/leads")
+            status=$(echo "$res" | tail -1); body=$(echo "$res" | head -n -1)
+            id=$(echo "$body" | jq -r '.selftest // empty')
+            if [ "$status" != 200 ] || [ "$(echo "$body" | jq -r '.persisted')" != false ] || ! echo "$id" | grep -Eq '^[0-9a-f-]{36}$'; then
+              echo "::error::hold self test: status $status, body not as expected"; exit 1
+            fi
+            key="held-leads/selftest/$id.json"
+            pnpm exec wrangler r2 object get "$BUCKET/$key" --remote --pipe > held.json
+            [ "$(jq -r '.lead.full_name' held.json)" = "Crew Selftest" ] || { echo "::error::held copy not read back"; rm -f held.json; exit 1; }
+            [ "$(jq -r '.lead.turnstileToken // "absent"' held.json)" = absent ] || { echo "::error::the Turnstile token was kept"; rm -f held.json; exit 1; }
+            echo "hold selftest: held yes, read back yes, token absent yes"
+            rm -f held.json
+            pnpm exec wrangler r2 object delete "$BUCKET/$key" --remote
+            echo "hold selftest: deleted"
+          fi
+          # Pass-through: an invalid body reaches the app and its own 400 comes back.
+          # The app checks the rate limit in the database before it reads the body, so
+          # while the database does not answer it cannot answer this either. Only then,
+          # and only when /api/health itself names the database as failing, the step
+          # says "not proved" instead of failing. Any other miss is a failure.
           code=""
           for attempt in 1 2 3; do
-            code=$(curl -s -o body.txt -w "%{http_code}" --max-time 60 -X POST -H "content-type: application/json" --data '{' "$SITE_URL/api/leads" || true)
+            code=$(curl -s -o body.txt -w "%{http_code}" --max-time 20 -X POST -H "content-type: application/json" --data '{' "$SITE_URL/api/leads" || true)
             [ "$code" = 400 ] && grep -q invalid-json body.txt && break
-            echo "attempt $attempt: status ${code:-none}"; sleep 10
+            echo "attempt $attempt: status ${code:-none}"; sleep 5
           done
           if [ "$code" = 400 ] && grep -q invalid-json body.txt; then
             echo "pass-through: 400 invalid-json"
           else
-            echo "::error::POST /api/leads with an invalid body did not pass through (status ${code:-none})"; exit 1
+            health=$(curl -s --max-time 20 "$SITE_URL/api/health" || true)
+            if [ "${code:-000}" = 000 ] && echo "$health" | jq -e '(.failing // []) | index("database")' >/dev/null 2>&1; then
+              echo "pass-through: not proved, the app did not answer in 20 s and /api/health names the database as failing"
+            else
+              echo "::error::POST /api/leads with an invalid body did not pass through (status ${code:-none})"; rm -f body.txt; exit 1
+            fi
           fi
           rm -f body.txt
-          [ "${{ inputs.target }}" = staging ] || exit 0
-          res=$(curl -s --max-time 60 -X POST -H "content-type: application/json" -H "x-hold-selftest: 1" \
-            --data '{"full_name":"Crew Selftest","phone":"+15555550100","consent":true,"turnstileToken":"selftest-not-kept"}' \
-            -w '\n%{http_code}' "$SITE_URL/api/leads")
-          status=$(echo "$res" | tail -1); body=$(echo "$res" | head -n -1)
-          id=$(echo "$body" | jq -r '.selftest // empty')
-          if [ "$status" != 200 ] || [ "$(echo "$body" | jq -r '.persisted')" != false ] || ! echo "$id" | grep -Eq '^[0-9a-f-]{36}$'; then
-            echo "::error::hold self test: status $status, body not as expected"; exit 1
-          fi
-          key="held-leads/selftest/$id.json"
-          pnpm exec wrangler r2 object get "$BUCKET/$key" --remote --pipe > held.json
-          [ "$(jq -r '.lead.full_name' held.json)" = "Crew Selftest" ] || { echo "::error::held copy not read back"; rm -f held.json; exit 1; }
-          [ "$(jq -r '.lead.turnstileToken // "absent"' held.json)" = absent ] || { echo "::error::the Turnstile token was kept"; rm -f held.json; exit 1; }
-          echo "hold selftest: held yes, read back yes, token absent yes"
-          rm -f held.json
-          pnpm exec wrangler r2 object delete "$BUCKET/$key" --remote
-          echo "hold selftest: deleted"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

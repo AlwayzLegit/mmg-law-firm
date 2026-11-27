@@ -193,6 +193,52 @@ describe("handleLeadPost", () => {
     expect(e.bucket.put).not.toHaveBeenCalled();
   });
 
+  it("10c. a body that declares more than the limit is forwarded as it came, unread", async () => {
+    let read = false;
+    const e = env(async (req) => {
+      read = true;
+      expect(req.bodyUsed).toBe(false);
+      return answer(500, { ok: false, error: "db-insert-failed" });
+    });
+    const big = JSON.stringify({ ...LEAD, description: "x".repeat(MAX_BODY_BYTES) });
+    const res = await handleLeadPost(post(WWW, big, { "content-length": String(new TextEncoder().encode(big).length) }), e.env, ctx());
+    expect(res.status).toBe(500);
+    expect(read).toBe(true);
+    expect(e.bucket.put).not.toHaveBeenCalled();
+  });
+
+  it("10d. a body with no declared length is read only up to the limit, then streams on whole", async () => {
+    const chunk = new TextEncoder().encode("x".repeat(8192));
+    let pulled = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (pulled >= 64) return c.close(); // 512 KB offered
+        pulled += 1;
+        c.enqueue(chunk);
+      },
+    });
+    const req = new Request(WWW, { method: "POST", headers: { "content-type": "application/json" }, body: stream, duplex: "half" } as RequestInit);
+    let sawBytes = 0;
+    let pulledAtForward = -1;
+    const e = env(async (r) => {
+      pulledAtForward = pulled;
+      const reader = r.body!.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sawBytes += value.byteLength;
+      }
+      return answer(400, { ok: false, error: "invalid-json" });
+    });
+    const res = await handleLeadPost(req, e.env, ctx());
+    expect(res.status).toBe(400);
+    // only the limit plus a chunk or two was read before the request went on (not the 512 KB offered)
+    expect(pulledAtForward).toBeLessThanOrEqual(7);
+    // the app still got every byte (nothing was dropped by the bounded read)
+    expect(sawBytes).toBe(64 * 8192);
+    expect(e.bucket.put).not.toHaveBeenCalled();
+  });
+
   it("10b. forwards the request with the same method, URL and headers", async () => {
     const e = env(async () => answer(200, { ok: true, persisted: true }));
     await handleLeadPost(post(WWW, LEAD, { "x-custom": "1" }), e.env, ctx());

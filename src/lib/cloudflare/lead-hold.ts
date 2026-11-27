@@ -183,22 +183,76 @@ async function selfTest(request: Request, env: HoldEnv, body: Record<string, unk
   return thankYou({ selftest: id });
 }
 
+/**
+ * The request body as text when it is at most `limit` bytes. Past the limit it
+ * stops reading and returns a request that carries the bytes read so far and
+ * then the rest of the original stream, so an oversized upload is never held in
+ * memory whole (at most the limit plus one chunk) and reaches the app complete.
+ */
+async function readBounded(request: Request, limit: number): Promise<{ text: string } | { over: Request }> {
+  if (!request.body) return { text: "" };
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    total += value.byteLength;
+    if (total > limit) {
+      const rest = new ReadableStream<Uint8Array>({
+        start(controller) {
+          for (const chunk of chunks) controller.enqueue(chunk);
+        },
+        async pull(controller) {
+          const next = await reader.read();
+          if (next.done) controller.close();
+          else controller.enqueue(next.value);
+        },
+        cancel(reason) {
+          return reader.cancel(reason);
+        },
+      });
+      const over = new Request(request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: rest,
+        duplex: "half",
+      } as RequestInit);
+      return { over };
+    }
+  }
+  const all = new Uint8Array(total);
+  let at = 0;
+  for (const chunk of chunks) {
+    all.set(chunk, at);
+    at += chunk.byteLength;
+  }
+  return { text: new TextDecoder().decode(all) };
+}
+
 export async function handleLeadPost(
   request: Request,
   env: HoldEnv,
   ctx: HoldContext,
   now: () => number = Date.now,
 ): Promise<Response> {
-  const text = await request.text();
+  // A body that declares more than the limit is never read here: it goes to the
+  // app as it came, streaming, exactly as before this module existed.
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return env.APP.fetch(request);
+
+  const read = await readBounded(request, MAX_BODY_BYTES);
+  // Over the limit with no declared length: the bytes read plus the rest stream on.
+  if ("over" in read) return env.APP.fetch(read.over);
+  const text = read.text;
   const forward = () => env.APP.fetch(withBody(request, text));
 
   let parsed: unknown = null;
-  if (new TextEncoder().encode(text).length <= MAX_BODY_BYTES) {
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = null;
-    }
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    parsed = null;
   }
   if (!isPlainObject(parsed)) return forward();
 
