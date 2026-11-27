@@ -48,8 +48,12 @@ describe("DATA_PROVIDER", () => {
     // No D1 binding in this test: the failure is in the result, never a throw.
     expect(res.data).toBeNull();
     expect(res.error?.message).toContain("needs the D1 binding DB");
-    const fn = await got.rpc("bump_rate_limit", {});
-    expect(fn.error?.code).toBe("PGRST202"); // no function moved yet
+    // A function that moved (OPS-364) goes to D1 too, and fails the same way without the binding.
+    const moved = await got.rpc("bump_rate_limit", { p_key: "k", p_window_seconds: 60 });
+    expect(moved.error?.message).toContain("needs the D1 binding DB");
+    // A policy helper has not moved: PGRST202, as PostgREST says for an unknown name.
+    const fn = await got.rpc("is_admin", {});
+    expect(fn.error?.code).toBe("PGRST202");
     expect(rpc).not.toHaveBeenCalled();
     // auth and storage still come from Supabase.
     expect((got.auth as unknown as { getUser(): string }).getUser()).toBe("user");

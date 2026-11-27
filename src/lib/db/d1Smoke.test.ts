@@ -29,7 +29,7 @@ describe.skipIf(!RUN)("d1 smoke (local D1)", () => {
   }, 60_000);
 
   afterAll(async () => {
-    process.stdout.write(`d1 smoke: ${passed.length} of 5\n`);
+    process.stdout.write(`d1 smoke: ${passed.length} of 7\n`);
     await dispose?.();
   });
 
@@ -86,5 +86,28 @@ describe.skipIf(!RUN)("d1 smoke (local D1)", () => {
     const after = await c.from<Row>("counties").select("updated_at").eq("slug", `${RUN_ID}-county`).single();
     expect(String(after.data!.updated_at) > String(before.data!.updated_at)).toBe(true);
     passed.push("count");
+  });
+
+  // OPS-364: the Postgres functions that run in code on D1.
+  it("6. bump_rate_limit counts inside a window", async () => {
+    const call = () => client().rpc<Row>("bump_rate_limit", { p_key: `smoke:${RUN_ID}`, p_window_seconds: 3600 }).maybeSingle();
+    expect((await call()).data?.count).toBe(1);
+    const second = await call();
+    expect(second.error).toBeNull();
+    expect(second.data?.count).toBe(2);
+    passed.push("rate-limit");
+  });
+
+  it("7. claim_content_topics claims a queued topic once", async () => {
+    const c = client();
+    const { data: agentRun } = await c.from<Row>("agent_runs").insert({ agent_name: RUN_ID }).select("id").single();
+    const { data: topic } = await c.from<Row>("content_topics").insert({ keyword: `${RUN_ID} keyword`, priority: 0 }).select("id").single();
+    const first = await c.rpc<Row[]>("claim_content_topics", { p_run_id: agentRun!.id, p_limit: 1, p_topic_ids: [topic!.id] });
+    expect(first.error).toBeNull();
+    expect(first.data).toHaveLength(1);
+    expect(first.data![0]).toMatchObject({ id: topic!.id, status: "claimed", claimed_by_run_id: agentRun!.id });
+    const again = await c.rpc<Row[]>("claim_content_topics", { p_run_id: agentRun!.id, p_limit: 1, p_topic_ids: [topic!.id] });
+    expect(again.data).toEqual([]);
+    passed.push("claim");
   });
 });

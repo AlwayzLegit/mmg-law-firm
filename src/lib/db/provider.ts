@@ -13,10 +13,11 @@ import { createD1DataClient, type D1DataClient, type D1Like } from "./d1Client";
  *       other property (`.auth`, `.storage`, ...) still goes to Supabase, which
  *       sign-in and file storage keep using until their own parts.
  *
- * What D1 mode does NOT have yet, so nothing may set it before part 2 lands:
- * row-level security (the 49 policies become server-side checks, with a test per
- * route), the Postgres functions (rpc() answers PGRST202), the seed rows and the
- * data copy. No wrangler config names a D1 database today, so with the variable
+ * What D1 mode does NOT have yet, so nothing may set it before the rest of
+ * OPS-353 lands: row-level security (the 49 policies become server-side checks,
+ * with a test per route, OPS-404), the policy helpers is_admin, is_owner and
+ * is_editor (rpc() answers PGRST202), the seed rows and the data copy. The
+ * other Postgres functions run in code (./d1Rpcs.ts, OPS-364). No wrangler config names a D1 database today, so with the variable
  * set but no binding every query comes back as an error, loudly.
  */
 export type DataProvider = "supabase" | "d1";
