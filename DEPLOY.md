@@ -619,6 +619,10 @@ Neither builds or deploys the app, sets secrets or pre-loads pages. The build id
 
 **Way back.** Revert the pull request and run `front-production` on `main` again (it redeploys the earlier front Worker with the live build id), or roll `mmg-law-firm-front` back to its previous version in Cloudflare.
 
+## Background page refreshes are capped (OPS-394)
+
+A crawler (the daily Semrush Site Audit) can find thousands of stale pages at once, and each one queues a background refresh that reads the database. `wrangler.jsonc` (production and staging) sets three vars that cap that queue: `MAX_REVALIDATE_CONCURRENCY` 2 (queue shards, OpenNext default 10), `NEXT_CACHE_DO_QUEUE_MAX_REVALIDATION` 2 (refreshes at once per shard, default 5) and `NEXT_CACHE_DO_QUEUE_MAX_RETRIES` 2 (default 6). That is at most 4 refreshes at once instead of 50. No page's `revalidate` time changed. A test in `src/lib/cron/schedules.test.ts` keeps both environments equal. If a stale page refreshes too slowly, raise the numbers; reverting the change puts back OpenNext's defaults.
+
 ## D1 functions in code (OPS-364, part 2a of OPS-353)
 
 `src/lib/db/d1Rpcs.ts` ports the six Postgres functions the app calls through
