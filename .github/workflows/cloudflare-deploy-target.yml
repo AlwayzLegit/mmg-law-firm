@@ -436,6 +436,17 @@ jobs:
       - name: Smoke consent optional
         if: ${{ inputs.fail_check != true }}
         run: |
+          # While the database is down, or on a front-only recovery deploy, the front
+          # Worker holds a POST for 15 s and answers 200 persisted false (OPS-398), and
+          # that would leave a synthetic held enquiry. So the POST is sent only when the
+          # app is healthy; otherwise the step says "not proved" and sends nothing.
+          if [ "$FRONT_ONLY" = true ]; then
+            echo "consent optional: not proved, front-only deploy"; exit 0
+          fi
+          health=$(curl -s --max-time 20 "$SITE_URL/api/health" || true)
+          if echo "$health" | jq -e '(.failing // []) | index("database")' >/dev/null 2>&1; then
+            echo "consent optional: not proved, database failing"; exit 0
+          fi
           code=""
           for attempt in 1 2 3; do
             code=$(curl -s -o body.txt -w "%{http_code}" --max-time 25 -X POST -H "content-type: application/json" \
@@ -444,18 +455,11 @@ jobs:
             [ "$code" = 400 ] && break
             echo "attempt $attempt: status ${code:-none}"; sleep 5
           done
-          if [ "$code" = 400 ]; then
-            if jq -e '(.issues.consent_contact // null) == null' body.txt >/dev/null 2>&1; then
-              echo "consent optional: status 400, error $(jq -r '.error // "none"' body.txt), consent issue absent"
-            else
-              echo "::error::the app still answers a consent issue for an unticked box"; rm -f body.txt; exit 1
-            fi
+          if [ "$code" = 400 ] && jq -e '(.issues.consent_contact // null) == null' body.txt >/dev/null 2>&1; then
+            echo "consent optional: status 400, error $(jq -r '.error // "none"' body.txt), consent issue absent"
+          elif [ "$code" = 400 ]; then
+            echo "::error::the app still answers a consent issue for an unticked box"; rm -f body.txt; exit 1
           else
-            health=$(curl -s --max-time 20 "$SITE_URL/api/health" || true)
-            if [ "${code:-000}" = 000 ] && echo "$health" | jq -e '(.failing // []) | index("database")' >/dev/null 2>&1; then
-              echo "consent optional: not proved, database failing"
-            else
-              echo "::error::POST /api/leads with an unticked consent box did not answer 400 (status ${code:-none})"; rm -f body.txt; exit 1
-            fi
+            echo "::error::POST /api/leads with an unticked consent box did not answer 400 (status ${code:-none})"; rm -f body.txt; exit 1
           fi
           rm -f body.txt
