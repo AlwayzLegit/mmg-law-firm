@@ -84,20 +84,31 @@ describe("LeadSchema — required-field rejections", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects when consent_contact is false", () => {
+  it("accepts consent_contact false: consent is optional", () => {
     const result = LeadSchema.safeParse({
       ...baseValid,
       consent_contact: false,
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const issue = result.error.issues.find((i) =>
-        i.path.includes("consent_contact"),
-      );
-      expect(issue?.message).toMatch(/consent/i);
-    }
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.consent_contact).toBe(false);
   });
 
+  it("defaults consent_contact to false when absent", () => {
+    const { consent_contact: _omit, ...rest } = baseValid;
+    void _omit;
+    const result = LeadSchema.safeParse(rest);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.consent_contact).toBe(false);
+  });
+
+  it("keeps consent_contact true when ticked", () => {
+    const result = LeadSchema.safeParse({
+      ...baseValid,
+      consent_contact: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.consent_contact).toBe(true);
+  });
   it("rejects when turnstileToken is missing", () => {
     const { turnstileToken: _ignore, ...rest } = baseValid;
     void _ignore;
@@ -207,8 +218,12 @@ describe("LeadSchema — spam heuristics (superRefine)", () => {
 
 describe("LeadSchema — locale", () => {
   it("accepts a known locale and rejects an unknown one", () => {
-    expect(LeadSchema.safeParse({ ...baseValid, locale: "hy" }).success).toBe(true);
+    expect(LeadSchema.safeParse({ ...baseValid, locale: "hy" }).success).toBe(
+      true,
+    );
     expect(LeadSchema.safeParse({ ...baseValid }).success).toBe(true);
-    expect(LeadSchema.safeParse({ ...baseValid, locale: "xx" }).success).toBe(false);
+    expect(LeadSchema.safeParse({ ...baseValid, locale: "xx" }).success).toBe(
+      false,
+    );
   });
 });

@@ -73,7 +73,7 @@ export async function sendLeadMessage(
   const supabase = await getServerSupabase();
   const { data: lead, error: leadErr } = await supabase
     .from("leads")
-    .select("id, full_name, phone, email")
+    .select("id, full_name, phone, email, consent_contact")
     .eq("id", leadId)
     .maybeSingle();
   if (leadErr || !lead) {
@@ -87,6 +87,12 @@ export async function sendLeadMessage(
   if (channel === "sms") {
     if (!lead.phone) {
       return { ok: false, error: "This lead has no phone number on file." };
+    }
+    if (lead.consent_contact !== true) {
+      return {
+        ok: false,
+        error: "This lead did not agree to texts. Call or email instead.",
+      };
     }
     const r = await sendSms({ to: lead.phone, body });
     if (!r.ok) {

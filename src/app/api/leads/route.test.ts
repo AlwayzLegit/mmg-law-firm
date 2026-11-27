@@ -99,10 +99,30 @@ describe("lead persistence acknowledgement (all transports mocked)", () => {
     expect(response.status).toBe(429);
     expect(mocks.insert).not.toHaveBeenCalled();
   });
+  it("stores the real consent choice: unticked is accepted and stored as false", async () => {
+    const response = await POST(
+      request({ ...fixture, consent_contact: false }),
+    );
+    expect(response.status).toBe(200);
+    expect(mocks.insert).toHaveBeenCalledTimes(1);
+    expect(mocks.insert.mock.calls[0][0].consent_contact).toBe(false);
+    expect(mocks.insert.mock.calls[0][0].consent_ts).toBeTruthy();
+  });
+  it("stores consent true when the box is ticked", async () => {
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.insert.mock.calls[0][0].consent_contact).toBe(true);
+  });
+  it("stores consent false when the field is absent", async () => {
+    const { consent_contact: _omit, ...rest } = fixture;
+    void _omit;
+    expect((await POST(request(rest))).status).toBe(200);
+    expect(mocks.insert.mock.calls[0][0].consent_contact).toBe(false);
+  });
   it("preserves validation and CAPTCHA rejection", async () => {
     expect(
-      (await POST(request({ ...fixture, consent_contact: false }))).status,
+      (await POST(request({ ...fixture, phone: "not a phone" }))).status,
     ).toBe(400);
+    expect(mocks.insert).not.toHaveBeenCalled();
     mocks.turnstile.mockResolvedValue({
       ok: false,
       reason: "invalid-input-response",

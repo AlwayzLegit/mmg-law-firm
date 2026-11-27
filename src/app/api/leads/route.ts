@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         incident_date: parsed.data.incident_date ?? null,
         description: parsed.data.description ?? null,
         has_attorney: parsed.data.has_attorney ?? false,
-        consent_contact: true,
+        consent_contact: parsed.data.consent_contact,
         consent_text: consentTextFor(locale),
         tags: localeTag ? [localeTag] : [],
         consent_ip: ip,

@@ -70,9 +70,10 @@ export const LeadSchema = z
         .optional(),
     ),
     has_attorney: z.boolean().default(false),
-    consent_contact: z.literal(true, {
-      message: "We need your consent before we can contact you.",
-    }),
+    // TCPA: consent to automated calls and texts is optional and never a
+    // condition of service (the form's own wording says so). The visitor's
+    // choice, ticked or not, is stored on the lead as sent.
+    consent_contact: z.boolean().default(false),
     // Honeypot. Real users never see or fill this; bots that auto-fill every
     // field will. The server routes any non-empty value to status='spam'
     // without notifying. Kept lax here (optional) so a filled honeypot still
