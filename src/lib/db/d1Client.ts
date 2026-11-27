@@ -21,6 +21,7 @@ import {
   type OrderBy,
   type ParsedSelect,
 } from "./d1Sql";
+import { D1_RPCS, type RpcImpl } from "./d1Rpcs";
 
 // supabase-js–compatible query client over a Cloudflare D1 binding.
 // src/lib/supabase/admin.ts and server.ts hand this out instead of the
@@ -30,8 +31,7 @@ import {
 // Ported from The Look (AlwayzLegit/thelook, commit a6db2f6,
 // src/lib/db/d1Client.ts) by OPS-362 (part 1 of OPS-353). Changes for MMG
 // Law: nested and "!inner" embeds, filters on embedded columns, .contains()
-// on a JSON-array column, and an empty RPC table (every rpc() answers
-// PGRST202 until the part that moves that Postgres function).
+// on a JSON-array column, and rpc() for the functions in d1Rpcs.ts (OPS-364).
 //
 // Contract kept from supabase-js / PostgREST:
 //   • awaiting a builder resolves { data, error, count, status } and
@@ -441,26 +441,45 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<PostgrestLikeRes
 }
 
 // --- RPCs ------------------------------------------------------------------
-// MMG Law's Postgres functions (bump_rate_limit, claim_content_topics,
-// content_health_issues, bump_error_count, error_counts_recent, ...) are not
-// moved yet. Each is a later part of OPS-353; until then rpc() answers
-// PGRST202 (function not found), exactly what PostgREST says for a name it
-// does not know, so a route that calls one fails loudly instead of silently.
+// MMG Law's Postgres functions that moved to D1 live in d1Rpcs.ts (OPS-364).
+// A name that is not there (is_admin, is_owner, is_editor: the policy helpers
+// of OPS-404) still answers PGRST202 (function not found), exactly what
+// PostgREST says for a name it does not know, so a route that calls one fails
+// loudly instead of silently.
 
-type RpcImpl = (db: D1Like, args: Record<string, unknown>) => Promise<unknown>;
-
-export const RPCS: Record<string, RpcImpl> = {};
+export const RPCS: Record<string, RpcImpl> = D1_RPCS;
 
 class D1RpcCall<T = unknown> implements PromiseLike<PostgrestLikeResult<T>> {
   private pending: Promise<PostgrestLikeResult<T>> | null = null;
+  private cardinality: "many" | "single" | "maybeSingle" = "many";
+  private signal: AbortSignal | null = null;
   constructor(private readonly name: string, private readonly args: Record<string, unknown>, private readonly db: () => Promise<D1Like>) {}
+  // supabase-js: .single() / .maybeSingle() / .abortSignal() on an rpc() call.
+  single(): this { this.cardinality = "single"; return this; }
+  maybeSingle(): this { this.cardinality = "maybeSingle"; return this; }
+  abortSignal(signal: AbortSignal): this { this.signal = signal; return this; }
   private async run(): Promise<PostgrestLikeResult<T>> {
     const impl = RPCS[this.name];
     if (!impl) return fail<T>(new QueryError(`Could not find the function public.${this.name} in the schema cache`, "PGRST202"), 404);
     try {
+      this.signal?.throwIfAborted();
       const db = await this.db();
       // Writes are never retried here.
-      const data = await impl(db, this.args);
+      let data: unknown = await impl(db, this.args);
+      this.signal?.throwIfAborted();
+      if (this.cardinality !== "many" && Array.isArray(data)) {
+        if (data.length === 1) data = data[0];
+        else if (data.length === 0 && this.cardinality === "maybeSingle") data = null;
+        else {
+          return {
+            data: null,
+            error: { message: "JSON object requested, multiple (or no) rows returned", code: "PGRST116", details: `The result contains ${data.length} rows`, hint: null },
+            count: null,
+            status: 406,
+            statusText: "Not Acceptable",
+          };
+        }
+      }
       return { data: data as T, error: null, count: null, status: 200, statusText: "OK" };
     } catch (err) {
       return fail<T>(err);
