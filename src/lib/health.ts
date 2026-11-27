@@ -24,8 +24,16 @@ import { getStaticSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
  * is not applied yet, or the read failed. The counts never change ok, status,
  * failing or the 503: a 503 keeps meaning that the database does not answer.
  *
+ * Why it fails (OPS-348): while the database check fails, the body also holds
+ * databaseFailure, one word group from the fixed list DatabaseFailure (a timeout,
+ * a network error, an HTTP status class, a SQLSTATE class, a PostgREST code, no
+ * row, not configured, other), so a run can read the class of an outage from
+ * outside without the Supabase dashboard. When the database answers the key is
+ * absent, not null.
+ *
  * What it never returns: error text, row data, keys, project names, a path.
- * The body holds exactly the seven keys of PublicHealth.
+ * The body holds exactly the seven keys of PublicHealth, plus databaseFailure
+ * (from the fixed list only) while the database check fails.
  */
 export const DATABASE_TIMEOUT_MS = 5_000;
 
@@ -39,6 +47,56 @@ export interface PublicHealth {
   errors24h: number | null;
   /** Server errors (5xx) in about the last 3 hours; null when not counted. */
   errors3h: number | null;
+  /** Only while the database check fails (OPS-348): the class of the failure, from the fixed list. */
+  databaseFailure?: DatabaseFailure;
+}
+
+/**
+ * The class of a failed database check (OPS-348). A fixed list: the value is never
+ * built from error text, a message, a key or a row. All characters are in the
+ * alphabet the monitor keeps in its failure text.
+ */
+export type DatabaseFailure =
+  | "timeout"
+  | "network"
+  | "http 401"
+  | "http 402"
+  | "http 403"
+  | "http 4xx"
+  | "http 5xx"
+  | `pg ${string}`
+  | "pgrst"
+  | "no row"
+  | "not configured"
+  | "other";
+
+/**
+ * Reduce a failed check to its class. `error` is the error of the client's answer (or the thrown value),
+ * `status` the HTTP status of the answer. Only the code, the status and the NAME of a timeout are read,
+ * never a message that is printed or returned.
+ */
+export function classifyDatabaseFailure(input: {
+  error?: unknown;
+  status?: unknown;
+}): DatabaseFailure {
+  const e = (input.error ?? {}) as Record<string, unknown>;
+  const text = `${typeof e.name === "string" ? e.name : ""} ${typeof e.message === "string" ? e.message : ""}`;
+  // The abort of AbortSignal.timeout: a TimeoutError or AbortError, however the client words it.
+  if (/abort|timeout|timed out/i.test(text)) return "timeout";
+  const code = typeof e.code === "string" ? e.code : "";
+  if (/^PGRST/i.test(code)) return "pgrst";
+  if (/^[0-9A-Z]{5}$/.test(code)) return `pg ${code.slice(0, 2)}`;
+  const status = typeof input.status === "number" ? input.status : undefined;
+  if (status === 0) return "network";
+  if (status === 401 || status === 402 || status === 403) return `http ${status}`;
+  if (status !== undefined && status >= 400 && status < 500) return "http 4xx";
+  if (status !== undefined && status >= 500 && status < 600) return "http 5xx";
+  return "other";
+}
+
+export interface DatabaseCheck {
+  ok: boolean;
+  failure?: DatabaseFailure;
 }
 
 export interface ErrorCounts {
@@ -80,13 +138,13 @@ export async function readErrorCounts(
   }
 }
 
-/** True only when one published row came back without an error. */
+/** ok is true only when one published row came back without an error; otherwise failure is the class. */
 export async function checkDatabase(
   timeoutMs = DATABASE_TIMEOUT_MS,
-): Promise<boolean> {
-  if (!isSupabaseConfigured()) return false;
+): Promise<DatabaseCheck> {
+  if (!isSupabaseConfigured()) return { ok: false, failure: "not configured" };
   try {
-    const { data, error } = await getStaticSupabase()
+    const { data, error, status } = await getStaticSupabase()
       .from("practice_areas")
       .select("id")
       .eq("is_published", true)
@@ -95,12 +153,15 @@ export async function checkDatabase(
     if (error) {
       // The error code only: no message (it can quote the request) and no personal data.
       console.error("health: database check failed", error.code ?? "unknown");
-      return false;
+      return { ok: false, failure: classifyDatabaseFailure({ error, status }) };
     }
-    return Array.isArray(data) && data.length === 1;
-  } catch {
+    if (Array.isArray(data) && data.length === 1) return { ok: true };
+    return { ok: false, failure: "no row" };
+  } catch (err) {
     console.error("health: database check threw");
-    return false;
+    const failure = classifyDatabaseFailure({ error: err });
+    // A thrown error that is not a timeout is a failed request: the client did not get an answer.
+    return { ok: false, failure: failure === "other" ? "network" : failure };
   }
 }
 
@@ -108,11 +169,11 @@ export async function publicHealth(
   now: Date = new Date(),
 ): Promise<PublicHealth> {
   const failing: string[] = [];
-  const [databaseOk, counts] = await Promise.all([
+  const [database, counts] = await Promise.all([
     checkDatabase(),
     readErrorCounts(),
   ]);
-  if (!databaseOk) failing.push("database");
+  if (!database.ok) failing.push("database");
   const ok = failing.length === 0;
   return {
     ok,
@@ -122,5 +183,7 @@ export async function publicHealth(
     timestamp: now.toISOString(),
     errors24h: counts.errors24h,
     errors3h: counts.errors3h,
+    // Absent, not null, while the database answers: a healthy body is as it was.
+    ...(database.ok ? {} : { databaseFailure: database.failure ?? "other" }),
   };
 }

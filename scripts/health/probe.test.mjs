@@ -173,6 +173,19 @@ test("a 503 or an unhealthy body fails, naming only the failing check", async ()
   assert.match(r2.error, /^\/api\/health: status 200/);
 });
 
+test("a failing database names its class in the failure text (OPS-348)", async () => {
+  const withClass = (c) => JSON.stringify({ ok: false, status: "unhealthy", env: "production", failing: ["database"], databaseFailure: c, timestamp: "2026-11-27T19:00:00.000Z" });
+  for (const c of ["timeout", "http 402", "pg 57", "no row", "not configured"]) {
+    const r = await withHealth({ "/api/health": { status: 503, text: withClass(c) } });
+    assert.equal(r.error, `/api/health: status 503 (failing: database, class: ${c})`);
+  }
+  // Only the plain alphabet and 30 characters get through: nothing that could carry a workflow command.
+  for (const bad of ["::error::x", "a".repeat(31), "x\ny", 5, null]) {
+    const r = await withHealth({ "/api/health": { status: 503, text: withClass(bad) } });
+    assert.equal(r.error, "/api/health: status 503 (failing: database)");
+  }
+});
+
 test("a 200 that is not the health body fails", async () => {
   const r = await withHealth({ "/api/health": { text: "<html>Welcome</html>" } });
   assert.match(r.error, /^\/api\/health: status 200/);
