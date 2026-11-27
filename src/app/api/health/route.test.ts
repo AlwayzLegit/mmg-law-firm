@@ -21,7 +21,7 @@ vi.mock("@/lib/env", () => ({
   },
 }));
 import * as routeModule from "./route";
-import { DATABASE_TIMEOUT_MS } from "@/lib/health";
+import { DATABASE_TIMEOUT_MS, classifyDatabaseFailure } from "@/lib/health";
 
 const { GET } = routeModule;
 // Seven keys since OPS-21: the five of OPS-27 and two server-error counts.
@@ -34,6 +34,9 @@ const SEVEN_KEYS = [
   "status",
   "timestamp",
 ];
+
+// Eight keys while the database check fails (OPS-348): the seven and databaseFailure.
+const EIGHT_KEYS = [...SEVEN_KEYS, "databaseFailure"].sort();
 
 describe("GET /api/health", () => {
   beforeEach(() => {
@@ -61,6 +64,8 @@ describe("GET /api/health", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(Object.keys(body).sort()).toEqual(SEVEN_KEYS);
+    // Healthy: the key is absent, not null (OPS-348).
+    expect("databaseFailure" in body).toBe(false);
     expect(body).toMatchObject({
       ok: true,
       status: "healthy",
@@ -101,11 +106,12 @@ describe("GET /api/health", () => {
     const res = await GET();
     const body = await res.json();
     expect(res.status).toBe(503);
-    expect(Object.keys(body).sort()).toEqual(SEVEN_KEYS);
+    expect(Object.keys(body).sort()).toEqual(EIGHT_KEYS);
     expect(body).toMatchObject({
       ok: false,
       status: "unhealthy",
       failing: ["database"],
+      databaseFailure: "pgrst",
     });
     expect(JSON.stringify(body)).not.toMatch(
       /leaked-text|supabase\.co|PGRST301/,
@@ -122,12 +128,16 @@ describe("GET /api/health", () => {
     );
     const res = await GET();
     expect(res.status).toBe(503);
-    expect(JSON.stringify(await res.json())).not.toContain("aborted");
+    const body = await res.json();
+    expect(JSON.stringify(body)).not.toContain("aborted");
+    expect(body.databaseFailure).toBe("timeout");
   });
 
   it("answers 503 when no row comes back (a database with nothing published is not serving the site)", async () => {
     mocks.abortSignal.mockResolvedValue({ data: [], error: null });
-    expect((await GET()).status).toBe(503);
+    const res = await GET();
+    expect(res.status).toBe(503);
+    expect((await res.json()).databaseFailure).toBe("no row");
   });
 
   it("answers 503 and never touches the database when it is not configured", async () => {
@@ -135,6 +145,145 @@ describe("GET /api/health", () => {
     const res = await GET();
     expect(res.status).toBe(503);
     expect(mocks.from).not.toHaveBeenCalled();
+    expect((await res.json()).databaseFailure).toBe("not configured");
+  });
+
+  // OPS-348: one case per class, each read in the body, and never any error text.
+  const CASES: Array<[string, () => void, string]> = [
+    [
+      "a timeout the client words as an error",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "TimeoutError: signal timed out", code: "" },
+          status: 0,
+        }),
+      "timeout",
+    ],
+    [
+      "a thrown fetch failure",
+      () => mocks.abortSignal.mockRejectedValue(new TypeError("fetch failed")),
+      "network",
+    ],
+    [
+      "a failed request with status 0",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "TypeError: fetch failed", code: "" },
+          status: 0,
+        }),
+      "network",
+    ],
+    [
+      "a 401 from the gateway",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "No API key found in request", code: "" },
+          status: 401,
+        }),
+      "http 401",
+    ],
+    [
+      "a 402 (a restricted project)",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "project restricted https://x.supabase.co", code: "" },
+          status: 402,
+        }),
+      "http 402",
+    ],
+    [
+      "a 403",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "forbidden", code: "" },
+          status: 403,
+        }),
+      "http 403",
+    ],
+    [
+      "another 4xx",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "gone", code: "" },
+          status: 410,
+        }),
+      "http 4xx",
+    ],
+    [
+      "a 503",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "upstream", code: "" },
+          status: 503,
+        }),
+      "http 5xx",
+    ],
+    [
+      "a cancelled statement (SQLSTATE 57014)",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "canceling statement", code: "57014" },
+          status: 500,
+        }),
+      "pg 57",
+    ],
+    [
+      "too many connections (SQLSTATE 53300)",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "too many connections", code: "53300" },
+          status: 500,
+        }),
+      "pg 53",
+    ],
+    [
+      "a PostgREST code",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "JWT expired", code: "PGRST301" },
+          status: 401,
+        }),
+      "pgrst",
+    ],
+    [
+      "an error with nothing the list knows",
+      () =>
+        mocks.abortSignal.mockResolvedValue({
+          data: null,
+          error: { message: "odd", code: "" },
+          status: 200,
+        }),
+      "other",
+    ],
+  ];
+  it.each(CASES)("reads the class of %s", async (_name, arrange, expected) => {
+    arrange();
+    const res = await GET();
+    const body = await res.json();
+    expect(res.status).toBe(503);
+    expect(body.databaseFailure).toBe(expected);
+    expect(Object.keys(body).sort()).toEqual(EIGHT_KEYS);
+    expect(JSON.stringify(body)).not.toMatch(
+      /supabase\.co|No API key|restricted|upstream|canceling|JWT|fetch failed/,
+    );
+  });
+
+  it("classifies from a fixed list in the monitor's alphabet", () => {
+    for (const [, , expected] of CASES) {
+      expect(expected).toMatch(/^[A-Za-z0-9 /_?=.,:()'-]{1,30}$/);
+    }
+    expect(classifyDatabaseFailure({})).toBe("other");
+    expect(classifyDatabaseFailure({ error: { code: "ab" }, status: "500" })).toBe("other");
   });
 
   it("reads the counts for this environment through error_counts_recent, with the anon client", async () => {
@@ -218,6 +367,7 @@ describe("GET /api/health", () => {
     const body = await res.json();
     expect(res.status).toBe(503);
     expect(body.failing).toEqual(["database"]);
+    expect(body.databaseFailure).toBe("no row");
     expect(body.errors3h).toBe(1);
   });
 

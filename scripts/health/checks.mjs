@@ -153,7 +153,9 @@ export async function runChecks(get, { log = () => {}, withHealth = false, now =
         // not JSON: handled below
       }
       if (health.status !== 200 || !body || body.ok !== true || body.status !== "healthy") {
-        const failing = Array.isArray(body?.failing) ? ` (failing: ${body.failing.map((f) => String(f).slice(0, 30)).join(", ")})` : "";
+        // OPS-348: the class of a database failure (a fixed list in the app), only in the plain alphabet and short.
+        const cls = typeof body?.databaseFailure === "string" && /^[A-Za-z0-9 ]{1,30}$/.test(body.databaseFailure) ? `, class: ${body.databaseFailure}` : "";
+        const failing = Array.isArray(body?.failing) ? ` (failing: ${body.failing.map((f) => String(f).slice(0, 30)).join(", ")}${cls})` : "";
         throw new CheckFailed("/api/health", `status ${health.status}${failing}`);
       }
       say("database: ok");
