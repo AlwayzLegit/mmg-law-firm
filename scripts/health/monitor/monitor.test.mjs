@@ -6,7 +6,8 @@ import { test } from "node:test";
 import { FORM_MARKERS } from "../checks.mjs";
 import { alertsConfigured, composeAlert, sendAlert } from "./alert.mjs";
 import { RETRY_WAIT_MS, handleFetch, runChecksTwice, runRound } from "./handler.mjs";
-import { HOUR_MS, MAX_KEPT, REMINDER_MS, nextRound, quietHours, quietUntilMs } from "./round.mjs";
+import { STATUS_URL, alertFor, fileAlert } from "./inbox.mjs";
+import { HOUR_MS, MAX_KEPT, REMINDER_MS, nextRound, nextRows, quietHours, quietUntilMs } from "./round.mjs";
 import { STATUS_MAX_AGE_MS, publicStatus, words } from "./status.mjs";
 
 const SITE = "https://www.mmg-lawfirm.com";
@@ -211,9 +212,175 @@ test("a round in the quiet time sends no mail, after it one mail goes out for th
   assert.equal(peek().incidents.length, 1);
 });
 
+// -------------------------------------------------------------- Inbox rows (OPS-352)
+
+// A stand-in for the CREW_INTAKE service binding: records each createAlert call.
+function fakeIntake(answer = async () => ({ ok: true, pageId: "p" })) {
+  const calls = [];
+  return { calls, binding: { createAlert: async (alert) => { calls.push(structuredClone(alert)); return answer(alert); } } };
+}
+
+const failingFetch = () => { const bad = goodRoutes(); bad["/"] = { text: "x", status: 500 }; return stubFetch(bad).fetchImpl; };
+const passingFetch = () => stubFetch(goodRoutes()).fetchImpl;
+
+test("alertFor builds fixed words and ISO times, and only a recovery has a to", () => {
+  const start = alertFor({ type: "start", reason: "/contact: status 500", from: T0 }, {});
+  assert.deepEqual(start, { kind: "start", check: "/contact: status 500", from: new Date(T0).toISOString(), to: null, statusUrl: STATUS_URL, rehearsal: false });
+  const back = alertFor({ type: "recovery", reason: "<b>x</b> a@b.co", from: T0, to: T0 + HOUR_MS }, { REHEARSAL: "1" });
+  assert.equal(back.check, "bx/b ab.co");
+  assert.equal(back.to, new Date(T0 + HOUR_MS).toISOString());
+  assert.equal(back.rehearsal, true);
+  assert.equal(alertFor({ type: "start", reason: "", from: T0 }, {}).check, "check failed");
+  assert.deepEqual(Object.keys(start).sort(), ["check", "from", "kind", "rehearsal", "statusUrl", "to"]);
+});
+
+test("fileAlert: no binding is not bound; a refusal and a throw are logged with no address or body and never throw", async () => {
+  const logs = [];
+  const event = { type: "start", reason: "r", from: T0 };
+  assert.equal(await fileAlert({}, event, (l) => logs.push(l)), "not bound");
+  const refused = fakeIntake(async () => ({ ok: false, reason: "rate limited" }));
+  assert.equal(await fileAlert({ CREW_INTAKE: refused.binding }, event, (l) => logs.push(l)), "refused");
+  const thrown = { createAlert: async () => { throw new Error("https://secret.example/body?token=abc"); } };
+  assert.equal(await fileAlert({ CREW_INTAKE: thrown }, event, (l) => logs.push(l)), "failed");
+  assert.deepEqual(logs, ["monitor: inbox alert refused rate limited", "monitor: inbox alert failed"]);
+  for (const l of logs) assert.ok(!l.includes("secret") && !l.includes("token") && !l.includes("http"), l);
+});
+
+test("nextRows: the row path is quiet for 24 hours from the first bound round and keeps what it would have filed", () => {
+  const ev = [{ type: "start", reason: "r", from: T0 }];
+  const a = nextRows(undefined, { bound: false, events: ev, now: T0 });
+  assert.deepEqual(a, { rows: { rowsFrom: null, filed: 0, lastResult: null, wouldHaveFiled: [] }, toFile: [] });
+  const b = nextRows(a.rows, { bound: true, events: [], now: T0 });
+  assert.equal(b.rows.rowsFrom, T0);
+  const c = nextRows(b.rows, { bound: true, events: ev, now: T0 + HOUR_MS });
+  assert.deepEqual(c.toFile, []);
+  assert.deepEqual(c.rows.wouldHaveFiled, [{ at: T0 + HOUR_MS, kind: "start" }]);
+  const d = nextRows(c.rows, { bound: true, events: ev, now: T0 + 24 * HOUR_MS });
+  assert.deepEqual(d.toFile, ev);
+  assert.equal(d.rows.rowsFrom, T0);
+  // not bound files nothing, even long after
+  assert.deepEqual(nextRows(undefined, { bound: false, events: ev, now: T0 + 99 * HOUR_MS }).toFile, []);
+  // broken stored records never throw
+  for (const bad of [null, 5, "x", [], { rowsFrom: "x", filed: -3, wouldHaveFiled: 7, lastResult: 9 }]) nextRows(bad, { bound: true, events: ev, now: T0 });
+  // the list keeps the last 20
+  let rows = b.rows;
+  for (let i = 0; i < 25; i++) rows = nextRows(rows, { bound: true, events: ev, now: T0 + i * 1000 }).rows;
+  assert.equal(rows.wouldHaveFiled.length, MAX_KEPT);
+});
+
+test("start, reminder and recovery each call the binding once with fixed words; the quiet times call nothing", async () => {
+  const { env, peek } = fakeEnv();
+  const intake = fakeIntake();
+  env.CREW_INTAKE = intake.binding;
+  const run = (fetchImpl, at) => runRound(env, { now: at, fetchImpl, alertFetch: async () => new Response("{}"), sleep: async () => {}, log: () => {} });
+  await run(passingFetch(), T0); // first round: both quiets start
+  await run(failingFetch(), T0 + HOUR_MS); // inside both quiets
+  assert.equal(intake.calls.length, 0);
+  assert.equal(peek().rows.wouldHaveFiled.length, 0); // no event in the site's own quiet either
+  await run(failingFetch(), T0 + 25 * HOUR_MS); // start
+  assert.equal(intake.calls.length, 1);
+  assert.equal(intake.calls[0].kind, "start");
+  assert.equal(intake.calls[0].from, new Date(T0 + 25 * HOUR_MS).toISOString());
+  assert.equal(intake.calls[0].to, null);
+  await run(failingFetch(), T0 + 25 * HOUR_MS + 15 * 60_000); // still failing, under an hour: nothing
+  assert.equal(intake.calls.length, 1);
+  await run(failingFetch(), T0 + 26 * HOUR_MS + 1000); // reminder
+  assert.equal(intake.calls.length, 2);
+  assert.equal(intake.calls[1].kind, "reminder");
+  await run(passingFetch(), T0 + 27 * HOUR_MS); // recovery
+  assert.equal(intake.calls.length, 3);
+  assert.equal(intake.calls[2].kind, "recovery");
+  assert.equal(intake.calls[2].to, new Date(T0 + 27 * HOUR_MS).toISOString());
+  assert.equal(peek().rows.filed, 3);
+  assert.equal(peek().rows.lastResult, "filed");
+  for (const c of intake.calls) assert.deepEqual(Object.keys(c).sort(), ["check", "from", "kind", "rehearsal", "statusUrl", "to"]);
+});
+
+test("the row path's own quiet holds even after the site's quiet is over, and fills wouldHaveFiled", async () => {
+  const { env, peek, poke } = fakeEnv();
+  const intake = fakeIntake();
+  // The monitor ran for days before the binding was added.
+  poke(nextRound(null, PASS, T0, "24").state);
+  env.CREW_INTAKE = intake.binding;
+  const run = (fetchImpl, at) => runRound(env, { now: at, fetchImpl, alertFetch: async () => new Response("{}"), sleep: async () => {}, log: () => {} });
+  await run(failingFetch(), T0 + 100 * HOUR_MS); // site quiet over, row quiet just started
+  assert.equal(intake.calls.length, 0);
+  assert.deepEqual(peek().rows.wouldHaveFiled, [{ at: T0 + 100 * HOUR_MS, kind: "start" }]);
+  const status = await (await handleFetch(new Request("https://m.example/status"), env, T0 + 100 * HOUR_MS + 1000)).json();
+  assert.equal(status.rowAlerts.state, "quiet");
+  assert.equal(status.rowAlerts.quietUntil, new Date(T0 + 124 * HOUR_MS).toISOString());
+  assert.deepEqual(status.wouldHaveFiled, [{ at: new Date(T0 + 100 * HOUR_MS).toISOString(), kind: "start" }]);
+  assert.equal(status.alerts, "not configured");
+  await run(passingFetch(), T0 + 125 * HOUR_MS); // after the row quiet: the recovery is filed
+  assert.equal(intake.calls.length, 1);
+  assert.equal(intake.calls[0].kind, "recovery");
+  const after = await (await handleFetch(new Request("https://m.example/status"), env, T0 + 125 * HOUR_MS + 1000)).json();
+  assert.equal(after.rowAlerts.state, "on");
+  assert.equal(after.rowAlerts.filed, 1);
+});
+
+test("a binding that throws or refuses is logged with no address or body and the round still stores its state", async () => {
+  for (const binding of [
+    { createAlert: async () => { throw new Error("https://leak.example/?k=1"); } },
+    { createAlert: async () => ({ ok: false, reason: "rate limited" }) },
+  ]) {
+    const { env, peek } = fakeEnv();
+    env.CREW_INTAKE = binding;
+    const logs = [];
+    const run = (fetchImpl, at) => runRound(env, { now: at, fetchImpl, alertFetch: async () => new Response("{}"), sleep: async () => {}, log: (l) => logs.push(l) });
+    await run(passingFetch(), T0);
+    await run(failingFetch(), T0 + 25 * HOUR_MS);
+    assert.equal(peek().ok, false);
+    assert.equal(peek().open.reason, "/: status 500");
+    assert.equal(peek().rows.filed, 0);
+    assert.ok(["failed", "refused"].includes(peek().rows.lastResult));
+    for (const l of logs) assert.ok(!l.includes("leak") && !l.includes("http"), l);
+  }
+});
+
+test("no binding: the row path says not bound, files nothing and /status keeps alerts not configured", async () => {
+  const { env, peek } = fakeEnv();
+  const run = (fetchImpl, at) => runRound(env, { now: at, fetchImpl, alertFetch: async () => new Response("{}"), sleep: async () => {}, log: () => {} });
+  await run(passingFetch(), T0);
+  await run(failingFetch(), T0 + 25 * HOUR_MS);
+  assert.equal(peek().rows.filed, 0);
+  const status = await (await handleFetch(new Request("https://m.example/status"), env, T0 + 25 * HOUR_MS + 1000)).json();
+  assert.equal(status.rowAlerts.state, "not bound");
+  assert.equal(status.alerts, "not configured");
+});
+
+test("REHEARSAL makes no request to the site, files exactly one row and never twice", async () => {
+  const { env, peek } = fakeEnv({ REHEARSAL: "1" });
+  const intake = fakeIntake();
+  env.CREW_INTAKE = intake.binding;
+  const sent = [];
+  const fetchImpl = async (url) => { sent.push(url); return new Response("x"); };
+  const run = (at) => runRound(env, { now: at, fetchImpl, alertFetch: async () => new Response("{}"), sleep: async () => {}, log: () => {} });
+  await run(T0);
+  assert.equal(sent.length, 0);
+  assert.equal(intake.calls.length, 1);
+  assert.equal(intake.calls[0].kind, "start");
+  assert.equal(intake.calls[0].check, "rehearsal: forced failure");
+  assert.equal(intake.calls[0].rehearsal, true);
+  assert.equal(peek().rows.filed, 1);
+  for (let i = 1; i <= 12; i++) await run(T0 + i * 15 * 60_000);
+  assert.equal(intake.calls.length, 1); // a reminder after an hour is not filed
+  const status = await (await handleFetch(new Request("https://m.example/status"), env, T0 + 12 * 15 * 60_000 + 1000)).json();
+  assert.equal(status.rowAlerts.state, "on");
+  assert.equal(status.rowAlerts.filed, 1);
+  assert.equal(status.rowAlerts.lastResult, "filed");
+});
+
+test("the real monitor never rehearses: without REHEARSAL it asks the site", async () => {
+  const { env } = fakeEnv();
+  const stub = stubFetch(goodRoutes());
+  await runRound(env, { now: T0, fetchImpl: stub.fetchImpl, alertFetch: async () => new Response("{}"), sleep: async () => {}, log: () => {} });
+  assert.ok(stub.sent.length > 0);
+});
+
 // ----------------------------------------------------------------- status
 
-const FIELDS = ["alerts", "checkedAt", "failingSince", "firstRoundAt", "incidents", "lastFailure", "lines", "ok", "quietUntil", "streak", "v", "wouldHaveRaised"];
+const FIELDS = ["alerts", "checkedAt", "failingSince", "firstRoundAt", "incidents", "lastFailure", "lines", "ok", "quietUntil", "rowAlerts", "streak", "v", "wouldHaveFiled", "wouldHaveRaised"];
 
 test("/status holds only the fixed fields and never what the stored state adds", async () => {
   const { env, poke } = fakeEnv();
@@ -230,6 +397,8 @@ test("/status holds only the fixed fields and never what the stored state adds",
   assert.equal(body.v, 1);
   assert.equal(body.ok, true);
   assert.equal(body.alerts, "not configured");
+  assert.deepEqual(body.rowAlerts, { state: "not bound", quietUntil: null, filed: 0, lastResult: null });
+  assert.deepEqual(body.wouldHaveFiled, []);
   assert.equal(body.firstRoundAt, new Date(T0).toISOString());
   assert.equal(body.quietUntil, new Date(T0 + 24 * HOUR_MS).toISOString());
 });
@@ -289,4 +458,24 @@ test("the monitor config has a Durable Object with SQLite, the strict fetch flag
   assert.deepEqual(json.triggers.crons, ["3,18,33,48 * * * *"]);
   assert.equal(json.env, undefined);
   assert.equal(json.vars.SITE_URL, SITE);
+  assert.equal(json.vars.REHEARSAL, undefined);
+});
+
+test("the config binds crew-intake's MmgLawIntake as CREW_INTAKE and no secret or address", () => {
+  const text = readFileSync(new URL("./wrangler.jsonc", import.meta.url), "utf8");
+  const json = JSON.parse(text.replace(/^\s*\/\/.*$/gm, ""));
+  assert.deepEqual(json.services, [{ binding: "CREW_INTAKE", service: "crew-intake", entrypoint: "MmgLawIntake" }]);
+  assert.ok(!/token|secret|api\.notion/i.test(JSON.stringify(json.vars)));
+});
+
+test("monitor-deploy.yml: rehearsal is a hand input, off by default, with no pull request trigger and a deletion that always runs", () => {
+  const text = readFileSync(new URL("../../../.github/workflows/monitor-deploy.yml", import.meta.url), "utf8");
+  assert.match(text, /rehearse:\s*\n\s+description:[^\n]*\n\s+type: boolean\n\s+default: false/);
+  assert.doesNotMatch(text, /pull_request/);
+  assert.match(text, /if: \$\{\{ always\(\) && inputs\.rehearse \}\}/);
+  assert.match(text, /rehearsal worker deleted/);
+  assert.match(text, /rehearsal: row filed: /);
+  assert.match(text, /--var REHEARSAL:1/);
+  // the real deploy is skipped in a rehearsal
+  assert.match(text, /name: Deploy the monitor\n\s+if: \$\{\{ !inputs\.rehearse \}\}/);
 });
