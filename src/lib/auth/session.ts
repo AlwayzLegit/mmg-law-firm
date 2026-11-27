@@ -46,9 +46,13 @@ export async function getSessionUser(): Promise<SessionUser | null> {
  * the signed session cookie is trusted for a few minutes (no database read);
  * requireAdmin() re-checks against the database on every admin render.
  */
-export async function getSessionUserFromHeaders(headers: Headers): Promise<SessionUser | null> {
+export async function getSessionUserFromHeaders(
+  headers: Headers,
+  opts: { fresh?: boolean } = {},
+): Promise<SessionUser | null> {
   const { auth } = await better();
-  const res = await auth.api.getSession({ headers });
+  // fresh: read the database, not the signed cookie cache (a revoked session is refused).
+  const res = await auth.api.getSession({ headers, ...(opts.fresh ? { query: { disableCookieCache: true } } : {}) });
   return res ? { id: res.user.id, email: res.user.email ?? null } : null;
 }
 

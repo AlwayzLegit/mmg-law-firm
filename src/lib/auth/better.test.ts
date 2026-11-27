@@ -173,6 +173,25 @@ describe("one-time links", () => {
     expect(await consumeLink(db(), { token: second.token, type: "invite" })).toBe(OWNER);
   });
 
+  it("a resent invite (now a magic link) retires the first invite, and recovery stands alone", async () => {
+    const invite = await issueLink(db(), { userId: OWNER, type: "invite" });
+    const recovery = await issueLink(db(), { userId: OWNER, type: "recovery" });
+    const magic = await issueLink(db(), { userId: OWNER, type: "magiclink" });
+    expect(await consumeLink(db(), { token: invite.token, type: "invite" })).toBeNull();
+    expect(await consumeLink(db(), { token: recovery.token, type: "recovery" })).toBe(OWNER);
+    expect(await consumeLink(db(), { token: magic.token, type: "magiclink" })).toBe(OWNER);
+  });
+
+  it("a revoked session is refused by a fresh read even while its cookie cache is still valid", async () => {
+    const { token } = await issueLink(db(), { userId: OWNER, type: "recovery" });
+    const ok = await auth.api.verifyLink({ body: { token, type: "recovery" }, headers: new Headers(), returnHeaders: true });
+    const cookie = cookieHeader(ok.headers);
+    const headers = new Headers({ cookie });
+    expect(await auth.api.getSession({ headers })).not.toBeNull();
+    await db().prepare("DELETE FROM auth_sessions WHERE user_id = ?").bind(OWNER).run();
+    expect(await auth.api.getSession({ headers, query: { disableCookieCache: true } })).toBeNull();
+  });
+
   it("verifyLink opens a session once, and not again", async () => {
     const { token } = await issueLink(db(), { userId: OWNER, type: "recovery" });
     const ok = await auth.api.verifyLink({ body: { token, type: "recovery" }, headers: new Headers(), returnHeaders: true });

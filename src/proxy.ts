@@ -36,7 +36,9 @@ async function betterAuthGate(request: NextRequest, response: NextResponse): Pro
   let userId: string | null = null;
   try {
     const { getSessionUserFromHeaders } = await import("@/lib/auth/session");
-    userId = (await getSessionUserFromHeaders(request.headers))?.id ?? null;
+    // /login checks the database: a cached cookie of a revoked session must not
+    // bounce to /admin, where requireAdmin() would send it back (a redirect loop).
+    userId = (await getSessionUserFromHeaders(request.headers, { fresh: pathname === "/login" }))?.id ?? null;
   } catch {
     userId = null;
   }

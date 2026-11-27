@@ -49,7 +49,9 @@ export async function linkIdentifier(type: LinkType, token: string): Promise<str
 /**
  * Store a new token for a user and return it (the only time it exists in the
  * clear). Earlier unused tokens of the same type for the same user are
- * deleted, so "Resend invite" retires the old link.
+ * deleted, so "Resend invite" retires the old link. An invite and a magic link
+ * are one family (a resend of a first invite becomes a magic link once the user
+ * exists), so issuing either retires both; recovery stands alone.
  */
 export async function issueLink(
   db: D1Like,
@@ -59,9 +61,10 @@ export async function issueLink(
   const token = newLinkToken();
   const identifier = await linkIdentifier(input.type, token);
   const expiresAt = new Date(now.getTime() + LINK_TTL_SECONDS[input.type] * 1000).toISOString();
+  const family: LinkType[] = input.type === "recovery" ? ["recovery"] : ["invite", "magiclink"];
   await db
-    .prepare("DELETE FROM auth_verifications WHERE value = ? AND identifier LIKE ?")
-    .bind(input.userId, `${PREFIX}:${input.type}:%`)
+    .prepare(`DELETE FROM auth_verifications WHERE value = ? AND (${family.map(() => "identifier LIKE ?").join(" OR ")})`)
+    .bind(input.userId, ...family.map((t) => `${PREFIX}:${t}:%`))
     .run();
   await db
     .prepare("INSERT INTO auth_verifications (id, identifier, value, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
