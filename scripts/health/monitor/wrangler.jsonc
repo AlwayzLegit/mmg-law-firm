@@ -7,6 +7,17 @@
 // RESEND_API_KEY and RESEND_FROM_EMAIL, set by the workflow's "Alert settings"
 // step when the repository variable MONITOR_ALERT_EMAIL exists. Without them the
 // monitor records and never emails.
+//
+// Inbox rows (OPS-352): on a start, a reminder or a recovery the monitor files one
+// row in the Crew's Notion Inbox through the service binding CREW_INTAKE to the
+// shared intake Worker crew-intake (entrypoint MmgLawIntake, method createAlert,
+// OPS-360). No token and no key here. The row path is quiet for 24 hours from the
+// first round that sees the binding (state.rows.rowsFrom): in that time /status
+// lists what it would have filed in wouldHaveFiled and nothing is filed. A
+// throwaway copy of this Worker (REHEARSAL=1, name mmg-law-firm-monitor-rehearsal)
+// is made and deleted by monitor-deploy.yml when started by hand with rehearse
+// true. If a cut run leaves it behind: pnpm exec wrangler delete --name
+// mmg-law-firm-monitor-rehearsal --force. The real monitor never has REHEARSAL.
 {
   "$schema": "../../../node_modules/wrangler/config-schema.json",
   "name": "mmg-law-firm-monitor",
@@ -26,5 +37,8 @@
   "vars": { "SITE_URL": "https://www.mmg-lawfirm.com", "QUIET_HOURS": "24" },
 
   "durable_objects": { "bindings": [{ "name": "MONITOR_STATE", "class_name": "MonitorState" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MonitorState"] }]
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MonitorState"] }],
+
+  // The shared intake Worker (same Cloudflare account). The project comes from the entrypoint.
+  "services": [{ "binding": "CREW_INTAKE", "service": "crew-intake", "entrypoint": "MmgLawIntake" }]
 }

@@ -19,6 +19,8 @@ export const REMINDER_MS = 60 * 60 * 1000;
 export const HOUR_MS = 60 * 60 * 1000;
 export const MIN_QUIET_HOURS = 24;
 export const MAX_QUIET_HOURS = 720;
+/** The row path (Inbox rows through crew-intake, OPS-352) has its own quiet, counted from the first round it is bound. */
+export const ROW_QUIET_HOURS = 24;
 
 const keep = (list) => list.slice(-MAX_KEPT);
 const finite = (n) => typeof n === "number" && Number.isFinite(n);
@@ -41,10 +43,10 @@ export const quietUntilMs = (firstRoundAt, hours) => firstRoundAt + quietHours(h
  * prev: stored state or null. result: { ok, lines, failure } from one round.
  * Returns { state, events }.
  */
-export function nextRound(prev, result, now, hours) {
+export function nextRound(prev, result, now, hours, { skipQuiet = false } = {}) {
   const p = prev && typeof prev === "object" ? prev : {};
   const firstRoundAt = finite(p.firstRoundAt) ? p.firstRoundAt : now;
-  const quiet = now < quietUntilMs(firstRoundAt, hours);
+  const quiet = !skipQuiet && now < quietUntilMs(firstRoundAt, hours);
   const failed = result.ok !== true;
   const events = [];
 
@@ -87,4 +89,32 @@ export function nextRound(prev, result, now, hours) {
     },
     events,
   };
+}
+
+/** rowsFrom plus the row path's quiet time, in ms. */
+export const rowsQuietUntilMs = (rowsFrom, hours = ROW_QUIET_HOURS) => rowsFrom + hours * HOUR_MS;
+
+/**
+ * The row path for one round (OPS-352). prev: the stored rows record or
+ * undefined. events: what nextRound emitted. bound: whether the CREW_INTAKE
+ * binding exists. A new alarm starts quiet: the first round that sees the
+ * binding stores rowsFrom, and before rowsFrom plus 24 hours each event is only
+ * kept in wouldHaveFiled (kind and time, the last 20) and nothing is filed. No
+ * date lives in the config. In a rehearsal the quiet is over and at most one
+ * row is ever filed. Returns { rows, toFile }: the record to store and the
+ * events to file now.
+ */
+export function nextRows(prev, { bound, events, now, rehearsal = false }) {
+  const p = prev && typeof prev === "object" ? prev : {};
+  const rowsFrom = finite(p.rowsFrom) ? p.rowsFrom : bound ? now : null;
+  const filed = finite(p.filed) && p.filed > 0 ? p.filed : 0;
+  const lastResult = typeof p.lastResult === "string" ? p.lastResult : null;
+  let wouldHaveFiled = Array.isArray(p.wouldHaveFiled) ? p.wouldHaveFiled : [];
+  let toFile = [];
+  if (bound && rowsFrom !== null) {
+    const quiet = !rehearsal && now < rowsQuietUntilMs(rowsFrom);
+    if (quiet) wouldHaveFiled = keep([...wouldHaveFiled, ...events.map((e) => ({ at: now, kind: e.type }))]);
+    else toFile = rehearsal ? (filed >= 1 ? [] : events.slice(0, 1)) : events;
+  }
+  return { rows: { rowsFrom, filed, lastResult, wouldHaveFiled }, toFile };
 }

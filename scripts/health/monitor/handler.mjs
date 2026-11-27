@@ -4,10 +4,14 @@
  */
 import { CheckFailed, makeGet, runChecks } from "../checks.mjs";
 import { alertsConfigured, sendAlert } from "./alert.mjs";
-import { nextRound } from "./round.mjs";
+import { fileAlert } from "./inbox.mjs";
+import { ROW_QUIET_HOURS, nextRound, nextRows } from "./round.mjs";
 import { publicStatus, words } from "./status.mjs";
 
 export const RETRY_WAIT_MS = 30_000;
+
+/** The one result a rehearsal round uses: no request to the site, a forced failure. */
+export const REHEARSAL_RESULT = { ok: false, lines: [], failure: "rehearsal: forced failure" };
 
 const stub = (env) => env.MONITOR_STATE.get(env.MONITOR_STATE.idFromName("monitor"));
 const sleepReal = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -33,14 +37,33 @@ export async function runChecksTwice(env, { fetchImpl = fetch, sleep = sleepReal
   return { ok: false, lines: [], failure };
 }
 
-/** One round: check, fold into the stored state, then alert. */
+/**
+ * One round: check, fold into the stored state, then alert. The state is stored
+ * before any alert goes out, so a failed alert never loses the round. The email
+ * path (alert.mjs) is unchanged and stays off without its settings. The row path
+ * (inbox.mjs) has its own quiet; REHEARSAL=1 (a throwaway copy of the monitor,
+ * monitor-deploy.yml) makes no request to the site, forces one failure, treats
+ * both quiets as over and files at most one row.
+ */
 export async function runRound(env, deps = {}) {
   const now = deps.now ?? Date.now();
+  const log = deps.log ?? console.log;
+  const rehearsal = env.REHEARSAL === "1";
   const s = stub(env);
-  const result = await runChecksTwice(env, { fetchImpl: deps.fetchImpl, sleep: deps.sleep });
-  const { state, events } = nextRound(await s.get(), result, now, env.QUIET_HOURS);
+  const result = rehearsal ? REHEARSAL_RESULT : await runChecksTwice(env, { fetchImpl: deps.fetchImpl, sleep: deps.sleep });
+  const prev = await s.get();
+  const { state, events } = nextRound(prev, result, now, env.QUIET_HOURS, { skipQuiet: rehearsal });
+  const { rows, toFile } = nextRows(prev && prev.rows, { bound: Boolean(env.CREW_INTAKE), events, now, rehearsal });
+  state.rows = rows;
   await s.put(state);
-  for (const event of events) await sendAlert(env, event, deps.alertFetch ?? fetch, deps.log ?? console.log);
+  for (const event of events) await sendAlert(env, event, deps.alertFetch ?? fetch, log);
+  if (toFile.length > 0) {
+    for (const event of toFile) {
+      const answer = await fileAlert(env, event, log);
+      state.rows = { ...state.rows, filed: state.rows.filed + (answer === "filed" ? 1 : 0), lastResult: answer };
+    }
+    await s.put(state);
+  }
   return state;
 }
 
@@ -51,6 +74,8 @@ export async function handleFetch(request, env, now = Date.now()) {
   const answer = publicStatus(await stub(env).get(), now, {
     alertsConfigured: alertsConfigured(env),
     quietHours: env.QUIET_HOURS,
+    rowsBound: Boolean(env.CREW_INTAKE),
+    rowQuietHours: env.REHEARSAL === "1" ? 0 : ROW_QUIET_HOURS,
   });
   return new Response(JSON.stringify(answer.body), {
     status: answer.status,
