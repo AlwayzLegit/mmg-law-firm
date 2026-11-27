@@ -400,7 +400,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   # Reads the live site from outside after the deploy (black box, GET only,
-  # no secret, no environment). The caller's production job needs this job of
+  # no secret, no environment; the one POST is stopped by Turnstile before any
+  # insert, OPS-410). The caller's production job needs this job of
   # staging, so a red check here keeps production from starting.
   check:
     needs: deploy
@@ -428,3 +429,33 @@ jobs:
           # probe leaves out /api/health, which fails for the database.
           if [ "$FRONT_ONLY" = true ]; then export PROBE_SKIP_HEALTH=1; fi
           node scripts/health/probe.mjs --base "$base" --with-health --attempts 3 --wait 20
+
+      # OPS-410: the call and text consent box is optional. One POST with the box
+      # unticked and a token Turnstile refuses: the app must answer 400 without a
+      # consent issue. The bad token stops it before any insert, so nothing is stored.
+      - name: Smoke consent optional
+        if: ${{ inputs.fail_check != true }}
+        run: |
+          code=""
+          for attempt in 1 2 3; do
+            code=$(curl -s -o body.txt -w "%{http_code}" --max-time 25 -X POST -H "content-type: application/json" \
+              --data '{"full_name":"Crew Consent Check","phone":"+12135550123","consent_contact":false,"turnstileToken":"crew-consent-check-not-valid"}' \
+              "$SITE_URL/api/leads" || true)
+            [ "$code" = 400 ] && break
+            echo "attempt $attempt: status ${code:-none}"; sleep 5
+          done
+          if [ "$code" = 400 ]; then
+            if jq -e '(.issues.consent_contact // null) == null' body.txt >/dev/null 2>&1; then
+              echo "consent optional: status 400, error $(jq -r '.error // "none"' body.txt), consent issue absent"
+            else
+              echo "::error::the app still answers a consent issue for an unticked box"; rm -f body.txt; exit 1
+            fi
+          else
+            health=$(curl -s --max-time 20 "$SITE_URL/api/health" || true)
+            if [ "${code:-000}" = 000 ] && echo "$health" | jq -e '(.failing // []) | index("database")' >/dev/null 2>&1; then
+              echo "consent optional: not proved, database failing"
+            else
+              echo "::error::POST /api/leads with an unticked consent box did not answer 400 (status ${code:-none})"; rm -f body.txt; exit 1
+            fi
+          fi
+          rm -f body.txt
