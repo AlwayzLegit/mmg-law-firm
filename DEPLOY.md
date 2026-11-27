@@ -597,3 +597,24 @@ embedded table are not supported except the `!inner` filters above.
 
 To run it locally: `pnpm exec wrangler d1 execute DB --local --persist-to .wrangler/state --config cloudflare/wrangler.d1-ci.jsonc --file migrations/d1/0001_schema.sql`, then
 `D1_SMOKE=1 pnpm exec vitest run src/lib/db`.
+
+## Front only and held enquiries (OPS-398)
+
+**When to use it.** The app cannot be built or deployed (for example the database is down, so `pnpm cf:build` times out on the pages it prerenders), but enquiries must still be taken. The workflow `Cloudflare deploy` has two extra choices of `target`:
+
+- `front-staging`: deploys only `mmg-law-firm-front-staging`.
+- `front-production`: deploys only `mmg-law-firm-front`. It runs only on `main` (a branch can never put its front Worker on www), and its environment still waits for the owner's approval click.
+
+Neither builds or deploys the app, sets secrets or pre-loads pages. The build id is read from the live site (`x-build-id` of `/contact`) and passed to the front Worker, so every stored page stays valid: a new build id would drop them all, and each page would then render against the database. The log prints `front only: BUILD_ID <id> (read from live)`. The probe after it skips `/api/health`, which fails for the database.
+
+**Who starts it.** Claude in chat, or the Merge captain on staging. Production only after the owner's yes, with his click.
+
+**What is held.** The front Worker (`src/lib/cloudflare/lead-hold.ts`) sits in front of `POST /api/leads`. When the app answers 500 `db-insert-failed`, or does not answer within 15 seconds, the enquiry is written to the private cache bucket under `held-leads/<date>/<id>.json` and the visitor sees the normal thank-you only after that write succeeded. Held: the lead fields the form posted (never the Turnstile token) and a consent record (time received, IP, user agent). Not held: anything else. A copy held on a timeout is deleted again when the app then answers with a 4xx or with a stored lead. While the database is down a real enquiry takes the app-timeout path (the rate limit waits on the database before anything else), so held records carry reason `app-timeout`, not `db-insert-failed`, and have not been checked by Turnstile: the replay in OPS-399 must check or drop them.
+
+**Privacy.** While the database is down a held enquiry sits in an R2 object outside the database, readable by anyone with R2 access on the Cloudflare account. The 7 day lifecycle rule `expire-held-leads` (added by the step `Held enquiries expire`) deletes it. Nothing is logged except fixed words. Replay of held enquiries into `leads` is OPS-399 and must be live within 7 days of the first hold.
+
+**Reading the count.** Claude in chat lists the objects under `held-leads/` by prefix (a count, never the content).
+
+**Proof.** The step `Smoke lead hold` runs the staging self test first (the var `HOLD_SELFTEST` and the header `x-hold-selftest`, honoured on the exact staging host only): it holds a made-up enquiry without calling the app, reads it back, checks the token is absent and deletes it: `hold selftest: held yes, read back yes, token absent yes`, `hold selftest: deleted`. It then prints `pass-through: 400 invalid-json` on every target. The app reads the rate limit from the database before it reads the body, so while the database does not answer it cannot send that 400; only then, and only when `/api/health` names the database as failing, the step prints `pass-through: not proved, the app did not answer in 20 s and /api/health names the database as failing` instead of failing. Read that line as an open item, not a pass: run the step again once a database answers.
+
+**Way back.** Revert the pull request and run `front-production` on `main` again (it redeploys the earlier front Worker with the live build id), or roll `mmg-law-firm-front` back to its previous version in Cloudflare.

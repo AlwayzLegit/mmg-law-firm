@@ -13,6 +13,7 @@ import {
   USER_AGENT,
   checkErrors,
   makeGet,
+  applyEnv,
   parseArgs,
   probe,
   runChecks,
@@ -358,4 +359,12 @@ test("the errors quiet date is a valid time", () => {
 test("a 404 on /api/health still does not read any counts", async () => {
   const r = await withHealth({});
   assert.ok(!r.lines.some((l) => l.startsWith("errors:")));
+});
+
+test("applyEnv leaves /api/health out only when PROBE_SKIP_HEALTH is 1 (OPS-398)", () => {
+  const opts = parseArgs(["--with-health"]);
+  assert.equal(applyEnv(opts, {}).withHealth, true);
+  assert.equal(applyEnv(opts, { PROBE_SKIP_HEALTH: "0" }).withHealth, true);
+  assert.equal(applyEnv(opts, { PROBE_SKIP_HEALTH: "1" }).withHealth, false);
+  assert.equal(applyEnv(parseArgs([]), { PROBE_SKIP_HEALTH: "1" }).withHealth, false);
 });
