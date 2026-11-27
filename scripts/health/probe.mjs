@@ -102,6 +102,13 @@ export function parseArgs(argv) {
   return out;
 }
 
+// OPS-398: a front-only deploy is for when the database is down, so the deploy
+// workflow sets PROBE_SKIP_HEALTH=1 and /api/health (which fails for the
+// database) is left out even though the command line asks for it.
+export function applyEnv(opts, env = {}) {
+  return env.PROBE_SKIP_HEALTH === "1" ? { ...opts, withHealth: false } : opts;
+}
+
 // The whole sequence runs, and on a failure runs once more after the wait.
 // Returns 0 or 1.
 export async function probe(opts, get, sleep = (ms) => new Promise((r) => setTimeout(r, ms))) {
@@ -122,7 +129,7 @@ export async function probe(opts, get, sleep = (ms) => new Promise((r) => setTim
 }
 
 async function main() {
-  const opts = parseArgs(process.argv.slice(2));
+  const opts = applyEnv(parseArgs(process.argv.slice(2)), process.env);
   process.exit(await probe(opts, makeGet(opts.base)));
 }
 

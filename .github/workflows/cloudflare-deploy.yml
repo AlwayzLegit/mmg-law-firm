@@ -12,6 +12,10 @@ name: Cloudflare deploy
 #                   staging with a check that must fail, then production,
 #                   which must end up skipped (a test of the gate itself; the
 #                   guard refuses a rehearsal that reaches production).
+#                   target front-staging / front-production (OPS-398): only
+#                   the front Worker is deployed, with the build id read from
+#                   the live site, for when the app cannot be built (the
+#                   database is down). front-production runs only on main.
 #
 # The public hostnames are routes of the front Worker (wrangler.front.jsonc;
 # production: www + apex, staging: staging.). It serves stored pages and
@@ -92,7 +96,7 @@ on:
       target:
         description: Which Worker to deploy
         type: choice
-        options: [staging, production, rehearse-gate]
+        options: [staging, production, rehearse-gate, front-staging, front-production]
         default: staging
         required: true
       cron_enabled:
@@ -142,4 +146,24 @@ jobs:
     with:
       target: production
       cron_enabled: ${{ inputs.cron_enabled }}
+    secrets: inherit
+
+  # OPS-398: the front Worker alone (the enquiry hold), no app build, no cache
+  # loss: the live build id is kept. Staging first by hand; production only
+  # from main, and its environment still waits for the owner's approval click.
+  front-staging:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'front-staging'
+    uses: ./.github/workflows/cloudflare-deploy-target.yml
+    with:
+      target: staging
+      front_only: true
+    secrets: inherit
+
+  front-production:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'front-production' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/cloudflare-deploy-target.yml
+    with:
+      target: production
+      cron_enabled: ${{ inputs.cron_enabled }}
+      front_only: true
     secrets: inherit

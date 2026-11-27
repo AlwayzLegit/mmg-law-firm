@@ -8,6 +8,7 @@
  * fresh isolate, so even its own edge-cache hits were slow on a cold
  * isolate. This Worker imports nothing from Next and starts in milliseconds.
  */
+import { handleLeadPost } from "../src/lib/cloudflare/lead-hold";
 import { cachedPage, isCacheableDocumentRequest } from "../src/lib/cloudflare/page-cache";
 import { tieredPageStore } from "../src/lib/cloudflare/page-store";
 
@@ -18,10 +19,16 @@ type Env = {
   PAGES: R2Bucket;
   /** Next build id of the app build deployed with this Worker (deploy workflow). */
   BUILD_ID?: string;
+  /** "1" on staging only (wrangler.front.jsonc): enables the enquiry-hold self test. */
+  HOLD_SELFTEST?: string;
 };
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // OPS-398: an enquiry the app cannot store is held in R2, not lost.
+    if (request.method === "POST" && new URL(request.url).pathname === "/api/leads") {
+      return handleLeadPost(request, env, ctx);
+    }
     const render = (req: Request) => env.APP.fetch(req);
     if (!env.BUILD_ID || !isCacheableDocumentRequest(request)) return render(request);
     const waitUntil = (p: Promise<unknown>) => ctx.waitUntil(p);

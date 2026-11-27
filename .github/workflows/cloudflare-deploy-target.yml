@@ -31,6 +31,10 @@ on:
         description: "rehearsal only: refused for production"
         type: boolean
         default: false
+      front_only:
+        description: "OPS-398: deploy only the front Worker, keeping the live build id; no app build, no app deploy"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -96,7 +100,7 @@ jobs:
       # gap of about a second. A no-op once the hosts are on the Worker.
       # Rollback (migration plan §E) recreates the Vercel records.
       - name: Move hosts off Vercel
-        if: inputs.target == 'production'
+        if: inputs.target == 'production' && !inputs.front_only
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -124,6 +128,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Worker
+        if: ${{ !inputs.front_only }}
         run: pnpm cf:build
         env:
           NEXT_PUBLIC_SITE_URL: ${{ env.SITE_URL }}
@@ -145,11 +150,29 @@ jobs:
       # front Worker stores only pages of the build it was deployed with, so
       # it never serves HTML whose /_next/static chunks are gone.
       - name: Build id
+        if: ${{ !inputs.front_only }}
         run: |
           id=$(cat .next/BUILD_ID)
           [ -n "$id" ] || { echo "::error::no .next/BUILD_ID"; exit 1; }
           echo "BUILD_ID=$id" >> "$GITHUB_ENV"
           echo "build id: $id"
+
+      # OPS-398: the front Worker alone. The app is not built or deployed, so
+      # the build id is read from the live site (the x-build-id the app already
+      # sends), and the front Worker keeps serving the pages stored for it.
+      # Refused unless it looks like a Next build id.
+      - name: Live build id
+        if: ${{ inputs.front_only }}
+        run: |
+          id=""
+          for attempt in 1 2 3; do
+            id=$(curl -s -o /dev/null -D - --max-time 30 "$SITE_URL/contact" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-build-id"{print $2}' | head -1)
+            [ -n "$id" ] && break
+            sleep 10
+          done
+          echo "$id" | grep -Eq '^[A-Za-z0-9_-]{8,64}$' || { echo "::error::no usable x-build-id on $SITE_URL/contact"; exit 1; }
+          echo "BUILD_ID=$id" >> "$GITHUB_ENV"
+          echo "front only: BUILD_ID $id (read from live)"
 
       # Front first: until the app below is live it still renders the
       # previous build, whose pages the front Worker passes through without
@@ -168,6 +191,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Deploy
+        if: ${{ !inputs.front_only }}
         run: |
           pnpm exec wrangler deploy $ENV_FLAG \
             --var "NEXT_PUBLIC_SITE_URL:$SITE_URL" \
@@ -178,6 +202,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Worker secrets
+        if: ${{ !inputs.front_only }}
         # Only secrets that exist are pushed; the rest stay as they are on
         # the Worker.
         run: |
@@ -215,6 +240,7 @@ jobs:
           S_CONTENT_NOTIFY_EMAIL: ${{ secrets.CONTENT_NOTIFY_EMAIL }}
 
       - name: Smoke the deployed Worker
+        if: ${{ !inputs.front_only }}
         run: |
           # The account's workers.dev subdomain, from the API (wrangler has no
           # command for it and `deployments list --json` carries no URL).
@@ -255,6 +281,7 @@ jobs:
       # crawlers arrive. A crawl that meets an empty store waits 1–3 s per
       # page for the app Worker to start (Semrush's slow-page audits).
       - name: Pre-load pages
+        if: ${{ !inputs.front_only }}
         run: |
           urls=$(curl -s --max-time 60 "$SITE_URL/sitemap.xml" | grep -o '<loc>[^<]*' | sed 's/<loc>//' \
             | xargs -n1 curl -s --max-time 60 | grep -o '<loc>[^<]*' | sed 's/<loc>//' | sort -u)
@@ -292,6 +319,7 @@ jobs:
       # Pages of earlier builds are never read again; R2 drops them after 8
       # days (page-store.ts already treats anything over 7 days as missing).
       - name: Expire old stored pages
+        if: ${{ !inputs.front_only }}
         run: |
           if pnpm exec wrangler r2 bucket lifecycle list "$BUCKET" 2>/dev/null | grep -q expire-edge-pages; then
             echo "lifecycle rule present"
@@ -299,6 +327,61 @@ jobs:
             pnpm exec wrangler r2 bucket lifecycle add "$BUCKET" expire-edge-pages edge-pages/ --expire-days 8 -y \
               || echo "::warning::could not add the R2 lifecycle rule; add it in the dashboard (prefix edge-pages/, 8 days)"
           fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # OPS-398: held enquiries (src/lib/cloudflare/lead-hold.ts) live under
+      # held-leads/ in the private cache bucket. R2 deletes them after 7 days.
+      - name: Held enquiries expire
+        run: |
+          if pnpm exec wrangler r2 bucket lifecycle list "$BUCKET" 2>/dev/null | grep -q expire-held-leads; then
+            echo "lifecycle expire-held-leads present"
+          else
+            pnpm exec wrangler r2 bucket lifecycle add "$BUCKET" expire-held-leads held-leads/ --expire-days 7 -y \
+              && echo "lifecycle expire-held-leads added" \
+              || { echo "::error::could not add the 7 day rule for held-leads/"; exit 1; }
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # OPS-398: proves the front Worker now sits in front of POST /api/leads.
+      # 1. An invalid body must pass through to the app: 400 invalid-json.
+      # 2. Staging only: the self test holds a made-up enquiry without calling
+      #    the app, reads it back, checks the Turnstile token is not kept and
+      #    deletes it. Nothing real is posted anywhere.
+      - name: Smoke lead hold
+        run: |
+          code=""
+          for attempt in 1 2 3; do
+            code=$(curl -s -o body.txt -w "%{http_code}" --max-time 60 -X POST -H "content-type: application/json" --data '{' "$SITE_URL/api/leads" || true)
+            [ "$code" = 400 ] && grep -q invalid-json body.txt && break
+            echo "attempt $attempt: status ${code:-none}"; sleep 10
+          done
+          if [ "$code" = 400 ] && grep -q invalid-json body.txt; then
+            echo "pass-through: 400 invalid-json"
+          else
+            echo "::error::POST /api/leads with an invalid body did not pass through (status ${code:-none})"; exit 1
+          fi
+          rm -f body.txt
+          [ "${{ inputs.target }}" = staging ] || exit 0
+          res=$(curl -s --max-time 60 -X POST -H "content-type: application/json" -H "x-hold-selftest: 1" \
+            --data '{"full_name":"Crew Selftest","phone":"+15555550100","consent":true,"turnstileToken":"selftest-not-kept"}' \
+            -w '\n%{http_code}' "$SITE_URL/api/leads")
+          status=$(echo "$res" | tail -1); body=$(echo "$res" | head -n -1)
+          id=$(echo "$body" | jq -r '.selftest // empty')
+          if [ "$status" != 200 ] || [ "$(echo "$body" | jq -r '.persisted')" != false ] || ! echo "$id" | grep -Eq '^[0-9a-f-]{36}$'; then
+            echo "::error::hold self test: status $status, body not as expected"; exit 1
+          fi
+          key="held-leads/selftest/$id.json"
+          pnpm exec wrangler r2 object get "$BUCKET/$key" --remote --pipe > held.json
+          [ "$(jq -r '.lead.full_name' held.json)" = "Crew Selftest" ] || { echo "::error::held copy not read back"; rm -f held.json; exit 1; }
+          [ "$(jq -r '.lead.turnstileToken // "absent"' held.json)" = absent ] || { echo "::error::the Turnstile token was kept"; rm -f held.json; exit 1; }
+          echo "hold selftest: held yes, read back yes, token absent yes"
+          rm -f held.json
+          pnpm exec wrangler r2 object delete "$BUCKET/$key" --remote
+          echo "hold selftest: deleted"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -313,6 +396,7 @@ jobs:
     env:
       SITE_URL: ${{ inputs.target == 'production' && 'https://www.mmg-lawfirm.com' || 'https://staging.mmg-lawfirm.com' }}
       FAIL_CHECK: ${{ inputs.fail_check }}
+      FRONT_ONLY: ${{ inputs.front_only }}
     steps:
       - uses: actions/checkout@v4
 
@@ -327,4 +411,7 @@ jobs:
           # the way the health self-test forces a failure.
           if [ "$FAIL_CHECK" = true ]; then base="$SITE_URL/this-path-does-not-exist"; fi
           echo "probing $base"
+          # A front-only deploy (OPS-398) is for when the database is down: the
+          # probe leaves out /api/health, which fails for the database.
+          if [ "$FRONT_ONLY" = true ]; then export PROBE_SKIP_HEALTH=1; fi
           node scripts/health/probe.mjs --base "$base" --with-health --attempts 3 --wait 20

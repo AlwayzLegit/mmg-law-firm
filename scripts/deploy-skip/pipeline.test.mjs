@@ -91,11 +91,34 @@ test("the workflow level and the job level concurrency groups differ", () => {
 });
 
 test("the rehearsal option exists and the by-hand production job is only for a hand run", () => {
-  assert.match(caller, /options: \[staging, production, rehearse-gate\]/);
+  assert.match(caller, /options: \[staging, production, rehearse-gate, front-staging, front-production\]/);
   assert.match(noComments(job(caller, "production-by-hand")), /if: github\.event_name == 'workflow_dispatch' && inputs\.target == 'production'/);
   assert.match(noComments(job(caller, "staging")), /if: github\.event_name == 'push' \|\| inputs\.target == 'staging' \|\| inputs\.target == 'rehearse-gate'/);
 });
 
 test("every called job passes the secrets on", () => {
-  for (const n of ["staging", "production", "production-by-hand"]) assert.match(job(caller, n), /secrets: inherit/, n);
+  for (const n of ["staging", "production", "production-by-hand", "front-staging", "front-production"]) assert.match(job(caller, n), /secrets: inherit/, n);
+});
+
+test("the front-only jobs deploy only the front Worker, and production only from main (OPS-398)", () => {
+  const staging = noComments(job(caller, "front-staging"));
+  assert.match(staging, /if: github\.event_name == 'workflow_dispatch' && inputs\.target == 'front-staging'/);
+  assert.match(staging, /target: staging/);
+  assert.match(staging, /front_only: true/);
+  const prod = noComments(job(caller, "front-production"));
+  assert.match(prod, /inputs\.target == 'front-production' && github\.ref == 'refs\/heads\/main'/);
+  assert.match(prod, /target: production/);
+  assert.match(prod, /front_only: true/);
+  // A push and the ordinary by-hand targets never run them.
+  for (const n of ["staging", "production", "production-by-hand"]) assert.doesNotMatch(noComments(job(caller, n)), /front_only/, n);
+});
+
+test("front_only skips the app build, the app deploy, the secrets and the pre-load in the target (OPS-398)", () => {
+  const t = noComments(target);
+  assert.match(t, /front_only:\n\s+description:[^\n]*\n\s+type: boolean\n\s+default: false/);
+  for (const step of ["Build Worker", "Build id", "Deploy", "Worker secrets", "Smoke the deployed Worker", "Pre-load pages", "Expire old stored pages"]) {
+    assert.match(t, new RegExp(`- name: ${step}\\n\\s+if: \\$\\{\\{ !inputs\\.front_only \\}\\}`), step);
+  }
+  assert.match(t, /- name: Live build id\n\s+if: \$\{\{ inputs\.front_only \}\}/);
+  assert.match(t, /- name: Move hosts off Vercel\n\s+if: inputs\.target == 'production' && !inputs\.front_only/);
 });

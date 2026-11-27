@@ -29,7 +29,10 @@
       // Must be set: routes are inherited, and staging must never claim www.
       "routes": [{ "pattern": "staging.mmg-lawfirm.com", "custom_domain": true }],
       "workers_dev": false,
-      "observability": { "enabled": true }
+      "observability": { "enabled": true },
+      // OPS-398: lets the deploy's smoke step prove the enquiry hold on staging
+      // only (src/lib/cloudflare/lead-hold.ts). Production has no such var.
+      "vars": { "HOLD_SELFTEST": "1" }
     }
   }
 }
