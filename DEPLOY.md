@@ -464,6 +464,15 @@ does not. It is not part of the site's two Workers and shares nothing with them.
   request trigger: the job holds the Cloudflare token. The pull request rehearsal
   is the `self-test` job of "Health monitor": one real round of the Worker under
   `wrangler dev`, with no account and no secret.
+- **Rehearsal (OPS-397).** "Monitor deploy" with `rehearse` true deploys a throwaway
+  copy, `mmg-law-firm-monitor-rehearsal`, and starts its one round itself with
+  `POST /rehearse` (OPS-397: a fresh Worker's first cron never fired in 17 minutes).
+  The request carries a per-run random value in the header `x-rehearsal-nonce`; the
+  copy runs the round only when the copy is a rehearsal (`REHEARSAL=1`) and the header
+  equals the value the workflow gave it. The real monitor has no `REHEARSAL_NONCE`, so
+  `/rehearse` there is a 404 like any other address. Read the run log for
+  `rehearsal: round started: 200`, the `rehearsal: poll` lines and
+  `rehearsal: row filed: yes`; the Inbox shows one row ending `[rehearsal]`.
 - **Silence it.** Remove the `crons` line in `scripts/health/monitor/wrangler.jsonc`
   and run "Monitor deploy", or disable the trigger on the Worker in the Cloudflare
   dashboard. Deleting the Worker is done in the dashboard.
