@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { authProvider } from "@/lib/auth/provider";
+import { createBetterRecoveryLink, signInWithBetterAuth } from "@/lib/auth/session";
 import { siteUrl } from "@/lib/seo/canonical";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email/resend";
@@ -55,6 +57,20 @@ export async function loginWithPassword(input: {
     return { ok: false, error: "Enter your email and password." };
   }
 
+  if (authProvider() === "better-auth") {
+    // Better Auth on D1 (OPS-365). Its session hook has already refused an
+    // account without an admin_profiles row, so no second check is needed.
+    const res = await signInWithBetterAuth(email.data, password.data);
+    if (res.ok) return { ok: true, redirect: safeNext(input.next) };
+    if (res.reason === "not-authorized") {
+      return { ok: false, error: "This account isn't authorized for the admin." };
+    }
+    if (res.reason === "rate-limited") {
+      return { ok: false, error: "Too many sign-in attempts. Try again later." };
+    }
+    return { ok: false, error: "Incorrect email or password." };
+  }
+
   const supabase = await getServerSupabase();
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.data,
@@ -93,19 +109,26 @@ export async function requestPasswordReset(input: {
   const limit = await checkRateLimit(`pw-reset:${email.data}`, 5);
   if (!limit.allowed) return { ok: true };
 
-  const admin = getServiceSupabase();
-  const { data: link, error } = await admin.auth.admin.generateLink({
-    type: "recovery",
-    email: email.data,
-  });
-  if (error || !link?.user || !link.properties?.hashed_token) {
-    return { ok: true };
-  }
-  if (!(await isAdminUser(link.user.id))) return { ok: true };
+  let url: string;
+  if (authProvider() === "better-auth") {
+    const betterUrl = await createBetterRecoveryLink(email.data);
+    if (!betterUrl) return { ok: true };
+    url = betterUrl;
+  } else {
+    const admin = getServiceSupabase();
+    const { data: link, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email: email.data,
+    });
+    if (error || !link?.user || !link.properties?.hashed_token) {
+      return { ok: true };
+    }
+    if (!(await isAdminUser(link.user.id))) return { ok: true };
 
-  const url = `${siteUrl()}/auth/callback?token_hash=${encodeURIComponent(
-    link.properties.hashed_token,
-  )}&type=recovery&next=${encodeURIComponent("/reset-password")}`;
+    url = `${siteUrl()}/auth/callback?token_hash=${encodeURIComponent(
+      link.properties.hashed_token,
+    )}&type=recovery&next=${encodeURIComponent("/reset-password")}`;
+  }
 
   await sendEmail({
     to: email.data,

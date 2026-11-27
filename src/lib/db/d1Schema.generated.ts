@@ -699,5 +699,84 @@ export const D1_SCHEMA: Record<string, TableInfo> = {
         "refColumn": "id"
       }
     ]
+  },
+  "auth_users": {
+    "columns": {
+      "id": "plain",
+      "email": "plain",
+      "name": "plain",
+      "email_verified": "bool",
+      "image_url": "plain",
+      "banned_until": "plain",
+      "created_at": "plain",
+      "updated_at": "plain"
+    },
+    "pk": [
+      "id"
+    ],
+    "fks": []
+  },
+  "auth_sessions": {
+    "columns": {
+      "id": "plain",
+      "user_id": "plain",
+      "token": "plain",
+      "expires_at": "plain",
+      "ip_address": "plain",
+      "user_agent": "plain",
+      "created_at": "plain",
+      "updated_at": "plain"
+    },
+    "pk": [
+      "id"
+    ],
+    "fks": [
+      {
+        "column": "user_id",
+        "table": "auth_users",
+        "refColumn": "id"
+      }
+    ]
+  },
+  "auth_accounts": {
+    "columns": {
+      "id": "plain",
+      "user_id": "plain",
+      "account_id": "plain",
+      "provider_id": "plain",
+      "password": "plain",
+      "access_token": "plain",
+      "refresh_token": "plain",
+      "id_token": "plain",
+      "access_token_expires_at": "plain",
+      "refresh_token_expires_at": "plain",
+      "scope": "plain",
+      "created_at": "plain",
+      "updated_at": "plain"
+    },
+    "pk": [
+      "id"
+    ],
+    "fks": [
+      {
+        "column": "user_id",
+        "table": "auth_users",
+        "refColumn": "id"
+      }
+    ]
+  },
+  "auth_verifications": {
+    "columns": {
+      "id": "plain",
+      "identifier": "plain",
+      "value": "plain",
+      "expires_at": "plain",
+      "created_at": "plain",
+      "updated_at": "plain"
+    },
+    "pk": [
+      "id"
+    ],
+    "fks": []
   }
 };

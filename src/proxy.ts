@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { SITE } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { isPrivateAnalyticsPath } from "@/lib/analytics/private-routes";
+import { authProvider } from "@/lib/auth/provider";
 import { apexRedirect, httpsRedirect, isNonCanonicalHost } from "@/lib/seo/host-guard";
 
 /**
@@ -19,6 +20,52 @@ export const config = {
     "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt).*)",
   ],
 };
+
+/**
+ * The /admin gate and the /login bounce for the Better Auth provider. The
+ * session cookie is signed and trusted for a few minutes without a database
+ * read (src/lib/auth/better.ts); requireAdmin() checks the database on every
+ * admin render, so a revoked session ends there at the latest. A failure to
+ * read the session closes the gate for /admin.
+ */
+async function betterAuthGate(request: NextRequest, response: NextResponse): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+  const isAdminPath = pathname.startsWith("/admin");
+  if (!isAdminPath && pathname !== "/login") return response;
+
+  let userId: string | null = null;
+  try {
+    const { getSessionUserFromHeaders } = await import("@/lib/auth/session");
+    userId = (await getSessionUserFromHeaders(request.headers))?.id ?? null;
+  } catch {
+    userId = null;
+  }
+
+  if (isAdminPath && !userId) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // A signed-in admin does not need the sign-in page. Check admin_profiles so
+  // a session whose profile was removed cannot bounce /admin <-> /login.
+  if (pathname === "/login" && userId) {
+    const { getServiceSupabase } = await import("@/lib/supabase/admin");
+    const { data: adminRow } = await getServiceSupabase()
+      .from("admin_profiles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (adminRow) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      url.searchParams.delete("next");
+      return NextResponse.redirect(url);
+    }
+  }
+  return response;
+}
 
 /**
  * Build the Content-Security-Policy for HTML responses.
@@ -188,6 +235,12 @@ export async function proxy(request: NextRequest) {
         : new URL(rule.destination, request.url).toString();
       return withCsp(NextResponse.redirect(dest, rule.permanent ? 308 : 307));
     }
+  }
+
+  // Better Auth on D1 (OPS-365, AUTH_PROVIDER=better-auth): no Supabase session
+  // to refresh. The gate below reads the signed session cookie.
+  if (authProvider() === "better-auth") {
+    return withCsp(await betterAuthGate(request, response));
   }
 
   // If Supabase isn't configured (typical in local dev without secrets),

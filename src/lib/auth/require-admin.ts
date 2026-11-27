@@ -1,6 +1,9 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 
+import { authProvider } from "@/lib/auth/provider";
+import { getSessionUser, signOut } from "@/lib/auth/session";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export type AdminProfile = {
@@ -31,18 +34,21 @@ export const requireAdmin = cache(async function requireAdmin(opts?: {
   user: { id: string; email: string | null };
   profile: AdminProfile;
 }> {
-  if (!isSupabaseConfigured()) {
+  const betterAuth = authProvider() === "better-auth";
+  if (!betterAuth && !isSupabaseConfigured()) {
     redirect("/login");
   }
 
-  const supabase = await getServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     redirect("/login");
   }
 
+  // With Supabase the profile is read as the signed-in user (row-level
+  // security lets them read their own row). Better Auth has no database
+  // identity, so the profile is read with the service client; the session
+  // above already proved who this is (OPS-365).
+  const supabase = betterAuth ? getServiceSupabase() : await getServerSupabase();
   const { data: profile, error } = await supabase
     .from("admin_profiles")
     .select("user_id, role, full_name, password_set")
@@ -51,7 +57,7 @@ export const requireAdmin = cache(async function requireAdmin(opts?: {
 
   if (error || !profile) {
     // Signed in but not an admin — sign out and bounce them.
-    await supabase.auth.signOut();
+    await signOut();
     redirect("/login?error=not-admin");
   }
 
@@ -62,7 +68,7 @@ export const requireAdmin = cache(async function requireAdmin(opts?: {
   }
 
   return {
-    user: { id: user.id, email: user.email ?? null },
+    user: { id: user.id, email: user.email },
     profile: profile as AdminProfile,
   };
 });
